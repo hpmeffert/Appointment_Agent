@@ -27,6 +27,12 @@ In simple words:
 - `apps/demo_monitoring_ui/v1_0_2`
 - `apps/shared/v1_0_0`
 
+## Current Product State
+
+- LEKAB is still a mocked prototype adapter for internal flow simulation.
+- Google booking flows are available in the prototype, but the real upstream Google API integration is planned for a later release step.
+- Microsoft is prepared as a future adapter line and is not yet a full production integration.
+
 ## Architecture
 
 ```text
@@ -62,6 +68,9 @@ Open:
 - Demo scenarios API: `http://localhost:8080/api/demo-monitoring/v1.0.0/scenarios`
 - Demo scenarios API Release Candidate: `http://localhost:8080/api/demo-monitoring/v1.0.2/scenarios`
 - Help overview: `http://localhost:8080/help`
+- Demo Guide: `http://localhost:8080/docs/demo`
+- User Guide: `http://localhost:8080/docs/user`
+- Admin Guide: `http://localhost:8080/docs/admin`
 
 ## How To Run Tests
 

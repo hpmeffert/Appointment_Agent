@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Appointment Agent Demo + Monitoring v1.0.0</title>
+    <style>
+      :root {
+        --ink: #1d2b24;
+        --muted: #59675f;
+        --panel: #f6f2e8;
+        --panel-strong: #efe5d1;
+        --line: #d3c6ab;
+        --brand: #0f766e;
+        --brand-soft: #d3f1ea;
+        --accent: #b45309;
+        --danger: #b42318;
+        --ok: #217346;
+        --bg: linear-gradient(135deg, #f3ead8 0%, #f8f6ef 48%, #dceee6 100%);
+        --shadow: 0 16px 50px rgba(26, 44, 36, 0.12);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+        min-height: 100vh;
+      }
+
+      .shell {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      .hero {
+        background: rgba(255, 250, 243, 0.88);
+        border: 1px solid rgba(211, 198, 171, 0.8);
+        border-radius: 28px;
+        box-shadow: var(--shadow);
+        padding: 28px;
+        backdrop-filter: blur(14px);
+        position: relative;
+      }
+
+      .eyebrow {
+        font-size: 13px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 12px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(34px, 5vw, 56px);
+        line-height: 0.98;
+        max-width: 900px;
+      }
+
+      .lead {
+        margin: 16px 0 0;
+        max-width: 880px;
+        font-size: 18px;
+        line-height: 1.55;
+        color: #33443c;
+      }
+
+      .toolbar {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        margin-top: 24px;
+      }
+
+      .toolcard, .panel {
+        background: rgba(255, 252, 247, 0.92);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 18px;
+        box-shadow: 0 10px 30px rgba(24, 36, 31, 0.06);
+      }
+
+      label {
+        display: block;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        margin-bottom: 10px;
+      }
+
+      select, input[type="range"] {
+        width: 100%;
+      }
+
+      select, button {
+        font: inherit;
+      }
+
+      select {
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: #fffdf9;
+        padding: 12px 14px;
+        color: var(--ink);
+      }
+
+      .button-row, .mode-row, .toggle-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 14px 18px;
+        background: #dfe7dd;
+        color: var(--ink);
+        cursor: pointer;
+        transition: transform 160ms ease, background 160ms ease;
+        min-height: 48px;
+        font-weight: 600;
+      }
+
+      button:hover { transform: translateY(-1px); }
+      button.active {
+        background: var(--brand);
+        color: white;
+      }
+      button.secondary { background: #f4e7d2; }
+      button.warning { background: #fbe5c8; }
+
+      .main {
+        display: grid;
+        gap: 18px;
+        margin-top: 24px;
+        grid-template-columns: 1.08fr 0.92fr;
+      }
+
+      .main.demo-only { grid-template-columns: 1fr; }
+      .main.monitoring-only { grid-template-columns: 1fr; }
+
+      .demo-pane.hidden,
+      .monitoring-pane.hidden { display: none; }
+
+      .pane-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+
+      .pane-title {
+        font-size: 24px;
+        margin: 0;
+      }
+
+      .status-pill {
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: var(--brand-soft);
+        color: #0b5f58;
+        font-size: 13px;
+      }
+
+      .chat-stream {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        min-height: 340px;
+      }
+
+      .bubble {
+        max-width: 85%;
+        border-radius: 20px;
+        padding: 14px 16px;
+        line-height: 1.45;
+      }
+
+      .bubble.user {
+        background: #fff;
+        border: 1px solid #d7d7d7;
+        align-self: flex-end;
+      }
+
+      .bubble.bot {
+        background: #0f766e;
+        color: #f7fffd;
+        align-self: flex-start;
+      }
+
+      .slot-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .slot-chip {
+        padding: 11px 14px;
+        background: #fff8ef;
+        border: 1px solid #e7d3ae;
+        border-radius: 16px;
+        font-size: 14px;
+      }
+
+      .monitor-grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .wide { grid-column: span 2; }
+
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .metric {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: #fffdf9;
+        border: 1px solid #ede4d2;
+      }
+
+      .flow-step {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: #fffdf9;
+        border: 1px solid #eadfc7;
+      }
+
+      .tag {
+        font-size: 12px;
+        padding: 6px 10px;
+        border-radius: 999px;
+      }
+
+      .pending { background: #f0eee8; color: #536056; }
+      .active { background: #d3f1ea; color: #0f766e; }
+      .done { background: #ddf7df; color: #217346; }
+      .failed { background: #fde2df; color: #b42318; }
+      .escalated { background: #fee7d6; color: #b45309; }
+
+      .timeline-item, .audit-item {
+        padding: 12px 14px;
+        border-left: 4px solid var(--brand);
+        background: #fffdf9;
+        border-radius: 0 14px 14px 0;
+      }
+
+      .small {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .footer-note {
+        margin-top: 18px;
+        font-size: 14px;
+        color: #526057;
+      }
+
+      .hero-actions {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .lang-switch {
+        display: flex;
+        gap: 8px;
+      }
+
+      .lang-switch button {
+        min-height: 40px;
+        padding: 10px 14px;
+      }
+
+      .help-wrap {
+        position: relative;
+      }
+
+      .help-button {
+        width: 48px;
+        height: 48px;
+        border-radius: 999px;
+        background: #fff9ef;
+        border: 1px solid #e7d3ae;
+        color: #845820;
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      .help-menu {
+        display: none;
+        position: absolute;
+        top: 58px;
+        right: 0;
+        width: 220px;
+        background: #fffdf9;
+        border: 1px solid #ead8b7;
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        padding: 10px;
+        z-index: 20;
+      }
+
+      .help-menu.open {
+        display: block;
+      }
+
+      .help-link {
+        display: block;
+        width: 100%;
+        text-align: left;
+        background: transparent;
+        padding: 12px;
+      }
+
+      .explain-box {
+        margin-top: 16px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: #fff9ef;
+        border: 1px solid #ead8b7;
+      }
+
+      .explain-box h4 {
+        margin: 0 0 8px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #845820;
+      }
+
+      .simple-card {
+        margin-top: 16px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: #f6fbf8;
+        border: 1px solid #cfe4da;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      @media (max-width: 1024px) {
+        .main { grid-template-columns: 1fr; }
+        .monitor-grid { grid-template-columns: 1fr; }
+        .wide { grid-column: span 1; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <section class="hero">
+        <div class="hero-actions">
+          <div class="lang-switch">
+            <button id="langEnBtn" class="active">EN</button>
+            <button id="langDeBtn">DE</button>
+          </div>
+          <div class="help-wrap">
+            <button id="helpBtn" class="help-button" aria-label="Help">?</button>
+            <div id="helpMenu" class="help-menu">
+              <button class="help-link" data-doc="demo">Demo Guide</button>
+              <button class="help-link" data-doc="user">User Guide</button>
+              <button class="help-link" data-doc="admin">Admin Guide</button>
+            </div>
+          </div>
+        </div>
+        <div class="eyebrow">Appointment Agent Demo + Monitoring v1.0.0</div>
+        <h1>One screen that shows both the customer story and the technical workflow.</h1>
+        <p class="lead">
+          The left side feels like a customer appointment journey. The right side shows what happens inside LEKAB,
+          the Orchestrator, the Google Adapter, and the CRM event layer at the same time.
+        </p>
+        <p class="lead">
+          Available modes: Demo, Monitoring, and Combined.
+        </p>
+
+        <div class="toolbar">
+          <div class="toolcard">
+            <label>Mode</label>
+            <div class="mode-row" id="modeButtons"></div>
+          </div>
+          <div class="toolcard">
+            <label for="scenarioSelect">Scenario</label>
+            <select id="scenarioSelect"></select>
+          </div>
+          <div class="toolcard">
+            <label>Simulation Controls</label>
+            <div class="button-row">
+              <button id="restartBtn" class="secondary">Restart</button>
+              <button id="nextBtn" class="active">Next Step</button>
+              <button id="autoplayBtn" class="warning">Autoplay</button>
+              <button id="resetBtn">Reset</button>
+            </div>
+          </div>
+          <div class="toolcard">
+            <label for="speedRange">Autoplay Speed</label>
+            <input id="speedRange" type="range" min="800" max="2600" step="200" value="1400" />
+            <div class="small" id="speedLabel">1400 ms per step</div>
+          </div>
+          <div class="toolcard">
+            <label>Technical Toggles</label>
+            <div class="toggle-row">
+              <button id="toggleIdsBtn" class="secondary">Show IDs</button>
+              <button id="toggleAuditBtn" class="secondary">Show Audit Details</button>
+              <button id="noSlotBtn">Simulate No Slot</button>
+              <button id="failureBtn">Simulate Failure</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="main" id="mainLayout">
+        <article class="panel demo-pane" id="demoPane">
+          <div class="pane-header">
+            <h2 class="pane-title">Demo Mode</h2>
+            <div class="status-pill" id="scenarioLabel"></div>
+          </div>
+          <div class="chat-stream" id="chatStream"></div>
+          <div class="slot-grid" id="slotGrid"></div>
+          <div class="simple-card">
+            <h4 id="systemSimpleTitle">What Happens in System</h4>
+            <div id="systemSimpleText"></div>
+            <div id="systemTechnicalWrap" class="hidden" style="margin-top:12px;">
+              <h4 id="systemTechnicalTitle">Technical Explanation</h4>
+              <div id="systemTechnicalText"></div>
+            </div>
+            <div class="small" style="margin-top:10px;">
+              Click the heading above if you want to show or hide the deeper technical explanation.
+            </div>
+          </div>
+          <div class="explain-box">
+            <h4>What You Can Say</h4>
+            <div id="speakerNotes"></div>
+          </div>
+          <div class="footer-note" id="demoSummary"></div>
+        </article>
+
+        <aside class="panel monitoring-pane" id="monitoringPane">
+          <div class="pane-header">
+            <h2 class="pane-title">Monitoring Mode</h2>
+            <div class="status-pill" id="activeComponent"></div>
+          </div>
+          <div class="monitor-grid">
+            <div class="panel">
+              <h3>Journey State</h3>
+              <div class="stack" id="journeyMetrics"></div>
+            </div>
+            <div class="panel">
+              <h3>Flow Steps</h3>
+              <div class="stack" id="flowSteps"></div>
+            </div>
+            <div class="panel wide">
+              <h3>Event Timeline</h3>
+              <div class="stack" id="eventTimeline"></div>
+            </div>
+            <div class="panel">
+              <h3>Booking Details</h3>
+              <div class="stack" id="bookingPanel"></div>
+            </div>
+            <div class="panel">
+              <h3>Audit Log</h3>
+              <div class="stack" id="auditPanel"></div>
+            </div>
+            <div class="panel wide">
+              <h3>Key Parameters</h3>
+              <div class="stack" id="parameterPanel"></div>
+            </div>
+            <div class="panel wide">
+              <h3>CRM Events</h3>
+              <div class="stack" id="crmPanel"></div>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </div>
+
+    <script>
+      const state = {
+        payload: null,
+        scenarioId: null,
+        stepIndex: 0,
+        mode: "combined",
+        autoplay: null,
+        showIds: true,
+        showAudit: true,
+        showTechnicalExplanation: false,
+        language: "en",
+      };
+
+      const copy = {
+        en: {
+          restart: "Restart",
+          nextStep: "Next Step",
+          autoplay: "Autoplay",
+          stopAutoplay: "Stop Autoplay",
+          reset: "Reset",
+          showIds: "Show IDs",
+          hideIds: "Hide IDs",
+          showAudit: "Show Audit Details",
+          hideAudit: "Hide Audit Details",
+          whatYouCanSay: "What You Can Say",
+          whatHappens: "What Happens in System",
+          technicalExplanation: "Technical Explanation",
+          demoMode: "Demo Mode",
+          monitoringMode: "Monitoring Mode",
+        },
+        de: {
+          restart: "Neustart",
+          nextStep: "Naechster Schritt",
+          autoplay: "Auto abspielen",
+          stopAutoplay: "Auto stoppen",
+          reset: "Zuruecksetzen",
+          showIds: "IDs zeigen",
+          hideIds: "IDs ausblenden",
+          showAudit: "Audit Details zeigen",
+          hideAudit: "Audit Details ausblenden",
+          whatYouCanSay: "Was du sagen kannst",
+          whatHappens: "Was im System passiert",
+          technicalExplanation: "Technische Erklaerung",
+          demoMode: "Demo Modus",
+          monitoringMode: "Monitoring Modus",
+        },
+      };
+
+      const refs = {
+        modeButtons: document.getElementById("modeButtons"),
+        scenarioSelect: document.getElementById("scenarioSelect"),
+        restartBtn: document.getElementById("restartBtn"),
+        nextBtn: document.getElementById("nextBtn"),
+        autoplayBtn: document.getElementById("autoplayBtn"),
+        resetBtn: document.getElementById("resetBtn"),
+        speedRange: document.getElementById("speedRange"),
+        speedLabel: document.getElementById("speedLabel"),
+        toggleIdsBtn: document.getElementById("toggleIdsBtn"),
+        toggleAuditBtn: document.getElementById("toggleAuditBtn"),
+        noSlotBtn: document.getElementById("noSlotBtn"),
+        failureBtn: document.getElementById("failureBtn"),
+        helpBtn: document.getElementById("helpBtn"),
+        helpMenu: document.getElementById("helpMenu"),
+        langEnBtn: document.getElementById("langEnBtn"),
+        langDeBtn: document.getElementById("langDeBtn"),
+        mainLayout: document.getElementById("mainLayout"),
+        demoPane: document.getElementById("demoPane"),
+        monitoringPane: document.getElementById("monitoringPane"),
+        scenarioLabel: document.getElementById("scenarioLabel"),
+        chatStream: document.getElementById("chatStream"),
+        slotGrid: document.getElementById("slotGrid"),
+        demoSummary: document.getElementById("demoSummary"),
+        speakerNotes: document.getElementById("speakerNotes"),
+        systemSimpleTitle: document.getElementById("systemSimpleTitle"),
+        systemSimpleText: document.getElementById("systemSimpleText"),
+        systemTechnicalWrap: document.getElementById("systemTechnicalWrap"),
+        systemTechnicalTitle: document.getElementById("systemTechnicalTitle"),
+        systemTechnicalText: document.getElementById("systemTechnicalText"),
+        activeComponent: document.getElementById("activeComponent"),
+        journeyMetrics: document.getElementById("journeyMetrics"),
+        flowSteps: document.getElementById("flowSteps"),
+        eventTimeline: document.getElementById("eventTimeline"),
+        bookingPanel: document.getElementById("bookingPanel"),
+        auditPanel: document.getElementById("auditPanel"),
+        parameterPanel: document.getElementById("parameterPanel"),
+        crmPanel: document.getElementById("crmPanel"),
+      };
+
+      function currentScenario() {
+        return state.payload.scenarios.find((scenario) => scenario.id === state.scenarioId);
+      }
+
+      function currentStep() {
+        const scenario = currentScenario();
+        return scenario.steps[Math.min(state.stepIndex, scenario.steps.length - 1)];
+      }
+
+      function metricRow(label, value) {
+        return `<div class="metric"><strong>${label}</strong><span>${value ?? "not set"}</span></div>`;
+      }
+
+      function renderModeButtons() {
+        refs.modeButtons.innerHTML = "";
+        state.payload.modes.forEach((mode) => {
+          const button = document.createElement("button");
+          button.textContent = mode.label;
+          button.className = state.mode === mode.id ? "active" : "";
+          button.addEventListener("click", () => {
+            state.mode = mode.id;
+            stopAutoplay();
+            render();
+          });
+          refs.modeButtons.appendChild(button);
+        });
+      }
+
+      function renderScenarioSelect() {
+        refs.scenarioSelect.innerHTML = "";
+        state.payload.scenarios.forEach((scenario) => {
+          const option = document.createElement("option");
+          option.value = scenario.id;
+          option.textContent = scenario.title;
+          refs.scenarioSelect.appendChild(option);
+        });
+        refs.scenarioSelect.value = state.scenarioId;
+      }
+
+      function renderLayout() {
+        refs.mainLayout.className = "main";
+        refs.demoPane.classList.remove("hidden");
+        refs.monitoringPane.classList.remove("hidden");
+        if (state.mode === "demo") {
+          refs.mainLayout.classList.add("demo-only");
+          refs.monitoringPane.classList.add("hidden");
+        } else if (state.mode === "monitoring") {
+          refs.mainLayout.classList.add("monitoring-only");
+          refs.demoPane.classList.add("hidden");
+        }
+      }
+
+      function renderDemo(step, scenario) {
+        refs.scenarioLabel.textContent = scenario.title;
+        refs.chatStream.innerHTML = `
+          <div class="bubble user">${step.customer_message || "No customer message yet."}</div>
+          <div class="bubble bot">${step.platform_message || "Waiting for the next platform response."}</div>
+        `;
+        refs.slotGrid.innerHTML = (step.slot_options || [])
+          .map((slot) => `<div class="slot-chip">${slot}</div>`)
+          .join("");
+        refs.systemSimpleTitle.textContent = copy[state.language].whatHappens;
+        refs.systemSimpleText.textContent = scenario.simple_explanation || scenario.summary;
+        refs.systemTechnicalTitle.textContent = copy[state.language].technicalExplanation;
+        refs.systemTechnicalText.textContent = scenario.technical_explanation || "";
+        refs.systemTechnicalWrap.classList.toggle("hidden", !state.showTechnicalExplanation);
+        refs.speakerNotes.innerHTML = (step.speaker_notes || [scenario.presenter_intro || ""])
+          .map((note) => `<div class="small" style="margin-bottom:8px;">${note}</div>`)
+          .join("");
+        refs.demoSummary.innerHTML = `
+          <strong>Simple:</strong> ${scenario.simple_explanation || scenario.summary}<br />
+          <strong>Technical:</strong> ${scenario.technical_explanation || ""}
+        `;
+      }
+
+      function renderMonitoring(step) {
+        refs.activeComponent.textContent = `${step.active_component} is active`;
+        refs.journeyMetrics.innerHTML = [
+          metricRow("Journey State", step.journey_state),
+          metricRow("Selected Slot", step.selected_slot || "none"),
+          metricRow("Escalated", step.escalated ? "yes" : "no"),
+          metricRow("Slot Hold", step.slot_hold_status || "not set"),
+          state.showIds ? metricRow("Booking Ref", step.booking_reference || "not set") : "",
+          state.showIds ? metricRow("Provider Ref", step.provider_reference || "not set") : "",
+        ].join("");
+
+        refs.flowSteps.innerHTML = Object.entries(step.flow_steps || {})
+          .map(
+            ([name, status]) => `
+              <div class="flow-step">
+                <strong>${name}</strong>
+                <span class="tag ${status}">${status}</span>
+              </div>
+            `
+          )
+          .join("");
+
+        refs.eventTimeline.innerHTML = (step.event_stream || [])
+          .map((eventName) => `<div class="timeline-item">${eventName}</div>`)
+          .join("");
+
+        refs.bookingPanel.innerHTML = [
+          metricRow("Booking Reference", step.booking_reference || "not set"),
+          metricRow("Provider Reference", step.provider_reference || "not set"),
+          metricRow("Current Slot", step.selected_slot || "not set"),
+          metricRow("Current State", step.journey_state),
+        ].join("");
+
+        refs.parameterPanel.innerHTML = [
+          metricRow("journey_id", "One process id for one full appointment journey"),
+          metricRow("correlation_id", "Connects events that belong together"),
+          metricRow("trace_id", "Used for deeper debugging and flow tracking"),
+          metricRow("booking_reference", "Our own internal booking id"),
+          metricRow("provider_reference", "The external Google-side booking id"),
+        ].join("");
+
+        const auditEntries = state.showAudit ? step.audit_log || [] : ["Audit details are hidden right now."];
+        refs.auditPanel.innerHTML = auditEntries
+          .map((entry) => `<div class="audit-item">${entry}</div>`)
+          .join("");
+
+        const crmEntries = (step.crm_events || []).length ? step.crm_events : ["No CRM event emitted yet."];
+        refs.crmPanel.innerHTML = crmEntries.map((entry) => `<div class="timeline-item">${entry}</div>`).join("");
+      }
+
+      function render() {
+        const scenario = currentScenario();
+        const step = currentStep();
+        renderModeButtons();
+        renderScenarioSelect();
+        renderLayout();
+        renderDemo(step, scenario);
+        renderMonitoring(step);
+        refs.speedLabel.textContent = `${refs.speedRange.value} ms per step`;
+        refs.toggleIdsBtn.className = state.showIds ? "secondary active" : "secondary";
+        refs.toggleAuditBtn.className = state.showAudit ? "secondary active" : "secondary";
+        refs.autoplayBtn.textContent = state.autoplay ? copy[state.language].stopAutoplay : copy[state.language].autoplay;
+        refs.restartBtn.textContent = copy[state.language].restart;
+        refs.nextBtn.textContent = copy[state.language].nextStep;
+        refs.resetBtn.textContent = copy[state.language].reset;
+        refs.toggleIdsBtn.textContent = state.showIds ? copy[state.language].hideIds : copy[state.language].showIds;
+        refs.toggleAuditBtn.textContent = state.showAudit ? copy[state.language].hideAudit : copy[state.language].showAudit;
+        refs.demoPane.querySelector(".pane-title").textContent = copy[state.language].demoMode;
+        refs.monitoringPane.querySelector(".pane-title").textContent = copy[state.language].monitoringMode;
+        refs.demoPane.querySelector(".explain-box h4").textContent = copy[state.language].whatYouCanSay;
+        refs.langEnBtn.className = state.language === "en" ? "active" : "";
+        refs.langDeBtn.className = state.language === "de" ? "active" : "";
+      }
+
+      function stopAutoplay() {
+        if (state.autoplay) {
+          clearInterval(state.autoplay);
+          state.autoplay = null;
+        }
+      }
+
+      function nextStep() {
+        const scenario = currentScenario();
+        state.stepIndex = Math.min(state.stepIndex + 1, scenario.steps.length - 1);
+        render();
+      }
+
+      refs.scenarioSelect.addEventListener("change", (event) => {
+        state.scenarioId = event.target.value;
+        state.stepIndex = 0;
+        stopAutoplay();
+        render();
+      });
+
+      refs.restartBtn.addEventListener("click", () => {
+        state.stepIndex = 0;
+        stopAutoplay();
+        render();
+      });
+
+      refs.nextBtn.addEventListener("click", () => {
+        stopAutoplay();
+        nextStep();
+      });
+
+      refs.autoplayBtn.addEventListener("click", () => {
+        if (state.autoplay) {
+          stopAutoplay();
+          render();
+          return;
+        }
+        state.autoplay = setInterval(() => {
+          const scenario = currentScenario();
+          if (state.stepIndex >= scenario.steps.length - 1) {
+            stopAutoplay();
+            render();
+            return;
+          }
+          nextStep();
+        }, Number(refs.speedRange.value));
+        render();
+      });
+
+      refs.resetBtn.addEventListener("click", () => {
+        stopAutoplay();
+        state.mode = "combined";
+        state.showIds = true;
+        state.showAudit = true;
+        state.scenarioId = state.payload.scenarios[0].id;
+        state.stepIndex = 0;
+        render();
+      });
+
+      refs.speedRange.addEventListener("input", () => {
+        refs.speedLabel.textContent = `${refs.speedRange.value} ms per step`;
+        if (state.autoplay) {
+          stopAutoplay();
+        }
+        render();
+      });
+
+      refs.toggleIdsBtn.addEventListener("click", () => {
+        state.showIds = !state.showIds;
+        render();
+      });
+
+      refs.toggleAuditBtn.addEventListener("click", () => {
+        state.showAudit = !state.showAudit;
+        render();
+      });
+
+      refs.systemSimpleTitle.addEventListener("click", () => {
+        state.showTechnicalExplanation = !state.showTechnicalExplanation;
+        render();
+      });
+
+      refs.helpBtn.addEventListener("click", () => {
+        refs.helpMenu.classList.toggle("open");
+      });
+
+      refs.helpMenu.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-doc]");
+        if (!target) return;
+        window.open(`/docs/${target.getAttribute("data-doc")}?lang=${state.language}`, "_blank");
+        refs.helpMenu.classList.remove("open");
+      });
+
+      refs.langEnBtn.addEventListener("click", () => {
+        state.language = "en";
+        render();
+      });
+
+      refs.langDeBtn.addEventListener("click", () => {
+        state.language = "de";
+        render();
+      });
+
+      refs.noSlotBtn.addEventListener("click", () => {
+        stopAutoplay();
+        state.scenarioId = "no-slot-escalation";
+        state.stepIndex = 0;
+        render();
+      });
+
+      refs.failureBtn.addEventListener("click", () => {
+        stopAutoplay();
+        state.scenarioId = "provider-failure";
+        state.stepIndex = 0;
+        render();
+      });
+
+      fetch("/api/demo-monitoring/v1.0.0/scenarios")
+        .then((response) => response.json())
+        .then((payload) => {
+          state.payload = payload;
+          state.scenarioId = payload.scenarios[0].id;
+          render();
+        });
+    </script>
+  </body>
+</html>

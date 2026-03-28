@@ -1,0 +1,13 @@
+services:
+  appointment-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      APPOINTMENT_AGENT_DB_URL: sqlite:////app/data/appointment_agent.db
+      APPOINTMENT_AGENT_SAFE_DIAGNOSTICS: "true"
+    volumes:
+      - ./data:/app/data
+      - ./test-results:/app/test-results

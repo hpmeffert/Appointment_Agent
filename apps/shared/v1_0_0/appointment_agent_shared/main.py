@@ -3,6 +3,7 @@ from sqlalchemy import text
 
 from demo_monitoring_ui.v1_0_0.demo_monitoring_ui.app import router as demo_monitoring_router
 from demo_monitoring_ui.v1_0_2.demo_monitoring_ui.app import router as demo_monitoring_router_v102
+from demo_monitoring_ui.v1_0_4_patch1.demo_monitoring_ui.app import router as demo_monitoring_router_v104_patch1
 from appointment_orchestrator.v1_0_0.appointment_orchestrator.app import router as orchestrator_router
 from appointment_orchestrator.v1_0_1.appointment_orchestrator.app import router as orchestrator_router_v101
 from google_adapter.v1_0_0.google_adapter.app import router as google_router
@@ -53,6 +54,7 @@ def help_view() -> dict[str, object]:
             "lekab_adapter/v1_0_0",
             "demo_monitoring_ui/v1_0_0",
             "demo_monitoring_ui/v1_0_2",
+            "demo_monitoring_ui/v1_0_4_patch1",
             "appointment_orchestrator/v1_0_0",
             "appointment_orchestrator/v1_0_1",
             "google_adapter/v1_0_0",
@@ -65,6 +67,7 @@ def help_view() -> dict[str, object]:
 app.include_router(lekab_router)
 app.include_router(demo_monitoring_router)
 app.include_router(demo_monitoring_router_v102)
+app.include_router(demo_monitoring_router_v104_patch1)
 app.include_router(orchestrator_router)
 app.include_router(orchestrator_router_v101)
 app.include_router(google_router)

@@ -184,8 +184,28 @@ class ReminderCommand(BaseModel):
     journey_id: str
     correlation_id: str
     tenant_id: str
-    message: str
-    to_numbers: list[str]
+    message: str = ""
+    to_numbers: list[str] = Field(default_factory=list)
+    appointment_date: Optional[str] = None
+    appointment_time: Optional[str] = None
+    appointment_type: Optional[str] = None
+    booking_reference: Optional[str] = None
+
+
+class ReminderActionCommand(BaseModel):
+    journey_id: str
+    correlation_id: str
+    tenant_id: str
+    action: str
+    requested_by: str = "customer"
+    reason: Optional[str] = None
+    message: Optional[str] = None
+    date_window_start: Optional[datetime] = None
+    date_window_end: Optional[datetime] = None
+    duration_minutes: Optional[int] = None
+    resource_candidates: list[str] = Field(default_factory=list)
+    no_slot_strategy: str = "ESCALATE_TO_HUMAN"
+    force_no_slots: bool = False
 
 
 class CancelJourneyCommand(BaseModel):

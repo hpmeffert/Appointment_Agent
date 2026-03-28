@@ -1,5 +1,9 @@
 # User Guide v1.0.3
 
+Version: v1.0.4 Patch 1
+Status: current Docker-backed demo patch
+Language: English
+
 This guide explains how to start the Appointment Agent prototype with Docker.
 
 ## Why Docker Is Used
@@ -30,7 +34,7 @@ docker compose up --build
 
 Open this in your browser:
 
-- `http://localhost:8080/ui/demo-monitoring/v1.0.2`
+- `http://localhost:8080/ui/demo-monitoring/v1.0.4-patch1`
 
 If everything is working, you should see:
 
@@ -38,6 +42,9 @@ If everything is working, you should see:
 - mode buttons like Demo, Monitoring, Combined
 - scenario controls
 - a help button with `?`
+- reminder scenarios like keep, reschedule, cancel, and call me
+- a header that shows `v1.0.4 Patch 1`
+- a messaging card with `message_id` and `lekab_job_id`
 
 ## Useful Links
 
@@ -45,6 +52,42 @@ If everything is working, you should see:
 - Demo Guide: `http://localhost:8080/docs/demo`
 - User Guide: `http://localhost:8080/docs/user`
 - Admin Guide: `http://localhost:8080/docs/admin`
+
+## New Reminder Flow
+
+The project now includes a reminder flow for existing appointments.
+
+That means the system can show a message like:
+
+- "Reminder: You have an appointment tomorrow at 10:00."
+
+And then offer these actions:
+
+- Keep appointment
+- Reschedule
+- Cancel
+- Call me
+
+This is useful because many real customers do not want to start from zero. They just want to react to the reminder quickly.
+
+## Important Reminder Parameters
+
+- `appointment_date`
+  This is the calendar date shown in the reminder message.
+- `appointment_time`
+  This is the appointment time shown in the reminder message.
+- `appointment_type`
+  This is the short label for the appointment, for example `consultation`.
+- `booking_reference`
+  This is the internal appointment id that helps the system track the booking.
+- `provider_reference`
+  This is the provider-side id, for example the Google event id.
+- `selected_action`
+  This shows what the customer chose in the reminder flow: `keep`, `reschedule`, `cancel`, or `call_me`.
+- `journey_id`
+  This is the id for the full appointment process from start to finish.
+- `correlation_id`
+  This helps connect matching events and log entries.
 
 ## Important Parameters
 

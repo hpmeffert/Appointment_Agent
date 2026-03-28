@@ -42,6 +42,11 @@ def remind_journey(payload: dict, service: AppointmentOrchestratorServiceV101 = 
     return service.send_reminder(payload)
 
 
+@router.post("/journeys/reminder-action")
+def reminder_action(payload: dict, service: AppointmentOrchestratorServiceV101 = Depends(get_service)) -> dict:
+    return service.handle_reminder_action(payload)
+
+
 @router.post("/journeys/cancel")
 def cancel_journey(payload: dict, service: AppointmentOrchestratorServiceV101 = Depends(get_service)) -> dict:
     return service.cancel_journey(payload)

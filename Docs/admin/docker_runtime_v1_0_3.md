@@ -1,5 +1,9 @@
 # Appointment Agent Docker Admin Guide v1.0.3
 
+Version: v1.0.4 Patch 1
+Status: current Docker-backed demo patch
+Language: English
+
 This guide explains the Docker runtime in a simple and practical way.
 
 ## What Is Running
@@ -13,6 +17,7 @@ Inside that container you get:
 - Monitoring routes
 - documentation routes
 - local SQLite persistence
+- appointment reminder demo flows
 
 This is enough for local demos and development without pretending we already have a big production cluster.
 
@@ -65,6 +70,28 @@ After startup, these should respond:
 - `/api/demo-monitoring/v1.0.2/scenarios`
 - `/docs/demo`
 
+The scenario payload should now also include reminder cases:
+
+- `appointment-reminder-keep`
+- `appointment-reminder-reschedule`
+- `appointment-reminder-cancel`
+- `appointment-reminder-call-me`
+
+## Reminder Flow Parameters
+
+- `appointment_date`
+  The date shown in the reminder.
+- `appointment_time`
+  The time shown in the reminder.
+- `booking_reference`
+  The internal booking id used by the platform.
+- `provider_reference`
+  The external provider id, for example from Google.
+- `selected_action`
+  The action chosen from the reminder flow.
+- `current_state`
+  The resulting state after the action, such as `BOOKED`, `WAITING_FOR_SELECTION`, `CLOSED`, or `ESCALATED`.
+
 ## Reset Behavior
 
 - `docker compose down`
@@ -77,3 +104,4 @@ After startup, these should respond:
 - If the UI does not load, check `docker compose logs`.
 - If the docs route fails in Linux, look for a `Docs/` path issue.
 - If the DB cannot be opened, remove the volume with `docker compose down -v` and start again.
+- If reminder actions do not appear in the demo, check that the scenario payload includes the new reminder scenario ids.

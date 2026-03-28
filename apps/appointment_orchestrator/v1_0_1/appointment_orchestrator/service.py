@@ -10,6 +10,7 @@ from appointment_agent_shared.commands import (
     CancelJourneyCommand,
     ConfirmJourneyCommand,
     LekabDispatchCommand,
+    ReminderActionCommand,
     ReminderCommand,
     SearchSlotsCommand,
     SelectSlotCommand,
@@ -134,6 +135,15 @@ class AppointmentOrchestratorServiceV101:
                 "end_time": booking_result.end_time.isoformat() if booking_result.end_time else None,
             }
         )
+        journey.preference_payload = payload
+        self.session.commit()
+
+    def _update_preference_payload(self, journey_id: str, values: dict) -> None:
+        journey = self.journeys.get(journey_id)
+        if journey is None:
+            raise ValueError("Journey not found")
+        payload = dict(journey.preference_payload or {})
+        payload.update(values)
         journey.preference_payload = payload
         self.session.commit()
 
@@ -383,21 +393,261 @@ class AppointmentOrchestratorServiceV101:
             raise ValueError("Journey not found")
         if journey.current_state not in {JourneyState.REMINDER_PENDING.value, JourneyState.BOOKED.value}:
             raise ValueError("Reminder is not allowed in the current state")
+        reminder_message = command.message or self._build_reminder_message(journey, command)
+        appointment_date = command.appointment_date or self._derive_appointment_date(journey)
+        appointment_time = command.appointment_time or self._derive_appointment_time(journey)
+        appointment_type = command.appointment_type or journey.service_type
+        booking_reference = command.booking_reference or journey.booking_reference
         dispatch = self.lekab.launch_reminder(
             LekabDispatchCommand(
                 tenant_id=command.tenant_id,
                 correlation_id=command.correlation_id,
                 job_name="Appointment Reminder",
-                message=command.message,
+                message=reminder_message,
                 to_numbers=command.to_numbers,
+                metadata={
+                    "appointment_date": appointment_date,
+                    "appointment_time": appointment_time,
+                    "appointment_type": appointment_type,
+                    "booking_reference": booking_reference,
+                },
             )
         )
         journey = self.journeys.mark_state(command.journey_id, JourneyState.REMINDER_PENDING.value)
-        self._append_turn(journey.journey_id, "outbound", journey.channel, "reminder", {"message": command.message})
-        trace_id = self._publish(command.correlation_id, command.tenant_id, journey.journey_id, "appointment.reminder.schedule", dispatch)
-        self._audit(command.tenant_id, journey.journey_id, command.correlation_id, "reminder", "Reminder workflow scheduled", dispatch, "reminder_scheduled", trace_id)
-        self._publish(command.correlation_id, command.tenant_id, journey.journey_id, "crm.activity.append.requested", {"kind": "reminder", "message": command.message})
-        return {"journey_id": journey.journey_id, "journey_state": journey.current_state, "dispatch": dispatch}
+        self._update_preference_payload(
+            journey.journey_id,
+            {
+                "appointment_date": appointment_date,
+                "appointment_time": appointment_time,
+                "appointment_type": appointment_type,
+                "selected_action": None,
+                "last_reminder_message": reminder_message,
+            },
+        )
+        self._append_turn(
+            journey.journey_id,
+            "outbound",
+            journey.channel,
+            "reminder",
+            {
+                "message": reminder_message,
+                "appointment_date": appointment_date,
+                "appointment_time": appointment_time,
+                "appointment_type": appointment_type,
+                "booking_reference": booking_reference,
+            },
+        )
+        trace_id = self._publish(
+            command.correlation_id,
+            command.tenant_id,
+            journey.journey_id,
+            "appointment.reminder.sent",
+            {
+                "dispatch": dispatch,
+                "appointment_date": appointment_date,
+                "appointment_time": appointment_time,
+                "appointment_type": appointment_type,
+                "booking_reference": booking_reference,
+            },
+        )
+        self._audit(
+            command.tenant_id,
+            journey.journey_id,
+            command.correlation_id,
+            "reminder",
+            "Reminder sent with appointment details and next actions",
+            {
+                "appointment_date": appointment_date,
+                "appointment_time": appointment_time,
+                "appointment_type": appointment_type,
+                "booking_reference": booking_reference,
+                "runtime_id": dispatch["runtime_id"],
+            },
+            "reminder_sent",
+            trace_id,
+        )
+        self._publish(
+            command.correlation_id,
+            command.tenant_id,
+            journey.journey_id,
+            "crm.activity.append.requested",
+            {"kind": "reminder", "message": reminder_message, "booking_reference": booking_reference},
+        )
+        return {
+            "journey_id": journey.journey_id,
+            "journey_state": journey.current_state,
+            "dispatch": dispatch,
+            "message": reminder_message,
+            "appointment_date": appointment_date,
+            "appointment_time": appointment_time,
+            "appointment_type": appointment_type,
+            "booking_reference": booking_reference,
+            "available_actions": ["keep", "reschedule", "cancel", "call_me"],
+        }
+
+    def _derive_appointment_date(self, journey) -> str | None:
+        payload = journey.preference_payload or {}
+        if payload.get("start_time"):
+            return payload["start_time"][:10]
+        return None
+
+    def _derive_appointment_time(self, journey) -> str | None:
+        payload = journey.preference_payload or {}
+        if payload.get("start_time"):
+            return payload["start_time"][11:16]
+        return None
+
+    def _build_reminder_message(self, journey, command: ReminderCommand) -> str:
+        appointment_date = command.appointment_date or self._derive_appointment_date(journey) or "tomorrow"
+        appointment_time = command.appointment_time or self._derive_appointment_time(journey) or "10:00"
+        appointment_type = command.appointment_type or journey.service_type or "appointment"
+        booking_reference = command.booking_reference or journey.booking_reference
+        base = f"Reminder: You have a {appointment_type} appointment on {appointment_date} at {appointment_time}."
+        if booking_reference:
+            base += f" Booking reference: {booking_reference}."
+        base += " What would you like to do: keep it, reschedule, cancel, or ask for a call?"
+        return base
+
+    def handle_reminder_action(self, payload: dict) -> dict:
+        command = ReminderActionCommand.model_validate(payload)
+        journey = self.journeys.get(command.journey_id)
+        if journey is None:
+            raise ValueError("Journey not found")
+        if journey.current_state not in {JourneyState.REMINDER_PENDING.value, JourneyState.BOOKED.value}:
+            raise ValueError("Reminder action is not allowed in the current state")
+        normalized_action = command.action.lower().strip()
+        self._update_preference_payload(journey.journey_id, {"selected_action": normalized_action})
+        self._append_turn(
+            journey.journey_id,
+            "inbound",
+            journey.channel,
+            "reminder_action",
+            {"action": normalized_action, "requested_by": command.requested_by},
+        )
+        if normalized_action == "keep":
+            trace_id = self._publish(
+                command.correlation_id,
+                command.tenant_id,
+                journey.journey_id,
+                "appointment.reminder.confirmed",
+                {"booking_reference": journey.booking_reference, "requested_by": command.requested_by},
+            )
+            journey = self.journeys.mark_state(journey.journey_id, JourneyState.BOOKED.value)
+            self._publish(
+                command.correlation_id,
+                command.tenant_id,
+                journey.journey_id,
+                "crm.activity.append.requested",
+                {"kind": "reminder_confirmed", "message": "Customer kept the existing appointment"},
+            )
+            self._audit(
+                command.tenant_id,
+                journey.journey_id,
+                command.correlation_id,
+                "reminder_confirmation",
+                "Customer confirmed the appointment will stay as booked",
+                {"selected_action": normalized_action},
+                "reminder_confirmed",
+                trace_id,
+            )
+            return {
+                "journey_id": journey.journey_id,
+                "journey_state": journey.current_state,
+                "selected_action": normalized_action,
+                "status": "appointment_kept",
+            }
+        if normalized_action == "reschedule":
+            trace_id = self._publish(
+                command.correlation_id,
+                command.tenant_id,
+                journey.journey_id,
+                "appointment.reminder.reschedule.requested",
+                {"requested_by": command.requested_by},
+            )
+            self._audit(
+                command.tenant_id,
+                journey.journey_id,
+                command.correlation_id,
+                "reminder_action",
+                "Customer entered the reschedule path from the reminder",
+                {"selected_action": normalized_action},
+                "reminder_reschedule",
+                trace_id,
+            )
+            return self.start_reschedule(
+                {
+                    "journey_id": journey.journey_id,
+                    "tenant_id": command.tenant_id,
+                    "correlation_id": command.correlation_id,
+                    "reason": command.reason or "reminder_reschedule",
+                    "message": command.message or "Customer selected reschedule from reminder",
+                    "date_window_start": command.date_window_start or datetime.utcnow(),
+                    "date_window_end": command.date_window_end or datetime.utcnow() + timedelta(days=7),
+                    "duration_minutes": command.duration_minutes or settings.default_duration_minutes,
+                    "resource_candidates": command.resource_candidates,
+                    "no_slot_strategy": command.no_slot_strategy,
+                    "force_no_slots": command.force_no_slots,
+                }
+            )
+        if normalized_action == "cancel":
+            trace_id = self._publish(
+                command.correlation_id,
+                command.tenant_id,
+                journey.journey_id,
+                "appointment.reminder.cancel.requested",
+                {"requested_by": command.requested_by},
+            )
+            self._audit(
+                command.tenant_id,
+                journey.journey_id,
+                command.correlation_id,
+                "reminder_action",
+                "Customer entered the cancellation path from the reminder",
+                {"selected_action": normalized_action},
+                "reminder_cancel",
+                trace_id,
+            )
+            result = self.cancel_journey(
+                {
+                    "journey_id": journey.journey_id,
+                    "tenant_id": command.tenant_id,
+                    "correlation_id": command.correlation_id,
+                    "reason": command.reason or "reminder_cancel",
+                    "requested_by": command.requested_by,
+                }
+            )
+            result["selected_action"] = normalized_action
+            return result
+        if normalized_action in {"call_me", "call me", "human", "speak_to_someone"}:
+            trace_id = self._publish(
+                command.correlation_id,
+                command.tenant_id,
+                journey.journey_id,
+                "appointment.reminder.call_me.requested",
+                {"requested_by": command.requested_by},
+            )
+            self._audit(
+                command.tenant_id,
+                journey.journey_id,
+                command.correlation_id,
+                "reminder_action",
+                "Customer asked for a human handover from the reminder",
+                {"selected_action": "call_me"},
+                "reminder_call_me",
+                trace_id,
+            )
+            result = self.escalate_journey(
+                {
+                    "journey_id": journey.journey_id,
+                    "tenant_id": command.tenant_id,
+                    "correlation_id": command.correlation_id,
+                    "reason": command.reason or "reminder_call_me",
+                    "message": command.message or "Customer asked to speak to someone from the reminder flow",
+                }
+            )
+            result["selected_action"] = "call_me"
+            return result
+        raise ValueError("Unknown reminder action")
 
     def cancel_journey(self, payload: dict) -> dict:
         command = CancelJourneyCommand.model_validate(payload)

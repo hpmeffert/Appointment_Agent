@@ -282,3 +282,169 @@ def test_v101_cancellation_missing_provider_reference_escalates() -> None:
 
     assert cancelled.status_code == 200
     assert cancelled.json()["journey_state"] == "ESCALATED"
+
+
+def _create_booked_journey(client: TestClient) -> tuple[str, str, str]:
+    journey_id, correlation_id = _new_journey()
+    start = client.post(
+        "/api/orchestrator/v1.0.1/journeys/start",
+        json={
+            "journey_id": journey_id,
+            "tenant_id": "demo",
+            "correlation_id": correlation_id,
+            "customer_id": "C-300",
+            "service_type": "consultation",
+            "timezone": "Europe/Berlin",
+        },
+    )
+    slot_id = start.json()["slot_options"][0]["slot_id"]
+    client.post(
+        "/api/orchestrator/v1.0.1/journeys/select",
+        json={"journey_id": journey_id, "tenant_id": "demo", "correlation_id": correlation_id, "slot_id": slot_id},
+    )
+    client.post(
+        "/api/orchestrator/v1.0.1/journeys/confirm",
+        json={
+            "tenant_id": "demo",
+            "correlation_id": correlation_id,
+            "booking": {
+                "tenant_id": "demo",
+                "journey_id": journey_id,
+                "customer_id": "C-300",
+                "slot_id": slot_id,
+                "calendar_target": "advisor@example.com",
+                "title": "Consultation",
+                "description": "Initial booking",
+                "timezone": "Europe/Berlin",
+            },
+            "dispatch": {
+                "tenant_id": "demo",
+                "correlation_id": correlation_id,
+                "job_name": "Appointment Confirmation",
+                "message": "Confirmed",
+                "to_numbers": ["+49123"],
+            },
+        },
+    )
+    return journey_id, correlation_id, slot_id
+
+
+def test_v101_reminder_send_and_keep_action() -> None:
+    client = TestClient(app)
+    journey_id, correlation_id, _slot_id = _create_booked_journey(client)
+
+    reminder = client.post(
+        "/api/orchestrator/v1.0.1/journeys/remind",
+        json={
+            "journey_id": journey_id,
+            "tenant_id": "demo",
+            "correlation_id": correlation_id,
+            "to_numbers": ["+49123"],
+        },
+    )
+
+    assert reminder.status_code == 200
+    assert reminder.json()["journey_state"] == "REMINDER_PENDING"
+    assert "Reminder:" in reminder.json()["message"]
+    assert "keep" in reminder.json()["available_actions"]
+
+    keep = client.post(
+        "/api/orchestrator/v1.0.1/journeys/reminder-action",
+        json={
+            "journey_id": journey_id,
+            "tenant_id": "demo",
+            "correlation_id": correlation_id,
+            "action": "keep",
+        },
+    )
+
+    assert keep.status_code == 200
+    assert keep.json()["journey_state"] == "BOOKED"
+    assert keep.json()["selected_action"] == "keep"
+
+
+def test_v101_reminder_action_reschedule() -> None:
+    client = TestClient(app)
+    journey_id, correlation_id, _slot_id = _create_booked_journey(client)
+
+    client.post(
+        "/api/orchestrator/v1.0.1/journeys/remind",
+        json={
+            "journey_id": journey_id,
+            "tenant_id": "demo",
+            "correlation_id": correlation_id,
+            "to_numbers": ["+49123"],
+        },
+    )
+
+    reschedule = client.post(
+        "/api/orchestrator/v1.0.1/journeys/reminder-action",
+        json={
+            "journey_id": journey_id,
+            "tenant_id": "demo",
+            "correlation_id": correlation_id,
+            "action": "reschedule",
+        },
+    )
+
+    assert reschedule.status_code == 200
+    assert reschedule.json()["journey_state"] == "WAITING_FOR_SELECTION"
+    assert len(reschedule.json()["slot_options"]) > 0
+
+
+def test_v101_reminder_action_cancel() -> None:
+    client = TestClient(app)
+    journey_id, correlation_id, _slot_id = _create_booked_journey(client)
+
+    client.post(
+        "/api/orchestrator/v1.0.1/journeys/remind",
+        json={
+            "journey_id": journey_id,
+            "tenant_id": "demo",
+            "correlation_id": correlation_id,
+            "to_numbers": ["+49123"],
+        },
+    )
+
+    cancelled = client.post(
+        "/api/orchestrator/v1.0.1/journeys/reminder-action",
+        json={
+            "journey_id": journey_id,
+            "tenant_id": "demo",
+            "correlation_id": correlation_id,
+            "action": "cancel",
+        },
+    )
+
+    assert cancelled.status_code == 200
+    assert cancelled.json()["journey_state"] == "CLOSED"
+    assert cancelled.json()["selected_action"] == "cancel"
+
+
+def test_v101_reminder_action_call_me() -> None:
+    client = TestClient(app)
+    journey_id, correlation_id, _slot_id = _create_booked_journey(client)
+
+    client.post(
+        "/api/orchestrator/v1.0.1/journeys/remind",
+        json={
+            "journey_id": journey_id,
+            "tenant_id": "demo",
+            "correlation_id": correlation_id,
+            "to_numbers": ["+49123"],
+        },
+    )
+
+    escalated = client.post(
+        "/api/orchestrator/v1.0.1/journeys/reminder-action",
+        json={
+            "journey_id": journey_id,
+            "tenant_id": "demo",
+            "correlation_id": correlation_id,
+            "action": "call_me",
+        },
+    )
+
+    assert escalated.status_code == 200
+    assert escalated.json()["journey_state"] == "ESCALATED"
+    assert escalated.json()["selected_action"] == "call_me"

@@ -21,17 +21,22 @@ router = APIRouter(tags=["demo-docs-v1.0.2"])
 
 DOC_MAP = {
     "demo": {
-        "en": DOCS_ROOT / "demo" / "demo_guide_demo_monitoring_ui_v1_0_0.md",
-        "de": DOCS_ROOT / "demo" / "demo_guide_demo_monitoring_ui_v1_0_0.md",
+        "en": DOCS_ROOT / "demo" / "demo_guide_demo_monitoring_ui_v1_0_0_en.md",
+        "de": DOCS_ROOT / "demo" / "demo_guide_demo_monitoring_ui_v1_0_0_de.md",
     },
     "user": {
-        "en": DOCS_ROOT / "user" / "user_guide_demo_monitoring_ui_v1_0_0.md",
-        "de": DOCS_ROOT / "user" / "user_guide_demo_monitoring_ui_v1_0_0.md",
+        "en": DOCS_ROOT / "user" / "user_guide_demo_monitoring_ui_v1_0_0_en.md",
+        "de": DOCS_ROOT / "user" / "user_guide_demo_monitoring_ui_v1_0_0_de.md",
     },
     "admin": {
-        "en": DOCS_ROOT / "admin" / "demo_monitoring_ui_v1_0_0.md",
-        "de": DOCS_ROOT / "admin" / "demo_monitoring_ui_v1_0_0.md",
+        "en": DOCS_ROOT / "admin" / "demo_monitoring_ui_v1_0_0_en.md",
+        "de": DOCS_ROOT / "admin" / "demo_monitoring_ui_v1_0_0_de.md",
     },
+}
+
+DOC_LABELS = {
+    "en": {"demo": "Demo Guide", "user": "User Guide", "admin": "Admin Guide", "language": "Language"},
+    "de": {"demo": "Demo Leitfaden", "user": "Benutzerleitfaden", "admin": "Admin Leitfaden", "language": "Sprache"},
 }
 
 
@@ -84,6 +89,7 @@ def _markdown_to_html(markdown: str) -> str:
 
 def _render_doc(doc_type: str, lang: str) -> HTMLResponse:
     doc_path = DOC_MAP[doc_type][lang]
+    labels = DOC_LABELS[lang]
     content = doc_path.read_text(encoding="utf-8")
     html_content = _markdown_to_html(content)
     body = f"""
@@ -91,7 +97,7 @@ def _render_doc(doc_type: str, lang: str) -> HTMLResponse:
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{doc_type.title()} Guide</title>
+        <title>{labels[doc_type]}</title>
         <style>
           body {{
             margin: 0;
@@ -130,8 +136,8 @@ def _render_doc(doc_type: str, lang: str) -> HTMLResponse:
       <body>
         <main>
           <div class="topbar">
-            <div class="pill">Language: {lang.upper()}</div>
-            <div>{doc_type.title()} Guide</div>
+            <div class="pill">{labels["language"]}: {lang.upper()}</div>
+            <div>{labels[doc_type]}</div>
           </div>
           {html_content}
         </main>

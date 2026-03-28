@@ -53,6 +53,12 @@
         margin-bottom: 12px;
       }
 
+      .release-note {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 14px;
+      }
+
       h1 {
         margin: 0;
         font-size: clamp(34px, 5vw, 56px);
@@ -384,27 +390,28 @@
             </div>
           </div>
         </div>
-        <div class="eyebrow">Appointment Agent Demo + Monitoring v1.0.0</div>
-        <h1>One screen that shows both the customer story and the technical workflow.</h1>
-        <p class="lead">
+        <div class="eyebrow" id="eyebrowText">Appointment Agent Demo + Monitoring v1.0.0</div>
+        <div class="release-note" id="releaseText">Release shown: v1.0.4 Patch 1</div>
+        <h1 id="heroTitle">One screen that shows both the customer story and the technical workflow.</h1>
+        <p class="lead" id="heroLeadOne">
           The left side feels like a customer appointment journey. The right side shows what happens inside LEKAB,
           the Orchestrator, the Google Adapter, and the CRM event layer at the same time.
         </p>
-        <p class="lead">
+        <p class="lead" id="heroLeadTwo">
           Available modes: Demo, Monitoring, and Combined.
         </p>
 
         <div class="toolbar">
           <div class="toolcard">
-            <label>Mode</label>
+            <label id="modeLabel">Mode</label>
             <div class="mode-row" id="modeButtons"></div>
           </div>
           <div class="toolcard">
-            <label for="scenarioSelect">Scenario</label>
+            <label for="scenarioSelect" id="scenarioSelectLabel">Scenario</label>
             <select id="scenarioSelect"></select>
           </div>
           <div class="toolcard">
-            <label>Simulation Controls</label>
+            <label id="simulationControlsLabel">Simulation Controls</label>
             <div class="button-row">
               <button id="restartBtn" class="secondary">Restart</button>
               <button id="nextBtn" class="active">Next Step</button>
@@ -413,12 +420,12 @@
             </div>
           </div>
           <div class="toolcard">
-            <label for="speedRange">Autoplay Speed</label>
+            <label for="speedRange" id="autoplaySpeedLabel">Autoplay Speed</label>
             <input id="speedRange" type="range" min="800" max="2600" step="200" value="1400" />
             <div class="small" id="speedLabel">1400 ms per step</div>
           </div>
           <div class="toolcard">
-            <label>Technical Toggles</label>
+            <label id="technicalTogglesLabel">Technical Toggles</label>
             <div class="toggle-row">
               <button id="toggleIdsBtn" class="secondary">Show IDs</button>
               <button id="toggleAuditBtn" class="secondary">Show Audit Details</button>
@@ -444,12 +451,12 @@
               <h4 id="systemTechnicalTitle">Technical Explanation</h4>
               <div id="systemTechnicalText"></div>
             </div>
-            <div class="small" style="margin-top:10px;">
+            <div class="small" style="margin-top:10px;" id="technicalHint">
               Click the heading above if you want to show or hide the deeper technical explanation.
             </div>
           </div>
           <div class="explain-box">
-            <h4>What You Can Say</h4>
+            <h4 id="whatYouCanSayTitle">What You Can Say</h4>
             <div id="speakerNotes"></div>
           </div>
           <div class="footer-note" id="demoSummary"></div>
@@ -462,31 +469,35 @@
           </div>
           <div class="monitor-grid">
             <div class="panel">
-              <h3>Journey State</h3>
+              <h3 id="journeyStateTitle">Journey State</h3>
               <div class="stack" id="journeyMetrics"></div>
             </div>
             <div class="panel">
-              <h3>Flow Steps</h3>
+              <h3 id="flowStepsTitle">Flow Steps</h3>
               <div class="stack" id="flowSteps"></div>
             </div>
             <div class="panel wide">
-              <h3>Event Timeline</h3>
+              <h3 id="eventTimelineTitle">Event Timeline</h3>
               <div class="stack" id="eventTimeline"></div>
             </div>
             <div class="panel">
-              <h3>Booking Details</h3>
+              <h3 id="bookingDetailsTitle">Booking Details</h3>
               <div class="stack" id="bookingPanel"></div>
             </div>
             <div class="panel">
-              <h3>Audit Log</h3>
+              <h3 id="messagingDetailsTitle">Messaging Details</h3>
+              <div class="stack" id="messagePanel"></div>
+            </div>
+            <div class="panel">
+              <h3 id="auditLogTitle">Audit Log</h3>
               <div class="stack" id="auditPanel"></div>
             </div>
             <div class="panel wide">
-              <h3>Key Parameters</h3>
+              <h3 id="keyParametersTitle">Key Parameters</h3>
               <div class="stack" id="parameterPanel"></div>
             </div>
             <div class="panel wide">
-              <h3>CRM Events</h3>
+              <h3 id="crmEventsTitle">CRM Events</h3>
               <div class="stack" id="crmPanel"></div>
             </div>
           </div>
@@ -509,6 +520,17 @@
 
       const copy = {
         en: {
+          pageTitle: "Appointment Agent Demo + Monitoring v1.0.0",
+          eyebrow: "Appointment Agent Demo + Monitoring v1.0.0",
+          releaseShown: "Release shown: v1.0.4 Patch 1",
+          heroTitle: "One screen that shows both the customer story and the technical workflow.",
+          heroLeadOne: "The left side feels like a customer appointment journey. The right side shows what happens inside LEKAB, the Orchestrator, the Google Adapter, and the CRM event layer at the same time.",
+          heroLeadTwo: "Available modes: Demo, Monitoring, and Combined.",
+          modeLabel: "Mode",
+          scenarioLabel: "Scenario",
+          simulationControls: "Simulation Controls",
+          autoplaySpeed: "Autoplay Speed",
+          technicalToggles: "Technical Toggles",
           restart: "Restart",
           nextStep: "Next Step",
           autoplay: "Autoplay",
@@ -523,8 +545,83 @@
           technicalExplanation: "Technical Explanation",
           demoMode: "Demo Mode",
           monitoringMode: "Monitoring Mode",
+          journeyState: "Journey State",
+          flowSteps: "Flow Steps",
+          eventTimeline: "Event Timeline",
+          bookingDetails: "Booking Details",
+          messagingDetails: "Messaging Details",
+          auditLog: "Audit Log",
+          keyParameters: "Key Parameters",
+          crmEvents: "CRM Events",
+          technicalHint: "Click the heading above if you want to show or hide the deeper technical explanation.",
+          speedPerStep: "ms per step",
+          simulateNoSlot: "Simulate No Slot",
+          simulateFailure: "Simulate Failure",
+          demoGuide: "Demo Guide",
+          userGuide: "User Guide",
+          adminGuide: "Admin Guide",
+          noCustomerMessageYet: "No customer message yet.",
+          waitingForPlatformResponse: "Waiting for the next platform response.",
+          notSet: "not set",
+          none: "none",
+          yes: "yes",
+          no: "no",
+          activeComponentIsActive: "is active",
+          simple: "Simple",
+          technical: "Technical",
+          auditHidden: "Audit details are hidden right now.",
+          noCrmEventYet: "No CRM event emitted yet.",
+          noMessageMetadataYet: "No messaging metadata was generated for this step yet.",
+          selectedSlot: "Selected Slot",
+          escalatedLabel: "Escalated",
+          slotHold: "Slot Hold",
+          bookingRefShort: "Booking Ref",
+          providerRefShort: "Provider Ref",
+          bookingReferenceLabel: "Booking Reference",
+          providerReferenceLabel: "Provider Reference",
+          currentSlot: "Current Slot",
+          currentState: "Current State",
+          lekabJobId: "LEKAB Job ID",
+          messageId: "Message ID",
+          messageChannel: "Channel",
+          messageStatus: "Message Status",
+          deliveryStatus: "Delivery Status",
+          messageIdDesc: "Tracks the communication-side message in LEKAB or messaging",
+          lekabJobIdDesc: "Tracks the workflow job on the LEKAB side",
+          activeStatus: "active",
+          doneStatus: "done",
+          pendingStatus: "pending",
+          failedStatus: "failed",
+          escalatedStatus: "escalated",
+          sentStatus: "sent",
+          receivedStatus: "received",
+          deliveredStatus: "delivered",
+          inboundCapturedStatus: "inbound captured",
+          journeyIdDesc: "One process id for one full appointment journey",
+          correlationIdDesc: "Connects events that belong together",
+          traceIdDesc: "Used for deeper debugging and flow tracking",
+          bookingReferenceDesc: "Our own internal booking id",
+          providerReferenceDesc: "The external Google-side booking id",
+          appointmentDateDesc: "The date shown in the reminder",
+          appointmentTimeDesc: "The time shown in the reminder",
+          selectedActionDesc: "The action selected from the reminder flow",
+          serviceBusTitle: "How the Service Bus Works",
+          serviceBusText: "Think of the bus like a central highway. Each system sends messages there, but the systems do not depend on direct point-to-point links.",
+          scalingTitle: "How the System Scales",
+          scalingText: "At 20 users, many journeys run in parallel. At 100 users, stateless services can scale horizontally. At 1000 users, more containers, more CPU, more memory, a future queue, and database optimization are the main scaling knobs.",
         },
         de: {
+          pageTitle: "Appointment Agent Demo + Monitoring v1.0.0",
+          eyebrow: "Appointment Agent Demo + Monitoring v1.0.0",
+          releaseShown: "Gezeigter Release: v1.0.4 Patch 1",
+          heroTitle: "Ein Bildschirm, der gleichzeitig die Kundenseite und den technischen Ablauf zeigt.",
+          heroLeadOne: "Links fuehlt es sich wie eine Terminreise fuer den Kunden an. Rechts siehst du gleichzeitig, was in LEKAB, dem Orchestrator, dem Google Adapter und der CRM-Ereignisschicht passiert.",
+          heroLeadTwo: "Verfuegbare Modi: Demo, Monitoring und Kombiniert.",
+          modeLabel: "Modus",
+          scenarioLabel: "Szenario",
+          simulationControls: "Simulations-Steuerung",
+          autoplaySpeed: "Autoplay-Geschwindigkeit",
+          technicalToggles: "Technische Schalter",
           restart: "Neustart",
           nextStep: "Naechster Schritt",
           autoplay: "Auto abspielen",
@@ -539,6 +636,70 @@
           technicalExplanation: "Technische Erklaerung",
           demoMode: "Demo Modus",
           monitoringMode: "Monitoring Modus",
+          journeyState: "Journey-Status",
+          flowSteps: "Ablaufschritte",
+          eventTimeline: "Event-Zeitleiste",
+          bookingDetails: "Buchungsdetails",
+          messagingDetails: "Messaging-Details",
+          auditLog: "Audit-Protokoll",
+          keyParameters: "Wichtige Parameter",
+          crmEvents: "CRM-Ereignisse",
+          technicalHint: "Klicke auf die Ueberschrift oben, wenn du die tiefere technische Erklaerung ein- oder ausblenden willst.",
+          speedPerStep: "ms pro Schritt",
+          simulateNoSlot: "Keinen Slot simulieren",
+          simulateFailure: "Fehler simulieren",
+          demoGuide: "Demo Leitfaden",
+          userGuide: "Benutzerleitfaden",
+          adminGuide: "Admin Leitfaden",
+          noCustomerMessageYet: "Noch keine Kundennachricht.",
+          waitingForPlatformResponse: "Warte auf die naechste Systemantwort.",
+          notSet: "nicht gesetzt",
+          none: "keiner",
+          yes: "ja",
+          no: "nein",
+          activeComponentIsActive: "ist aktiv",
+          simple: "Einfach",
+          technical: "Technisch",
+          auditHidden: "Audit-Details sind gerade ausgeblendet.",
+          noCrmEventYet: "Noch kein CRM-Ereignis erzeugt.",
+          noMessageMetadataYet: "Fuer diesen Schritt wurden noch keine Messaging-Metadaten erzeugt.",
+          selectedSlot: "Ausgewaehlter Slot",
+          escalatedLabel: "Eskaliert",
+          slotHold: "Slot Hold",
+          bookingRefShort: "Booking Ref",
+          providerRefShort: "Provider Ref",
+          bookingReferenceLabel: "Booking Reference",
+          providerReferenceLabel: "Provider Reference",
+          currentSlot: "Aktueller Slot",
+          currentState: "Aktueller Status",
+          lekabJobId: "LEKAB Job ID",
+          messageId: "Message ID",
+          messageChannel: "Kanal",
+          messageStatus: "Nachrichtenstatus",
+          deliveryStatus: "Lieferstatus",
+          messageIdDesc: "Verfolgt die Nachricht auf der Kommunikationsseite in LEKAB oder Messaging",
+          lekabJobIdDesc: "Verfolgt den Workflow-Job auf der LEKAB-Seite",
+          activeStatus: "aktiv",
+          doneStatus: "fertig",
+          pendingStatus: "offen",
+          failedStatus: "fehlgeschlagen",
+          escalatedStatus: "eskaliert",
+          sentStatus: "gesendet",
+          receivedStatus: "empfangen",
+          deliveredStatus: "zugestellt",
+          inboundCapturedStatus: "eingehend erfasst",
+          journeyIdDesc: "Eine Prozess-ID fuer eine komplette Terminreise",
+          correlationIdDesc: "Verbindet Ereignisse, die zusammengehoeren",
+          traceIdDesc: "Wird fuer tiefere Fehlersuche und Ablaufverfolgung benutzt",
+          bookingReferenceDesc: "Unsere interne Buchungs-ID",
+          providerReferenceDesc: "Die externe Buchungs-ID auf der Google-Seite",
+          appointmentDateDesc: "Das Datum, das in der Erinnerung gezeigt wird",
+          appointmentTimeDesc: "Die Uhrzeit, die in der Erinnerung gezeigt wird",
+          selectedActionDesc: "Die in der Erinnerung gewaehlte Aktion",
+          serviceBusTitle: "So funktioniert der Service Bus",
+          serviceBusText: "Stell dir den Bus wie eine zentrale Autobahn vor. Jedes System sendet dort Nachrichten, aber die Systeme haengen nicht direkt aneinander.",
+          scalingTitle: "So skaliert das System",
+          scalingText: "Bei 20 Nutzern laufen viele Journeys parallel. Bei 100 Nutzern koennen stateless Dienste horizontal wachsen. Bei 1000 Nutzern sind mehr Container, mehr CPU, mehr Speicher, eine spaetere Queue und Datenbank-Optimierung die wichtigsten Hebel.",
         },
       };
 
@@ -577,9 +738,30 @@
         flowSteps: document.getElementById("flowSteps"),
         eventTimeline: document.getElementById("eventTimeline"),
         bookingPanel: document.getElementById("bookingPanel"),
+        messagePanel: document.getElementById("messagePanel"),
         auditPanel: document.getElementById("auditPanel"),
         parameterPanel: document.getElementById("parameterPanel"),
         crmPanel: document.getElementById("crmPanel"),
+        eyebrowText: document.getElementById("eyebrowText"),
+        releaseText: document.getElementById("releaseText"),
+        heroTitle: document.getElementById("heroTitle"),
+        heroLeadOne: document.getElementById("heroLeadOne"),
+        heroLeadTwo: document.getElementById("heroLeadTwo"),
+        modeLabel: document.getElementById("modeLabel"),
+        scenarioSelectLabel: document.getElementById("scenarioSelectLabel"),
+        simulationControlsLabel: document.getElementById("simulationControlsLabel"),
+        autoplaySpeedLabel: document.getElementById("autoplaySpeedLabel"),
+        technicalTogglesLabel: document.getElementById("technicalTogglesLabel"),
+        technicalHint: document.getElementById("technicalHint"),
+        whatYouCanSayTitle: document.getElementById("whatYouCanSayTitle"),
+        journeyStateTitle: document.getElementById("journeyStateTitle"),
+        flowStepsTitle: document.getElementById("flowStepsTitle"),
+        eventTimelineTitle: document.getElementById("eventTimelineTitle"),
+        bookingDetailsTitle: document.getElementById("bookingDetailsTitle"),
+        messagingDetailsTitle: document.getElementById("messagingDetailsTitle"),
+        auditLogTitle: document.getElementById("auditLogTitle"),
+        keyParametersTitle: document.getElementById("keyParametersTitle"),
+        crmEventsTitle: document.getElementById("crmEventsTitle"),
       };
 
       function currentScenario() {
@@ -591,8 +773,44 @@
         return scenario.steps[Math.min(state.stepIndex, scenario.steps.length - 1)];
       }
 
+      function t(key) {
+        return copy[state.language][key] || copy.en[key] || key;
+      }
+
       function metricRow(label, value) {
-        return `<div class="metric"><strong>${label}</strong><span>${value ?? "not set"}</span></div>`;
+        return `<div class="metric"><strong>${label}</strong><span>${value ?? t("notSet")}</span></div>`;
+      }
+
+      function localizeStatus(status) {
+        return t(`${String(status).replace(/-/g, "")}Status`);
+      }
+
+      function updateStaticCopy() {
+        document.title = t("pageTitle");
+        refs.eyebrowText.textContent = t("eyebrow");
+        refs.releaseText.textContent = t("releaseShown");
+        refs.heroTitle.textContent = t("heroTitle");
+        refs.heroLeadOne.textContent = t("heroLeadOne");
+        refs.heroLeadTwo.textContent = t("heroLeadTwo");
+        refs.modeLabel.textContent = t("modeLabel");
+        refs.scenarioSelectLabel.textContent = t("scenarioLabel");
+        refs.simulationControlsLabel.textContent = t("simulationControls");
+        refs.autoplaySpeedLabel.textContent = t("autoplaySpeed");
+        refs.technicalTogglesLabel.textContent = t("technicalToggles");
+        refs.technicalHint.textContent = t("technicalHint");
+        refs.whatYouCanSayTitle.textContent = t("whatYouCanSay");
+        refs.journeyStateTitle.textContent = t("journeyState");
+        refs.flowStepsTitle.textContent = t("flowSteps");
+        refs.eventTimelineTitle.textContent = t("eventTimeline");
+        refs.bookingDetailsTitle.textContent = t("bookingDetails");
+        refs.messagingDetailsTitle.textContent = t("messagingDetails");
+        refs.auditLogTitle.textContent = t("auditLog");
+        refs.keyParametersTitle.textContent = t("keyParameters");
+        refs.crmEventsTitle.textContent = t("crmEvents");
+        refs.helpBtn.setAttribute("aria-label", state.language === "de" ? "Hilfe" : "Help");
+        refs.helpMenu.querySelector('[data-doc="demo"]').textContent = t("demoGuide");
+        refs.helpMenu.querySelector('[data-doc="user"]').textContent = t("userGuide");
+        refs.helpMenu.querySelector('[data-doc="admin"]').textContent = t("adminGuide");
       }
 
       function renderModeButtons() {
@@ -637,35 +855,35 @@
       function renderDemo(step, scenario) {
         refs.scenarioLabel.textContent = scenario.title;
         refs.chatStream.innerHTML = `
-          <div class="bubble user">${step.customer_message || "No customer message yet."}</div>
-          <div class="bubble bot">${step.platform_message || "Waiting for the next platform response."}</div>
+          <div class="bubble user">${step.customer_message || t("noCustomerMessageYet")}</div>
+          <div class="bubble bot">${step.platform_message || t("waitingForPlatformResponse")}</div>
         `;
         refs.slotGrid.innerHTML = (step.slot_options || [])
           .map((slot) => `<div class="slot-chip">${slot}</div>`)
           .join("");
-        refs.systemSimpleTitle.textContent = copy[state.language].whatHappens;
+        refs.systemSimpleTitle.textContent = t("whatHappens");
         refs.systemSimpleText.textContent = scenario.simple_explanation || scenario.summary;
-        refs.systemTechnicalTitle.textContent = copy[state.language].technicalExplanation;
+        refs.systemTechnicalTitle.textContent = t("technicalExplanation");
         refs.systemTechnicalText.textContent = scenario.technical_explanation || "";
         refs.systemTechnicalWrap.classList.toggle("hidden", !state.showTechnicalExplanation);
         refs.speakerNotes.innerHTML = (step.speaker_notes || [scenario.presenter_intro || ""])
           .map((note) => `<div class="small" style="margin-bottom:8px;">${note}</div>`)
           .join("");
         refs.demoSummary.innerHTML = `
-          <strong>Simple:</strong> ${scenario.simple_explanation || scenario.summary}<br />
-          <strong>Technical:</strong> ${scenario.technical_explanation || ""}
+          <strong>${t("simple")}:</strong> ${scenario.simple_explanation || scenario.summary}<br />
+          <strong>${t("technical")}:</strong> ${scenario.technical_explanation || ""}
         `;
       }
 
       function renderMonitoring(step) {
-        refs.activeComponent.textContent = `${step.active_component} is active`;
+        refs.activeComponent.textContent = `${step.active_component} ${t("activeComponentIsActive")}`;
         refs.journeyMetrics.innerHTML = [
-          metricRow("Journey State", step.journey_state),
-          metricRow("Selected Slot", step.selected_slot || "none"),
-          metricRow("Escalated", step.escalated ? "yes" : "no"),
-          metricRow("Slot Hold", step.slot_hold_status || "not set"),
-          state.showIds ? metricRow("Booking Ref", step.booking_reference || "not set") : "",
-          state.showIds ? metricRow("Provider Ref", step.provider_reference || "not set") : "",
+          metricRow(t("journeyState"), step.journey_state),
+          metricRow(t("selectedSlot"), step.selected_slot || t("none")),
+          metricRow(t("escalatedLabel"), step.escalated ? t("yes") : t("no")),
+          metricRow(t("slotHold"), step.slot_hold_status || t("notSet")),
+          state.showIds ? metricRow(t("bookingRefShort"), step.booking_reference || t("notSet")) : "",
+          state.showIds ? metricRow(t("providerRefShort"), step.provider_reference || t("notSet")) : "",
         ].join("");
 
         refs.flowSteps.innerHTML = Object.entries(step.flow_steps || {})
@@ -673,7 +891,7 @@
             ([name, status]) => `
               <div class="flow-step">
                 <strong>${name}</strong>
-                <span class="tag ${status}">${status}</span>
+                <span class="tag ${status}">${localizeStatus(status)}</span>
               </div>
             `
           )
@@ -684,51 +902,84 @@
           .join("");
 
         refs.bookingPanel.innerHTML = [
-          metricRow("Booking Reference", step.booking_reference || "not set"),
-          metricRow("Provider Reference", step.provider_reference || "not set"),
-          metricRow("Current Slot", step.selected_slot || "not set"),
-          metricRow("Current State", step.journey_state),
+          metricRow(t("bookingReferenceLabel"), step.booking_reference || t("notSet")),
+          metricRow(t("providerReferenceLabel"), step.provider_reference || t("notSet")),
+          metricRow(t("currentSlot"), step.selected_slot || t("notSet")),
+          metricRow(t("currentState"), step.journey_state),
         ].join("");
+
+        refs.messagePanel.innerHTML = step.message_id
+          ? [
+              metricRow(t("lekabJobId"), step.lekab_job_id || t("notSet")),
+              metricRow(t("messageId"), step.message_id || t("notSet")),
+              metricRow(t("messageChannel"), step.message_channel || t("notSet")),
+              metricRow(t("messageStatus"), localizeStatus(step.message_status || "pending")),
+              metricRow(t("deliveryStatus"), localizeStatus(step.delivery_status || "pending")),
+            ].join("")
+          : metricRow(t("messageId"), t("noMessageMetadataYet"));
 
         refs.parameterPanel.innerHTML = [
-          metricRow("journey_id", "One process id for one full appointment journey"),
-          metricRow("correlation_id", "Connects events that belong together"),
-          metricRow("trace_id", "Used for deeper debugging and flow tracking"),
-          metricRow("booking_reference", "Our own internal booking id"),
-          metricRow("provider_reference", "The external Google-side booking id"),
+          metricRow("journey_id", t("journeyIdDesc")),
+          metricRow("correlation_id", t("correlationIdDesc")),
+          metricRow("trace_id", t("traceIdDesc")),
+          metricRow("booking_reference", t("bookingReferenceDesc")),
+          metricRow("provider_reference", t("providerReferenceDesc")),
+          metricRow("message_id", t("messageIdDesc")),
+          metricRow("lekab_job_id", t("lekabJobIdDesc")),
+          metricRow("appointment_date", t("appointmentDateDesc")),
+          metricRow("appointment_time", t("appointmentTimeDesc")),
+          metricRow("selected_action", t("selectedActionDesc")),
+          metricRow(t("serviceBusTitle"), t("serviceBusText")),
+          metricRow(t("scalingTitle"), t("scalingText")),
         ].join("");
 
-        const auditEntries = state.showAudit ? step.audit_log || [] : ["Audit details are hidden right now."];
+        const auditEntries = state.showAudit ? step.audit_log || [] : [t("auditHidden")];
         refs.auditPanel.innerHTML = auditEntries
           .map((entry) => `<div class="audit-item">${entry}</div>`)
           .join("");
 
-        const crmEntries = (step.crm_events || []).length ? step.crm_events : ["No CRM event emitted yet."];
+        const crmEntries = (step.crm_events || []).length ? step.crm_events : [t("noCrmEventYet")];
         refs.crmPanel.innerHTML = crmEntries.map((entry) => `<div class="timeline-item">${entry}</div>`).join("");
       }
 
       function render() {
         const scenario = currentScenario();
         const step = currentStep();
+        updateStaticCopy();
         renderModeButtons();
         renderScenarioSelect();
         renderLayout();
         renderDemo(step, scenario);
         renderMonitoring(step);
-        refs.speedLabel.textContent = `${refs.speedRange.value} ms per step`;
+        refs.speedLabel.textContent = `${refs.speedRange.value} ${t("speedPerStep")}`;
         refs.toggleIdsBtn.className = state.showIds ? "secondary active" : "secondary";
         refs.toggleAuditBtn.className = state.showAudit ? "secondary active" : "secondary";
-        refs.autoplayBtn.textContent = state.autoplay ? copy[state.language].stopAutoplay : copy[state.language].autoplay;
-        refs.restartBtn.textContent = copy[state.language].restart;
-        refs.nextBtn.textContent = copy[state.language].nextStep;
-        refs.resetBtn.textContent = copy[state.language].reset;
-        refs.toggleIdsBtn.textContent = state.showIds ? copy[state.language].hideIds : copy[state.language].showIds;
-        refs.toggleAuditBtn.textContent = state.showAudit ? copy[state.language].hideAudit : copy[state.language].showAudit;
-        refs.demoPane.querySelector(".pane-title").textContent = copy[state.language].demoMode;
-        refs.monitoringPane.querySelector(".pane-title").textContent = copy[state.language].monitoringMode;
-        refs.demoPane.querySelector(".explain-box h4").textContent = copy[state.language].whatYouCanSay;
+        refs.autoplayBtn.textContent = state.autoplay ? t("stopAutoplay") : t("autoplay");
+        refs.restartBtn.textContent = t("restart");
+        refs.nextBtn.textContent = t("nextStep");
+        refs.resetBtn.textContent = t("reset");
+        refs.toggleIdsBtn.textContent = state.showIds ? t("hideIds") : t("showIds");
+        refs.toggleAuditBtn.textContent = state.showAudit ? t("hideAudit") : t("showAudit");
+        refs.noSlotBtn.textContent = t("simulateNoSlot");
+        refs.failureBtn.textContent = t("simulateFailure");
+        refs.demoPane.querySelector(".pane-title").textContent = t("demoMode");
+        refs.monitoringPane.querySelector(".pane-title").textContent = t("monitoringMode");
+        refs.demoPane.querySelector(".explain-box h4").textContent = t("whatYouCanSay");
         refs.langEnBtn.className = state.language === "en" ? "active" : "";
         refs.langDeBtn.className = state.language === "de" ? "active" : "";
+      }
+
+      function loadPayload() {
+        return fetch(`/api/demo-monitoring/v1.0.0/scenarios?lang=${state.language}`)
+          .then((response) => response.json())
+          .then((payload) => {
+            const previousScenarioId = state.scenarioId;
+            state.payload = payload;
+            const scenarioStillExists = payload.scenarios.some((scenario) => scenario.id === previousScenarioId);
+            state.scenarioId = scenarioStillExists ? previousScenarioId : payload.scenarios[0].id;
+            state.stepIndex = 0;
+            render();
+          });
       }
 
       function stopAutoplay() {
@@ -791,7 +1042,7 @@
       });
 
       refs.speedRange.addEventListener("input", () => {
-        refs.speedLabel.textContent = `${refs.speedRange.value} ms per step`;
+        refs.speedLabel.textContent = `${refs.speedRange.value} ${t("speedPerStep")}`;
         if (state.autoplay) {
           stopAutoplay();
         }
@@ -825,13 +1076,15 @@
       });
 
       refs.langEnBtn.addEventListener("click", () => {
+        stopAutoplay();
         state.language = "en";
-        render();
+        loadPayload();
       });
 
       refs.langDeBtn.addEventListener("click", () => {
+        stopAutoplay();
         state.language = "de";
-        render();
+        loadPayload();
       });
 
       refs.noSlotBtn.addEventListener("click", () => {
@@ -848,13 +1101,7 @@
         render();
       });
 
-      fetch("/api/demo-monitoring/v1.0.0/scenarios")
-        .then((response) => response.json())
-        .then((payload) => {
-          state.payload = payload;
-          state.scenarioId = payload.scenarios[0].id;
-          render();
-        });
+      loadPayload();
     </script>
   </body>
 </html>

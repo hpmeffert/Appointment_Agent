@@ -5,7 +5,16 @@ from pathlib import Path
 from fastapi import APIRouter, Query
 from fastapi.responses import HTMLResponse
 
-DOCS_ROOT = Path(__file__).resolve().parents[4] / "docs"
+def _resolve_docs_root() -> Path:
+    project_root = Path(__file__).resolve().parents[4]
+    for candidate in ("Docs", "docs"):
+        candidate_path = project_root / candidate
+        if candidate_path.exists():
+            return candidate_path
+    return project_root / "Docs"
+
+
+DOCS_ROOT = _resolve_docs_root()
 
 router = APIRouter(tags=["demo-docs-v1.0.2"])
 

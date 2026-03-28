@@ -3,11 +3,29 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - .env
     ports:
-      - "8080:8080"
+      - "${APPOINTMENT_AGENT_APP_PORT:-8080}:8080"
     environment:
-      APPOINTMENT_AGENT_DB_URL: sqlite:////app/data/appointment_agent.db
-      APPOINTMENT_AGENT_SAFE_DIAGNOSTICS: "true"
+      APPOINTMENT_AGENT_APP_HOST: ${APPOINTMENT_AGENT_APP_HOST:-0.0.0.0}
+      APPOINTMENT_AGENT_APP_PORT: ${APPOINTMENT_AGENT_APP_PORT:-8080}
+      APPOINTMENT_AGENT_LOG_LEVEL: ${APPOINTMENT_AGENT_LOG_LEVEL:-info}
+      APPOINTMENT_AGENT_DB_URL: ${APPOINTMENT_AGENT_DB_URL:-sqlite:////app/data/appointment_agent.db}
+      APPOINTMENT_AGENT_SAFE_DIAGNOSTICS: ${APPOINTMENT_AGENT_SAFE_DIAGNOSTICS:-true}
+      APPOINTMENT_AGENT_DEFAULT_LANGUAGE: ${APPOINTMENT_AGENT_DEFAULT_LANGUAGE:-en}
+      APPOINTMENT_AGENT_GOOGLE_MOCK_MODE: ${APPOINTMENT_AGENT_GOOGLE_MOCK_MODE:-true}
+      APPOINTMENT_AGENT_LEKAB_MOCK_MODE: ${APPOINTMENT_AGENT_LEKAB_MOCK_MODE:-true}
+      APPOINTMENT_AGENT_DEMO_BASE_PATH: ${APPOINTMENT_AGENT_DEMO_BASE_PATH:-/ui/demo-monitoring/v1.0.2}
     volumes:
-      - ./data:/app/data
-      - ./test-results:/app/test-results
+      - appointment-agent-data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  appointment-agent-data:

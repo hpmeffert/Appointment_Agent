@@ -3,7 +3,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "Appointment Agent"
-    app_version: str = "v1.0.0"
+    app_version: str = "v1.0.3"
+    app_host: str = "0.0.0.0"
+    app_port: int = 8080
+    log_level: str = "info"
     silence_threshold_ms: int = 1300
     db_url: str = "sqlite:///./data/appointment_agent.db"
     safe_diagnostics: bool = True
@@ -17,6 +20,9 @@ class Settings(BaseSettings):
     ask_confirmation_before_commit: bool = True
     human_handoff_enabled: bool = True
     idempotency_enabled: bool = True
+    google_mock_mode: bool = True
+    lekab_mock_mode: bool = True
+    demo_base_path: str = "/ui/demo-monitoring/v1.0.2"
 
     model_config = SettingsConfigDict(
         env_prefix="APPOINTMENT_AGENT_",

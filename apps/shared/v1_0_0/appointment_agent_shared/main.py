@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from sqlalchemy import text
 
 from demo_monitoring_ui.v1_0_0.demo_monitoring_ui.app import router as demo_monitoring_router
 from demo_monitoring_ui.v1_0_2.demo_monitoring_ui.app import router as demo_monitoring_router_v102
@@ -23,7 +24,21 @@ def root() -> dict[str, object]:
         "name": settings.app_name,
         "version": settings.app_version,
         "help_path": "/help",
+        "health_path": "/health",
+        "demo_path": settings.demo_base_path,
         "silence_threshold_ms": settings.silence_threshold_ms,
+    }
+
+
+@app.get("/health")
+def health_view() -> dict[str, object]:
+    with engine.connect() as connection:
+        connection.execute(text("SELECT 1"))
+    return {
+        "status": "ok",
+        "version": settings.app_version,
+        "default_language": settings.default_language,
+        "demo_path": settings.demo_base_path,
     }
 
 
@@ -32,6 +47,8 @@ def help_view() -> dict[str, object]:
     return {
         "header": f"{settings.app_name} {settings.app_version}",
         "silence_threshold_ms": settings.silence_threshold_ms,
+        "demo_path": settings.demo_base_path,
+        "docker_start": "docker compose up --build",
         "modules": [
             "lekab_adapter/v1_0_0",
             "demo_monitoring_ui/v1_0_0",

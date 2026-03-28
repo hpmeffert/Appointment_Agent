@@ -12,9 +12,10 @@ In simple words:
 
 ## Current Versions
 
-- Core internal integration line: `v1.0.1`
+- Core internal integration line: `v1.0.3`
 - Demo UI stable line: `v1.0.0`
 - Demo UI release preparation line: `v1.0.2`
+- Docker runtime release line: `v1.0.3`
 
 ## Main Modules
 
@@ -26,6 +27,7 @@ In simple words:
 - `apps/demo_monitoring_ui/v1_0_0`
 - `apps/demo_monitoring_ui/v1_0_2`
 - `apps/shared/v1_0_0`
+- `Docs/`
 
 ## Current Product State
 
@@ -51,13 +53,32 @@ Google Adapter
 Booking Result / Audit / CRM Events
 ```
 
-## How To Run The Backend
+## How To Run With Docker
 
 ```bash
+cp .env.example .env
 docker compose up --build
 ```
 
-The backend starts on port `8080`.
+Docker is used here so you can start the full local prototype in one repeatable way.
+
+The container starts the API, demo UI routes, monitoring routes, docs routes, and local SQLite prototype storage.
+
+The default port is `8080`.
+
+## How To Stop Or Reset Docker
+
+Stop the running stack:
+
+```bash
+docker compose down
+```
+
+Reset the local Docker runtime state, including the named data volume:
+
+```bash
+docker compose down -v
+```
 
 ## How To Open The Demo
 
@@ -68,6 +89,7 @@ Open:
 - Demo scenarios API: `http://localhost:8080/api/demo-monitoring/v1.0.0/scenarios`
 - Demo scenarios API Release Candidate: `http://localhost:8080/api/demo-monitoring/v1.0.2/scenarios`
 - Help overview: `http://localhost:8080/help`
+- Health check: `http://localhost:8080/health`
 - Demo Guide: `http://localhost:8080/docs/demo`
 - User Guide: `http://localhost:8080/docs/user`
 - Admin Guide: `http://localhost:8080/docs/admin`
@@ -80,13 +102,19 @@ Open:
 
 Test summaries and JUnit output are written to `test-results/`.
 
+For a quick Docker smoke test after startup:
+
+```bash
+./scripts/docker_smoke_test.sh
+```
+
 ## Repository Structure
 
 - `apps/` application code
-- `docs/` documentation
+- `Docs/` documentation sources
 - `tests/` automated tests
 - `scripts/` helper scripts
-- `docker/` future docker-specific assets
+- `docker/` docker runtime notes
 - `data/` local runtime database files
 
 ## Security Basics
@@ -94,3 +122,10 @@ Test summaries and JUnit output are written to `test-results/`.
 - Do not commit real credentials.
 - Use `.env.example` as your sample configuration.
 - Runtime database files stay local in `data/`.
+
+## Common Docker Problems
+
+- If Docker says the port is already in use, stop the other app that already uses port `8080`, or change `APPOINTMENT_AGENT_APP_PORT` in `.env`.
+- If the app cannot start, check `docker compose logs` and look for module import or path errors.
+- If the UI opens but looks empty, test the API route `/api/demo-monitoring/v1.0.2/scenarios`.
+- If the database cannot be written, reset with `docker compose down -v` and start again.

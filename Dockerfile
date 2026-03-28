@@ -4,15 +4,24 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/apps:/app/apps/shared/v1_0_0
 ENV APPOINTMENT_AGENT_DB_URL=sqlite:////app/data/appointment_agent.db
+ENV APPOINTMENT_AGENT_APP_HOST=0.0.0.0
+ENV APPOINTMENT_AGENT_APP_PORT=8080
+ENV APPOINTMENT_AGENT_LOG_LEVEL=info
 
 COPY pyproject.toml README.md /app/
 COPY apps /app/apps
-COPY tests /app/tests
+COPY Docs /app/Docs
 COPY scripts /app/scripts
-COPY docs /app/docs
 
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -e .[dev]
+    pip install --no-cache-dir -e . && \
+    chmod +x /app/scripts/docker_start.sh /app/scripts/docker_smoke_test.sh && \
+    mkdir -p /app/data /app/test-results
 
-CMD ["uvicorn", "appointment_agent_shared.main:app", "--host", "0.0.0.0", "--port", "8080"]
+EXPOSE 8080
+
+HEALTHCHECK --interval=15s --timeout=5s --retries=5 CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"
+
+CMD ["/app/scripts/docker_start.sh"]

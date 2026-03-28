@@ -6,4 +6,4 @@
 - Help-Menue eingebaut, das Demo-, User- und Admin-Guide in neuen Tabs oeffnet.
 - Dokumentationsrouten unter `/docs/demo`, `/docs/user` und `/docs/admin` hinzugefuegt.
 - Repo fuer oeffentliche Sichtbarkeit vorbereitet mit `.env.example`, staerkerer `.gitignore` und einem `docker/` Verzeichnis.
-- Git-Tag und GitHub-Release wurden inhaltlich vorbereitet, aber nicht automatisch erstellt, weil der aktuelle Workspace noch kein initialisiertes Git-Repository ist.
+- Git-Repository, GitHub-Remote und Release-Tag `v1.0.2` sind jetzt fuer die oeffentliche Projektlinie eingerichtet.

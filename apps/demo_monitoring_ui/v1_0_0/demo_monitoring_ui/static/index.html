@@ -228,6 +228,72 @@
         gap: 10px;
       }
 
+      .monitor-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .monitor-controls {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        margin-bottom: 16px;
+      }
+
+      .tab-panel {
+        border-top: 1px solid var(--line);
+        padding-top: 16px;
+      }
+
+      .timeline-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 360px;
+        overflow: auto;
+        padding-right: 4px;
+      }
+
+      .timeline-record, .trace-record, .perf-card {
+        border: 1px solid #d8e4dd;
+        border-radius: 16px;
+        background: #f7fbf8;
+        padding: 12px 14px;
+      }
+
+      .timeline-record.active-highlight, .trace-record.active-highlight {
+        border-color: #0f766e;
+        box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.12);
+      }
+
+      .record-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .record-tag {
+        font-size: 12px;
+        padding: 6px 8px;
+        border-radius: 999px;
+        background: #e7f4ef;
+        color: #0b5f58;
+      }
+
+      .json-box {
+        margin-top: 10px;
+        padding: 12px;
+        border-radius: 14px;
+        background: #17211d;
+        color: #e7f3ee;
+        overflow: auto;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
       .metric {
         display: flex;
         justify-content: space-between;
@@ -391,7 +457,7 @@
           </div>
         </div>
         <div class="eyebrow" id="eyebrowText">Appointment Agent Demo + Monitoring v1.0.0</div>
-        <div class="release-note" id="releaseText">Release shown: v1.0.4 Patch 1</div>
+        <div class="release-note" id="releaseText">Release shown: v1.0.4 Patch 2</div>
         <h1 id="heroTitle">One screen that shows both the customer story and the technical workflow.</h1>
         <p class="lead" id="heroLeadOne">
           The left side feels like a customer appointment journey. The right side shows what happens inside LEKAB,
@@ -429,6 +495,7 @@
             <div class="toggle-row">
               <button id="toggleIdsBtn" class="secondary">Show IDs</button>
               <button id="toggleAuditBtn" class="secondary">Show Audit Details</button>
+              <button id="technicalModeBtn" class="secondary">Technical Mode Off</button>
               <button id="noSlotBtn">Simulate No Slot</button>
               <button id="failureBtn">Simulate Failure</button>
             </div>
@@ -500,6 +567,32 @@
               <h3 id="crmEventsTitle">CRM Events</h3>
               <div class="stack" id="crmPanel"></div>
             </div>
+            <div class="panel wide">
+              <div class="monitor-tabs" id="monitoringTabButtons"></div>
+              <div class="monitor-controls">
+                <div>
+                  <label for="eventFilterSelect" id="eventFilterLabel">Event Filter</label>
+                  <select id="eventFilterSelect"></select>
+                </div>
+                <div>
+                  <label for="correlationSelect" id="correlationLabel">Correlation View</label>
+                  <select id="correlationSelect"></select>
+                </div>
+                <div>
+                  <label for="loadProfileSelect" id="loadProfileLabel">Load Simulation</label>
+                  <select id="loadProfileSelect"></select>
+                </div>
+              </div>
+              <div class="tab-panel" id="timelineTab">
+                <div class="timeline-list" id="timelineRecords"></div>
+              </div>
+              <div class="tab-panel hidden" id="traceTab">
+                <div class="stack" id="traceRecords"></div>
+              </div>
+              <div class="tab-panel hidden" id="performanceTab">
+                <div class="stack" id="performanceRecords"></div>
+              </div>
+            </div>
           </div>
         </aside>
       </section>
@@ -514,6 +607,11 @@
         autoplay: null,
         showIds: true,
         showAudit: true,
+        technicalMode: false,
+        monitoringTab: "timeline",
+        eventFilter: "all",
+        correlationFilter: "all",
+        loadProfile: "20",
         showTechnicalExplanation: false,
         language: "en",
       };
@@ -522,7 +620,7 @@
         en: {
           pageTitle: "Appointment Agent Demo + Monitoring v1.0.0",
           eyebrow: "Appointment Agent Demo + Monitoring v1.0.0",
-          releaseShown: "Release shown: v1.0.4 Patch 1",
+          releaseShown: "Release shown: v1.0.4 Patch 2",
           heroTitle: "One screen that shows both the customer story and the technical workflow.",
           heroLeadOne: "The left side feels like a customer appointment journey. The right side shows what happens inside LEKAB, the Orchestrator, the Google Adapter, and the CRM event layer at the same time.",
           heroLeadTwo: "Available modes: Demo, Monitoring, and Combined.",
@@ -553,6 +651,29 @@
           auditLog: "Audit Log",
           keyParameters: "Key Parameters",
           crmEvents: "CRM Events",
+          timelineTab: "Timeline",
+          traceTab: "Trace",
+          performanceTab: "Performance",
+          eventFilter: "Event Filter",
+          correlationView: "Correlation View",
+          loadSimulation: "Load Simulation",
+          technicalModeOn: "Technical Mode On",
+          technicalModeOff: "Technical Mode Off",
+          allEvents: "All events",
+          allCorrelations: "All chains",
+          timestamp: "Timestamp",
+          eventType: "Event Type",
+          activeJourneys: "Active Journeys",
+          avgResponseTime: "Average Response Time",
+          maxResponseTime: "Max Response Time",
+          eventsPerSecond: "Events Per Second",
+          processingTime: "Simulated Processing Time",
+          parallelExecution: "Parallel Execution",
+          rawPayload: "Raw JSON Payload",
+          commandStructure: "Command Structure",
+          noEventsForFilter: "No events match the current filter.",
+          traceHelp: "Use correlation_id and trace_id to follow one request through the system.",
+          technicalViewHelp: "Technical mode shows raw payloads, command structures, and internal event details.",
           technicalHint: "Click the heading above if you want to show or hide the deeper technical explanation.",
           speedPerStep: "ms per step",
           simulateNoSlot: "Simulate No Slot",
@@ -613,7 +734,7 @@
         de: {
           pageTitle: "Appointment Agent Demo + Monitoring v1.0.0",
           eyebrow: "Appointment Agent Demo + Monitoring v1.0.0",
-          releaseShown: "Gezeigter Release: v1.0.4 Patch 1",
+          releaseShown: "Gezeigter Release: v1.0.4 Patch 2",
           heroTitle: "Ein Bildschirm, der gleichzeitig die Kundenseite und den technischen Ablauf zeigt.",
           heroLeadOne: "Links fuehlt es sich wie eine Terminreise fuer den Kunden an. Rechts siehst du gleichzeitig, was in LEKAB, dem Orchestrator, dem Google Adapter und der CRM-Ereignisschicht passiert.",
           heroLeadTwo: "Verfuegbare Modi: Demo, Monitoring und Kombiniert.",
@@ -644,6 +765,29 @@
           auditLog: "Audit-Protokoll",
           keyParameters: "Wichtige Parameter",
           crmEvents: "CRM-Ereignisse",
+          timelineTab: "Timeline",
+          traceTab: "Trace",
+          performanceTab: "Performance",
+          eventFilter: "Event-Filter",
+          correlationView: "Correlation-Sicht",
+          loadSimulation: "Last-Simulation",
+          technicalModeOn: "Technischer Modus An",
+          technicalModeOff: "Technischer Modus Aus",
+          allEvents: "Alle Events",
+          allCorrelations: "Alle Ketten",
+          timestamp: "Zeitstempel",
+          eventType: "Event-Typ",
+          activeJourneys: "Aktive Journeys",
+          avgResponseTime: "Durchschnittliche Antwortzeit",
+          maxResponseTime: "Maximale Antwortzeit",
+          eventsPerSecond: "Events pro Sekunde",
+          processingTime: "Simulierte Verarbeitungszeit",
+          parallelExecution: "Parallele Ausfuehrung",
+          rawPayload: "Rohes JSON-Payload",
+          commandStructure: "Command-Struktur",
+          noEventsForFilter: "Keine Events passen zum aktuellen Filter.",
+          traceHelp: "Nutze correlation_id und trace_id, um eine einzelne Anfrage durch das System zu verfolgen.",
+          technicalViewHelp: "Der technische Modus zeigt rohe Payloads, Command-Strukturen und interne Event-Details.",
           technicalHint: "Klicke auf die Ueberschrift oben, wenn du die tiefere technische Erklaerung ein- oder ausblenden willst.",
           speedPerStep: "ms pro Schritt",
           simulateNoSlot: "Keinen Slot simulieren",
@@ -714,6 +858,7 @@
         speedLabel: document.getElementById("speedLabel"),
         toggleIdsBtn: document.getElementById("toggleIdsBtn"),
         toggleAuditBtn: document.getElementById("toggleAuditBtn"),
+        technicalModeBtn: document.getElementById("technicalModeBtn"),
         noSlotBtn: document.getElementById("noSlotBtn"),
         failureBtn: document.getElementById("failureBtn"),
         helpBtn: document.getElementById("helpBtn"),
@@ -742,6 +887,16 @@
         auditPanel: document.getElementById("auditPanel"),
         parameterPanel: document.getElementById("parameterPanel"),
         crmPanel: document.getElementById("crmPanel"),
+        monitoringTabButtons: document.getElementById("monitoringTabButtons"),
+        eventFilterSelect: document.getElementById("eventFilterSelect"),
+        correlationSelect: document.getElementById("correlationSelect"),
+        loadProfileSelect: document.getElementById("loadProfileSelect"),
+        timelineTab: document.getElementById("timelineTab"),
+        traceTab: document.getElementById("traceTab"),
+        performanceTab: document.getElementById("performanceTab"),
+        timelineRecords: document.getElementById("timelineRecords"),
+        traceRecords: document.getElementById("traceRecords"),
+        performanceRecords: document.getElementById("performanceRecords"),
         eyebrowText: document.getElementById("eyebrowText"),
         releaseText: document.getElementById("releaseText"),
         heroTitle: document.getElementById("heroTitle"),
@@ -762,6 +917,9 @@
         auditLogTitle: document.getElementById("auditLogTitle"),
         keyParametersTitle: document.getElementById("keyParametersTitle"),
         crmEventsTitle: document.getElementById("crmEventsTitle"),
+        eventFilterLabel: document.getElementById("eventFilterLabel"),
+        correlationLabel: document.getElementById("correlationLabel"),
+        loadProfileLabel: document.getElementById("loadProfileLabel"),
       };
 
       function currentScenario() {
@@ -783,6 +941,14 @@
 
       function localizeStatus(status) {
         return t(`${String(status).replace(/-/g, "")}Status`);
+      }
+
+      function currentLoadProfile() {
+        return state.payload.load_profiles.find((profile) => profile.id === state.loadProfile) || state.payload.load_profiles[0];
+      }
+
+      function allScenarioEvents(scenario) {
+        return scenario.all_events || scenario.steps.flatMap((step) => step.events || []);
       }
 
       function updateStaticCopy() {
@@ -807,6 +973,9 @@
         refs.auditLogTitle.textContent = t("auditLog");
         refs.keyParametersTitle.textContent = t("keyParameters");
         refs.crmEventsTitle.textContent = t("crmEvents");
+        refs.eventFilterLabel.textContent = t("eventFilter");
+        refs.correlationLabel.textContent = t("correlationView");
+        refs.loadProfileLabel.textContent = t("loadSimulation");
         refs.helpBtn.setAttribute("aria-label", state.language === "de" ? "Hilfe" : "Help");
         refs.helpMenu.querySelector('[data-doc="demo"]').textContent = t("demoGuide");
         refs.helpMenu.querySelector('[data-doc="user"]').textContent = t("userGuide");
@@ -942,6 +1111,118 @@
         refs.crmPanel.innerHTML = crmEntries.map((entry) => `<div class="timeline-item">${entry}</div>`).join("");
       }
 
+      function renderMonitoringTabs(scenario, step) {
+        const tabDefs = [
+          { id: "timeline", label: t("timelineTab") },
+          { id: "trace", label: t("traceTab") },
+          { id: "performance", label: t("performanceTab") },
+        ];
+        refs.monitoringTabButtons.innerHTML = "";
+        tabDefs.forEach((tab) => {
+          const button = document.createElement("button");
+          button.textContent = tab.label;
+          button.className = state.monitoringTab === tab.id ? "active" : "secondary";
+          button.addEventListener("click", () => {
+            state.monitoringTab = tab.id;
+            render();
+          });
+          refs.monitoringTabButtons.appendChild(button);
+        });
+
+        const events = allScenarioEvents(scenario);
+        const eventTypes = [...new Set(events.map((event) => event.event_type))];
+        refs.eventFilterSelect.innerHTML = [`<option value="all">${t("allEvents")}</option>`]
+          .concat(eventTypes.map((eventType) => `<option value="${eventType}">${eventType}</option>`))
+          .join("");
+        refs.eventFilterSelect.value = state.eventFilter;
+
+        const correlations = [...new Set(events.map((event) => event.correlation_id))];
+        refs.correlationSelect.innerHTML = [`<option value="all">${t("allCorrelations")}</option>`]
+          .concat(correlations.map((value) => `<option value="${value}">${value}</option>`))
+          .join("");
+        refs.correlationSelect.value = state.correlationFilter;
+
+        refs.loadProfileSelect.innerHTML = state.payload.load_profiles
+          .map((profile) => `<option value="${profile.id}">${profile.label}</option>`)
+          .join("");
+        refs.loadProfileSelect.value = state.loadProfile;
+
+        refs.timelineTab.classList.toggle("hidden", state.monitoringTab !== "timeline");
+        refs.traceTab.classList.toggle("hidden", state.monitoringTab !== "trace");
+        refs.performanceTab.classList.toggle("hidden", state.monitoringTab !== "performance");
+
+        const filteredEvents = events.filter((event) => state.eventFilter === "all" || event.event_type === state.eventFilter);
+        refs.timelineRecords.innerHTML = filteredEvents.length
+          ? filteredEvents
+              .map((event) => {
+                const isHighlighted = state.correlationFilter === "all" || event.correlation_id === state.correlationFilter;
+                return `
+                  <div class="timeline-record ${isHighlighted ? "active-highlight" : ""}">
+                    <strong>${event.event_type}</strong>
+                    <div class="small">${t("timestamp")}: ${event.timestamp}</div>
+                    <div class="record-meta">
+                      <span class="record-tag">journey_id: ${event.journey_id}</span>
+                      <span class="record-tag">correlation_id: ${event.correlation_id}</span>
+                      <span class="record-tag">trace_id: ${event.trace_id}</span>
+                    </div>
+                    ${state.technicalMode ? `<pre class="json-box">${JSON.stringify(event.payload, null, 2)}</pre>` : ""}
+                  </div>
+                `;
+              })
+              .join("")
+          : `<div class="timeline-record">${t("noEventsForFilter")}</div>`;
+
+        const groupedByTrace = Object.entries(
+          events.reduce((accumulator, event) => {
+            accumulator[event.trace_id] = accumulator[event.trace_id] || [];
+            accumulator[event.trace_id].push(event);
+            return accumulator;
+          }, {})
+        );
+        refs.traceRecords.innerHTML = groupedByTrace
+          .map(([traceId, traceEvents]) => {
+            const highlighted = state.correlationFilter === "all" || traceEvents.some((event) => event.correlation_id === state.correlationFilter);
+            return `
+              <details class="trace-record ${highlighted ? "active-highlight" : ""}" open>
+                <summary><strong>${traceId}</strong> <span class="small">(${traceEvents.length} ${t("eventType").toLowerCase()})</span></summary>
+                <div class="small" style="margin-top:8px;">${t("traceHelp")}</div>
+                ${traceEvents
+                  .map(
+                    (event) => `
+                      <div style="margin-top:10px;">
+                        <strong>${event.event_type}</strong>
+                        <div class="record-meta">
+                          <span class="record-tag">${event.timestamp}</span>
+                          <span class="record-tag">correlation_id: ${event.correlation_id}</span>
+                        </div>
+                        ${state.technicalMode ? `<pre class="json-box">${JSON.stringify(event.payload, null, 2)}</pre>` : ""}
+                      </div>
+                    `
+                  )
+                  .join("")}
+              </details>
+            `;
+          })
+          .join("");
+
+        const loadProfile = currentLoadProfile();
+        refs.performanceRecords.innerHTML = `
+          <div class="perf-card">
+            ${metricRow(t("activeJourneys"), loadProfile.active_journeys)}
+            ${metricRow(t("processingTime"), `${loadProfile.avg_processing_ms} ms avg / ${loadProfile.max_processing_ms} ms max`)}
+            ${metricRow(t("parallelExecution"), loadProfile.parallel_execution)}
+            ${metricRow(t("eventsPerSecond"), loadProfile.events_per_second)}
+          </div>
+          <div class="perf-card">
+            ${metricRow(t("avgResponseTime"), `${step.performance.avg_response_ms} ms`)}
+            ${metricRow(t("maxResponseTime"), `${step.performance.max_response_ms} ms`)}
+            ${metricRow(t("eventsPerSecond"), step.performance.events_per_second)}
+            <div class="small" style="margin-top:10px;">${t("technicalViewHelp")}</div>
+            ${state.technicalMode ? `<pre class="json-box">${JSON.stringify({ raw_payload: step.raw_payload, command_structure: step.command_structure }, null, 2)}</pre>` : ""}
+          </div>
+        `;
+      }
+
       function render() {
         const scenario = currentScenario();
         const step = currentStep();
@@ -951,15 +1232,18 @@
         renderLayout();
         renderDemo(step, scenario);
         renderMonitoring(step);
+        renderMonitoringTabs(scenario, step);
         refs.speedLabel.textContent = `${refs.speedRange.value} ${t("speedPerStep")}`;
         refs.toggleIdsBtn.className = state.showIds ? "secondary active" : "secondary";
         refs.toggleAuditBtn.className = state.showAudit ? "secondary active" : "secondary";
+        refs.technicalModeBtn.className = state.technicalMode ? "secondary active" : "secondary";
         refs.autoplayBtn.textContent = state.autoplay ? t("stopAutoplay") : t("autoplay");
         refs.restartBtn.textContent = t("restart");
         refs.nextBtn.textContent = t("nextStep");
         refs.resetBtn.textContent = t("reset");
         refs.toggleIdsBtn.textContent = state.showIds ? t("hideIds") : t("showIds");
         refs.toggleAuditBtn.textContent = state.showAudit ? t("hideAudit") : t("showAudit");
+        refs.technicalModeBtn.textContent = state.technicalMode ? t("technicalModeOn") : t("technicalModeOff");
         refs.noSlotBtn.textContent = t("simulateNoSlot");
         refs.failureBtn.textContent = t("simulateFailure");
         refs.demoPane.querySelector(".pane-title").textContent = t("demoMode");
@@ -1036,6 +1320,11 @@
         state.mode = "combined";
         state.showIds = true;
         state.showAudit = true;
+        state.technicalMode = false;
+        state.monitoringTab = "timeline";
+        state.eventFilter = "all";
+        state.correlationFilter = "all";
+        state.loadProfile = "20";
         state.scenarioId = state.payload.scenarios[0].id;
         state.stepIndex = 0;
         render();
@@ -1056,6 +1345,26 @@
 
       refs.toggleAuditBtn.addEventListener("click", () => {
         state.showAudit = !state.showAudit;
+        render();
+      });
+
+      refs.technicalModeBtn.addEventListener("click", () => {
+        state.technicalMode = !state.technicalMode;
+        render();
+      });
+
+      refs.eventFilterSelect.addEventListener("change", (event) => {
+        state.eventFilter = event.target.value;
+        render();
+      });
+
+      refs.correlationSelect.addEventListener("change", (event) => {
+        state.correlationFilter = event.target.value;
+        render();
+      });
+
+      refs.loadProfileSelect.addEventListener("change", (event) => {
+        state.loadProfile = event.target.value;
         render();
       });
 

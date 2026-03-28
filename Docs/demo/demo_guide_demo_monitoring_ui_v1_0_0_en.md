@@ -1,10 +1,10 @@
 # Demo Guide Demo Monitoring UI v1.0.0 EN
 
-Version: v1.0.4 Patch 1
+Version: v1.0.4 Patch 2
 Status: active demo patch
 Language: English
-Release shown in UI header: `v1.0.4 Patch 1`
-Note: This filename stays stable for route compatibility. The content is updated for `v1.0.4 Patch 1`.
+Release shown in UI header: `v1.0.4 Patch 2`
+Note: This filename stays stable for route compatibility. The content is updated for `v1.0.4 Patch 2`.
 
 ## Why this appointment agent exists
 
@@ -208,6 +208,23 @@ Key line:
 
 - `selected_action`
   The option selected in a reminder flow, for example `keep`, `reschedule`, `cancel`, or `call_me`.
+
+## New technical monitoring view
+
+The monitoring area now has deeper technical tabs:
+
+- `Timeline`
+  Shows events in time order, with timestamp, `event_type`, `journey_id`, `correlation_id`, and `trace_id`.
+- `Trace`
+  Helps you follow one request chain through the system.
+- `Performance`
+  Shows simulated metrics like average response time, max response time, and events per second.
+
+Good presenter lines:
+
+- "This view shows what is happening inside the system."
+- "You can follow a single request using correlation_id."
+- "This proves the system is not just messaging, but real process orchestration."
 
 ## Recommended demo order
 

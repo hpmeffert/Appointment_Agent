@@ -1,10 +1,10 @@
 # Demo Monitoring UI Benutzerleitfaden v1.0.0 DE
 
-Version: v1.0.4 Patch 1
+Version: v1.0.4 Patch 2
 Status: aktiver Demo-Patch
 Language: Deutsch
-Im UI-Header gezeigter Release: `v1.0.4 Patch 1`
-Hinweis: Dieser Dateiname bleibt fuer die Routen-Kompatibilitaet stabil. Der Inhalt ist fuer `v1.0.4 Patch 1` aktualisiert.
+Im UI-Header gezeigter Release: `v1.0.4 Patch 2`
+Hinweis: Dieser Dateiname bleibt fuer die Routen-Kompatibilitaet stabil. Der Inhalt ist fuer `v1.0.4 Patch 2` aktualisiert.
 
 ## Was diese Seite macht
 
@@ -81,6 +81,15 @@ Diese Seite oeffnest du im Browser:
 
 - `CRM-Ereignisse`
   Zeigt, welche Ereignisse an eine CRM-Schicht weitergegeben werden koennten.
+
+## Neue Monitoring-Tabs
+
+- `Timeline`
+  Zeigt detaillierte Events mit Zeitstempel, Event-Typ, Journey-ID, Correlation-ID und Trace-ID.
+- `Trace`
+  Gruppiert den Ablauf nach Request-Tracking-IDs, damit du eine Anfragekette verfolgen kannst.
+- `Performance`
+  Zeigt simulierte Last- und Performance-Werte fuer `20`, `100` und `1000` Nutzer.
 
 ## Was die Messaging-IDs bedeuten
 

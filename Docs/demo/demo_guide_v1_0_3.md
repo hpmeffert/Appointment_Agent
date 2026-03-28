@@ -1,6 +1,6 @@
 # Demo Guide v1.0.3
 
-Version: v1.0.4 Patch 1
+Version: v1.0.4 Patch 2
 Status: current Docker-backed demo patch
 Language: English
 

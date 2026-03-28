@@ -1,10 +1,10 @@
 # Demo Monitoring UI User Guide v1.0.0 EN
 
-Version: v1.0.4 Patch 1
+Version: v1.0.4 Patch 2
 Status: active demo patch
 Language: English
-Release shown in UI header: `v1.0.4 Patch 1`
-Note: This filename stays stable for route compatibility. The content is updated for `v1.0.4 Patch 1`.
+Release shown in UI header: `v1.0.4 Patch 2`
+Note: This filename stays stable for route compatibility. The content is updated for `v1.0.4 Patch 2`.
 
 ## What this page does
 
@@ -81,6 +81,15 @@ Use this page in the browser:
 
 - `CRM Events`
   Shows which events could be forwarded to a CRM layer.
+
+## New monitoring tabs
+
+- `Timeline`
+  Shows detailed events with timestamp, event type, journey id, correlation id, and trace id.
+- `Trace`
+  Groups the flow by request-tracking ids so you can follow one request chain.
+- `Performance`
+  Shows simulated load and performance numbers for `20`, `100`, and `1000` users.
 
 ## What the messaging identifiers mean
 

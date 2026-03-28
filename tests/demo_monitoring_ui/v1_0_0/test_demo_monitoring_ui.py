@@ -10,7 +10,10 @@ def test_demo_ui_page_loads() -> None:
 
     assert response.status_code == 200
     assert "Appointment Agent Demo + Monitoring v1.0.0" in response.text
-    assert "Release shown: v1.0.4 Patch 1" in response.text
+    assert "Release shown: v1.0.4 Patch 2" in response.text
+    assert "Technical Mode Off" in response.text
+    assert "Timeline" in response.text
+    assert "Performance" in response.text
     assert "Combined" in response.text
     assert "Monitoring Mode" in response.text
     assert "?" in response.text
@@ -37,6 +40,10 @@ def test_demo_ui_scenario_payload_contains_required_scenarios() -> None:
     assert "message_id" in first_message_step
     assert "lekab_job_id" in first_message_step
     assert first_message_step["message_channel"] in {"RCS", "SMS"}
+    assert "events" in first_message_step
+    assert "correlation_id" in first_message_step
+    assert "trace_id" in first_message_step
+    assert payload["load_profiles"][0]["id"] == "20"
 
 
 def test_demo_ui_scenario_payload_is_localized_in_german() -> None:
@@ -68,11 +75,11 @@ def test_docs_routes_render_markdown_in_new_pages() -> None:
 
     assert demo_response.status_code == 200
     assert "Demo Guide" in demo_response.text
-    assert "Version: v1.0.4 Patch 1" in demo_response.text
+    assert "Version: v1.0.4 Patch 2" in demo_response.text
     assert user_response.status_code == 200
     assert "Sprache: DE" in user_response.text
     assert "Demo Monitoring UI Benutzerleitfaden v1.0.0 DE" in user_response.text
-    assert "Version: v1.0.4 Patch 1" in user_response.text
+    assert "Version: v1.0.4 Patch 2" in user_response.text
     assert admin_response.status_code == 200
     assert "Admin Guide" in admin_response.text
 
@@ -98,17 +105,17 @@ def test_demo_ui_v102_release_routes_are_available() -> None:
 def test_demo_ui_v104_patch1_release_routes_are_available() -> None:
     client = TestClient(app)
 
-    ui_response = client.get("/ui/demo-monitoring/v1.0.4-patch1")
-    help_response = client.get("/api/demo-monitoring/v1.0.4-patch1/help")
-    scenarios_response = client.get("/api/demo-monitoring/v1.0.4-patch1/scenarios")
+    ui_response = client.get("/ui/demo-monitoring/v1.0.4-patch2")
+    help_response = client.get("/api/demo-monitoring/v1.0.4-patch2/help")
+    scenarios_response = client.get("/api/demo-monitoring/v1.0.4-patch2/scenarios")
 
     assert ui_response.status_code == 200
-    assert "Appointment Agent Demo + Monitoring v1.0.4-patch1" in ui_response.text
-    assert "Release shown: v1.0.4 Patch 1" in ui_response.text
-    assert "/api/demo-monitoring/v1.0.4-patch1/scenarios" in ui_response.text
+    assert "Appointment Agent Demo + Monitoring v1.0.4-patch2" in ui_response.text
+    assert "Release shown: v1.0.4 Patch 2" in ui_response.text
+    assert "/api/demo-monitoring/v1.0.4-patch2/scenarios" in ui_response.text
 
     assert help_response.status_code == 200
-    assert help_response.json()["version"] == "v1.0.4-patch1"
+    assert help_response.json()["version"] == "v1.0.4-patch2"
 
     assert scenarios_response.status_code == 200
     assert "scenarios" in scenarios_response.json()

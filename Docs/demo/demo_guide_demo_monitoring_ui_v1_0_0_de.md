@@ -1,10 +1,10 @@
 # Demo Leitfaden Demo Monitoring UI v1.0.0 DE
 
-Version: v1.0.4 Patch 1
+Version: v1.0.4 Patch 2
 Status: aktiver Demo-Patch
 Language: Deutsch
-Im UI-Header gezeigter Release: `v1.0.4 Patch 1`
-Hinweis: Dieser Dateiname bleibt fuer die Routen-Kompatibilitaet stabil. Der Inhalt ist fuer `v1.0.4 Patch 1` aktualisiert.
+Im UI-Header gezeigter Release: `v1.0.4 Patch 2`
+Hinweis: Dieser Dateiname bleibt fuer die Routen-Kompatibilitaet stabil. Der Inhalt ist fuer `v1.0.4 Patch 2` aktualisiert.
 
 ## Warum es diesen Appointment Agent gibt
 
@@ -208,6 +208,23 @@ Kernsatz:
 
 - `selected_action`
   Die Aktion, die in einem Reminder-Ablauf ausgewaehlt wurde, zum Beispiel `keep`, `reschedule`, `cancel` oder `call_me`.
+
+## Neue technische Monitoring-Sicht
+
+Der Monitoring-Bereich hat jetzt tiefere technische Tabs:
+
+- `Timeline`
+  Zeigt Events in zeitlicher Reihenfolge, mit Zeitstempel, `event_type`, `journey_id`, `correlation_id` und `trace_id`.
+- `Trace`
+  Hilft dir, eine einzelne Anfragekette durch das System zu verfolgen.
+- `Performance`
+  Zeigt simulierte Metriken wie durchschnittliche Antwortzeit, maximale Antwortzeit und Events pro Sekunde.
+
+Gute Praesentationssaetze:
+
+- "Diese Sicht zeigt, was im System wirklich passiert."
+- "Mit correlation_id kannst du eine einzelne Anfrage durch das System verfolgen."
+- "Das beweist, dass das System nicht nur Messaging ist, sondern echte Prozess-Orchestrierung."
 
 ## Empfohlene Reihenfolge fuer die Demo
 

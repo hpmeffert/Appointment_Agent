@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 from hashlib import sha1
 
 
@@ -880,6 +881,12 @@ TRANSLATIONS = {
         "received": "empfangen",
         "delivered": "zugestellt",
         "inbound-captured": "eingehend-erfasst",
+        "20 users": "20 Nutzer",
+        "100 users": "100 Nutzer",
+        "1000 users": "1000 Nutzer",
+        "4 workers": "4 Worker",
+        "12 workers": "12 Worker",
+        "48 workers": "48 Worker",
     }
 }
 
@@ -919,14 +926,102 @@ def _simulate_message_metadata(scenario_id: str, step_index: int, step: dict) ->
     return enriched
 
 
-def _with_message_metadata(scenarios: list[dict]) -> list[dict]:
-    localized_scenarios = deepcopy(scenarios)
-    for scenario in localized_scenarios:
-        scenario["steps"] = [
-            _simulate_message_metadata(scenario["id"], index, step)
-            for index, step in enumerate(scenario.get("steps", []), start=1)
-        ]
-    return localized_scenarios
+def _build_event_records(
+    scenario_id: str,
+    step_index: int,
+    step: dict,
+    journey_id: str,
+    correlation_id: str,
+    trace_id: str,
+) -> list[dict]:
+    base_time = datetime(2026, 3, 28, 9, 0, tzinfo=timezone.utc) + timedelta(minutes=step_index * 3)
+    records: list[dict] = []
+    for event_index, event_type in enumerate(step.get("event_stream", []), start=1):
+        records.append(
+            {
+                "timestamp": (base_time + timedelta(seconds=event_index * 7)).isoformat().replace("+00:00", "Z"),
+                "event_type": event_type,
+                "journey_id": journey_id,
+                "correlation_id": correlation_id,
+                "trace_id": trace_id,
+                "payload": {
+                    "scenario_id": scenario_id,
+                    "step_label": step.get("label"),
+                    "active_component": step.get("active_component"),
+                    "journey_state": step.get("journey_state"),
+                },
+            }
+        )
+    return records
+
+
+def _performance_snapshot(step: dict, event_count: int) -> dict:
+    base = 180 if step.get("active_component") == "LEKAB" else 240
+    modifier = 35 * max(event_count, 1)
+    if step.get("escalated"):
+        modifier += 90
+    return {
+        "avg_response_ms": base + modifier,
+        "max_response_ms": base + modifier + 120,
+        "events_per_second": round(max(event_count, 1) / 2.0, 1),
+    }
+
+
+def _technical_payload(step: dict, journey_id: str, correlation_id: str, trace_id: str) -> dict:
+    return {
+        "journey_id": journey_id,
+        "correlation_id": correlation_id,
+        "trace_id": trace_id,
+        "journey_state": step.get("journey_state"),
+        "active_component": step.get("active_component"),
+        "flow_steps": step.get("flow_steps", {}),
+        "booking_reference": step.get("booking_reference"),
+        "provider_reference": step.get("provider_reference"),
+        "message_id": step.get("message_id"),
+        "lekab_job_id": step.get("lekab_job_id"),
+    }
+
+
+def _with_technical_monitoring(scenarios: list[dict]) -> list[dict]:
+    enriched_scenarios = deepcopy(scenarios)
+    for scenario in enriched_scenarios:
+        journey_id = f"journey-{scenario['id']}"
+        correlation_id = f"corr-{scenario['id']}"
+        trace_id = f"trace-{scenario['id']}"
+        original_steps = deepcopy(scenario.get("steps", []))
+        scenario["journey_id"] = journey_id
+        scenario["correlation_id"] = correlation_id
+        scenario["trace_id"] = trace_id
+        scenario["steps"] = []
+        all_events: list[dict] = []
+        for index, original_step in enumerate(original_steps, start=1):
+            step = _simulate_message_metadata(scenario["id"], index, original_step)
+            step_trace_id = f"{trace_id}-{index}"
+            step["journey_id"] = journey_id
+            step["correlation_id"] = correlation_id
+            step["trace_id"] = step_trace_id
+            step["events"] = _build_event_records(scenario["id"], index, step, journey_id, correlation_id, step_trace_id)
+            all_events.extend(step["events"])
+            step["performance"] = _performance_snapshot(step, len(step["events"]))
+            step["raw_payload"] = _technical_payload(step, journey_id, correlation_id, step_trace_id)
+            step["command_structure"] = {
+                "command_type": f"{step.get('active_component', 'system').lower().replace(' ', '_')}.step.process",
+                "tenant_id": "demo",
+                "journey_id": journey_id,
+                "correlation_id": correlation_id,
+                "trace_id": step_trace_id,
+            }
+            scenario["steps"].append(step)
+        scenario["all_events"] = list(reversed(all_events))
+    return enriched_scenarios
+
+
+def _load_profiles() -> list[dict]:
+    return [
+        {"id": "20", "label": "20 users", "active_journeys": 20, "avg_processing_ms": 220, "max_processing_ms": 420, "events_per_second": 12.5, "parallel_execution": "4 workers"},
+        {"id": "100", "label": "100 users", "active_journeys": 100, "avg_processing_ms": 310, "max_processing_ms": 690, "events_per_second": 55.0, "parallel_execution": "12 workers"},
+        {"id": "1000", "label": "1000 users", "active_journeys": 1000, "avg_processing_ms": 540, "max_processing_ms": 1200, "events_per_second": 340.0, "parallel_execution": "48 workers"},
+    ]
 
 
 def build_simulation_payload(lang: str = "en") -> dict:
@@ -937,6 +1032,7 @@ def build_simulation_payload(lang: str = "en") -> dict:
             {"id": "combined", "label": "Combined"},
         ],
         "statuses": ["pending", "active", "done", "failed", "escalated"],
-        "scenarios": _with_message_metadata(SCENARIOS),
+        "scenarios": _with_technical_monitoring(SCENARIOS),
+        "load_profiles": _load_profiles(),
     }
     return _translate(payload, "de" if lang == "de" else "en")

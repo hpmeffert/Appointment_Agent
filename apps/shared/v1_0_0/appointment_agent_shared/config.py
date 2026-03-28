@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "Appointment Agent"
-    app_version: str = "v1.0.4-patch1"
+    app_version: str = "v1.0.4-patch2"
     app_host: str = "0.0.0.0"
     app_port: int = 8080
     log_level: str = "info"
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     idempotency_enabled: bool = True
     google_mock_mode: bool = True
     lekab_mock_mode: bool = True
-    demo_base_path: str = "/ui/demo-monitoring/v1.0.4-patch1"
+    demo_base_path: str = "/ui/demo-monitoring/v1.0.4-patch2"
 
     model_config = SettingsConfigDict(
         env_prefix="APPOINTMENT_AGENT_",

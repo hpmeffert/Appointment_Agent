@@ -12,11 +12,11 @@ In simple words:
 
 ## Current Versions
 
-- Core internal integration line: `v1.0.4-patch1`
+- Core internal integration line: `v1.0.4-patch2`
 - Demo UI stable line: `v1.0.0`
 - Demo UI release preparation line: `v1.0.2`
-- Demo UI current patch line: `v1.0.4-patch1`
-- Docker runtime release line: `v1.0.4-patch1`
+- Demo UI current patch line: `v1.0.4-patch2`
+- Docker runtime release line: `v1.0.4-patch2`
 
 ## Main Modules
 
@@ -28,6 +28,7 @@ In simple words:
 - `apps/demo_monitoring_ui/v1_0_0`
 - `apps/demo_monitoring_ui/v1_0_2`
 - `apps/demo_monitoring_ui/v1_0_4_patch1`
+- `apps/demo_monitoring_ui/v1_0_4_patch2`
 - `apps/shared/v1_0_0`
 - `Docs/`
 
@@ -68,6 +69,14 @@ The container starts the API, demo UI routes, monitoring routes, docs routes, an
 
 The default port is `8080`.
 
+Current patch focus in `v1.0.4-patch2`:
+
+- event timeline view
+- correlation and trace view
+- load and concurrency simulation
+- performance panel
+- technical mode toggle
+
 ## How To Stop Or Reset Docker
 
 Stop the running stack:
@@ -88,10 +97,10 @@ Open:
 
 - Demo UI: `http://localhost:8080/ui/demo-monitoring/v1.0.0`
 - Demo UI Release Candidate: `http://localhost:8080/ui/demo-monitoring/v1.0.2`
-- Demo UI Current Patch: `http://localhost:8080/ui/demo-monitoring/v1.0.4-patch1`
+- Demo UI Current Patch: `http://localhost:8080/ui/demo-monitoring/v1.0.4-patch2`
 - Demo scenarios API: `http://localhost:8080/api/demo-monitoring/v1.0.0/scenarios`
 - Demo scenarios API Release Candidate: `http://localhost:8080/api/demo-monitoring/v1.0.2/scenarios`
-- Demo scenarios API Current Patch: `http://localhost:8080/api/demo-monitoring/v1.0.4-patch1/scenarios`
+- Demo scenarios API Current Patch: `http://localhost:8080/api/demo-monitoring/v1.0.4-patch2/scenarios`
 - Help overview: `http://localhost:8080/help`
 - Health check: `http://localhost:8080/health`
 - Demo Guide: `http://localhost:8080/docs/demo`
@@ -131,5 +140,5 @@ For a quick Docker smoke test after startup:
 
 - If Docker says the port is already in use, stop the other app that already uses port `8080`, or change `APPOINTMENT_AGENT_APP_PORT` in `.env`.
 - If the app cannot start, check `docker compose logs` and look for module import or path errors.
-- If the UI opens but looks empty, test the API route `/api/demo-monitoring/v1.0.4-patch1/scenarios`.
+- If the UI opens but looks empty, test the API route `/api/demo-monitoring/v1.0.4-patch2/scenarios`.
 - If the database cannot be written, reset with `docker compose down -v` and start again.

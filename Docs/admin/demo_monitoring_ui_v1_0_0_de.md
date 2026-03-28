@@ -1,10 +1,10 @@
 # Demo Monitoring UI Admin Leitfaden v1.0.0 DE
 
-Version: v1.0.4 Patch 1
+Version: v1.0.4 Patch 2
 Status: aktiver Demo-Patch
 Language: Deutsch
-Im UI-Header gezeigter Release: `v1.0.4 Patch 1`
-Hinweis: Dieser Dateiname bleibt fuer die Routen-Kompatibilitaet stabil. Der Inhalt ist fuer `v1.0.4 Patch 1` aktualisiert.
+Im UI-Header gezeigter Release: `v1.0.4 Patch 2`
+Hinweis: Dieser Dateiname bleibt fuer die Routen-Kompatibilitaet stabil. Der Inhalt ist fuer `v1.0.4 Patch 2` aktualisiert.
 
 ## Was dieses Modul ist
 
@@ -54,7 +54,7 @@ Der UI-Header zeigt jetzt die aktive Demo-Patch-Linie, damit Praesentierende gen
 
 Aktuell sichtbarer Release-String:
 
-`v1.0.4 Patch 1`
+`v1.0.4 Patch 2`
 
 ## Messaging-Kennungen
 
@@ -72,6 +72,15 @@ Aktuell sichtbarer Release-String:
 
 - `delivery_status`
   Zeigt das Lieferergebnis.
+
+## Erweitertes technisches Monitoring
+
+Der Monitoring-Bereich enthaelt jetzt:
+
+- eine scrollbare Event-Timeline
+- Correlation- und Trace-Gruppierung
+- simulierte Lastprofile fuer `20`, `100` und `1000` Nutzer
+- einen technischen Modus, der rohe JSON-Payloads und Command-Strukturen zeigt
 
 ## Erklaerung zum Service Bus
 

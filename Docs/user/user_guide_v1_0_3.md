@@ -1,6 +1,6 @@
 # User Guide v1.0.3
 
-Version: v1.0.4 Patch 1
+Version: v1.0.4 Patch 2
 Status: current Docker-backed demo patch
 Language: English
 
@@ -34,7 +34,7 @@ docker compose up --build
 
 Open this in your browser:
 
-- `http://localhost:8080/ui/demo-monitoring/v1.0.4-patch1`
+- `http://localhost:8080/ui/demo-monitoring/v1.0.4-patch2`
 
 If everything is working, you should see:
 
@@ -43,7 +43,7 @@ If everything is working, you should see:
 - scenario controls
 - a help button with `?`
 - reminder scenarios like keep, reschedule, cancel, and call me
-- a header that shows `v1.0.4 Patch 1`
+- a header that shows `v1.0.4 Patch 2`
 - a messaging card with `message_id` and `lekab_job_id`
 
 ## Useful Links

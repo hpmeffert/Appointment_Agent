@@ -37,6 +37,7 @@ from .models import (
     ConversationTurnPayload,
     ConversationTurnRecord,
     CustomerProfile,
+    GoogleDemoEventRecord,
     ProviderReference,
     SlotHold,
 )
@@ -64,6 +65,7 @@ __all__ = [
     "CreateBookingCommand",
     "CustomerProfile",
     "EventEnvelope",
+    "GoogleDemoEventRecord",
     "HandleProviderCallbackCommand",
     "HoldSlotCommand",
     "JourneyState",

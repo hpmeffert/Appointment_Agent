@@ -147,6 +147,110 @@ What you can say:
 2. The customer gets a safe answer.
 3. The audit trail and escalation path stay visible.
 
+## Preparing a Google Calendar Demo
+
+### Goal
+
+Make the calendar look realistic before a live demo:
+
+- some slots are already booked
+- some slots are still free
+- the calendar looks like a real working day, week, or month
+
+### Step 1 - Switch to Test Mode
+
+In the UI:
+
+- go to `Google Demo Control`
+- choose `Test`
+
+What this means:
+
+- `Simulation` keeps everything fake and safe
+- `Test` uses the real Google test calendar from your local setup
+
+Important presenter sentence:
+
+"Now I switch from safe simulation to the real test calendar."
+
+### Step 2 - Prepare the Calendar
+
+In the UI:
+
+- click `Prepare Demo Calendar` or `Generate Demo Appointments`
+- choose `Today`, `This Week`, or `This Month`
+- choose how many appointments you want
+
+Useful rule:
+
+- `Today` is good for a short focused demo
+- `This Week` is good when you want to show both free and busy days
+- `This Month` is good when you want the calendar to look full and realistic
+
+### What the system creates
+
+The system creates realistic demo entries, for example:
+
+- `Dentist Appointment - Dr. Zahn (Check-up)`
+- `Heating Maintenance - Annual Inspection`
+- `Wallbox Inspection - Check Wall Box Installation`
+
+Why this matters:
+
+- vague titles look fake
+- real titles make the Google Calendar easier to understand live
+
+### Step 3 - Verify the Calendar
+
+Open:
+
+- `https://calendar.google.com`
+
+Check:
+
+- which slots are booked
+- which slots are free
+- whether the live demo titles are visible
+
+Good presenter sentence:
+
+"This is a real calendar. The system understands availability."
+
+### Step 4 - Reset After the Demo
+
+In the UI:
+
+- click `Delete Demo Appointments`
+
+What this does:
+
+- it removes only demo-generated entries
+- it should not remove normal manual real appointments
+
+This is safe because demo events are marked clearly before cleanup is allowed.
+
+### Technical view
+
+- `events.insert`
+  Used to create the demo calendar entries.
+
+- `freeBusy`
+  Used to understand which time windows are still available.
+
+### Simple parameter explanation
+
+- `mode`
+  Decides whether the system stays in fake behavior or writes to the real test calendar.
+
+- `timeframe`
+  Decides whether demo preparation happens for one day, one week, or one month.
+
+- `count`
+  Decides how many demo appointments should be created.
+
+- `action`
+  Decides whether the system should generate, delete, or reset the demo entries.
+
 ## How the Service Bus works
 
 Simple explanation:

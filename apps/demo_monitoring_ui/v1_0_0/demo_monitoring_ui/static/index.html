@@ -500,6 +500,38 @@
               <button id="failureBtn">Simulate Failure</button>
             </div>
           </div>
+          <div class="toolcard">
+            <label id="googleOperatorLabel">Google Demo Control</label>
+            <div class="toggle-row" id="googleModeButtons">
+              <button id="googleSimulationBtn" class="active">Simulation</button>
+              <button id="googleTestBtn" class="secondary">Test</button>
+            </div>
+            <div class="small" id="googleModeHint" style="margin-top:10px;">
+              Simulation does not write to Google Calendar. Test writes to the real configured Google test calendar.
+            </div>
+            <div class="footer-note" id="googleModeStatus" style="margin-top:10px;">
+              Current mode: Simulation. No real Google calendar entries will be created.
+            </div>
+            <label for="googleTimeframeSelect" id="googleTimeframeLabel" style="margin-top:14px;">Timeframe</label>
+            <select id="googleTimeframeSelect">
+              <option value="day">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+            </select>
+            <label for="googleCountSelect" id="googleCountLabel" style="margin-top:14px;">Appointment Count</label>
+            <select id="googleCountSelect">
+              <option value="4">4</option>
+              <option value="6" selected>6</option>
+              <option value="8">8</option>
+              <option value="12">12</option>
+            </select>
+            <div class="button-row" style="margin-top:14px;">
+              <button id="googlePrepareBtn" class="secondary">Prepare Demo Calendar</button>
+              <button id="googleGenerateBtn" class="active">Generate Demo Appointments</button>
+              <button id="googleDeleteBtn" class="secondary">Delete Demo Appointments</button>
+              <button id="googleResetBtn" class="warning">Reset Demo Calendar</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -568,6 +600,14 @@
               <div class="stack" id="crmPanel"></div>
             </div>
             <div class="panel wide">
+              <h3 id="googleOperatorTitle">Google Test Mode</h3>
+              <div class="stack" id="googleOperatorPanel"></div>
+            </div>
+            <div class="panel wide">
+              <h3 id="contactLinkingTitle">Manual Entry and Contact Linking</h3>
+              <div class="stack" id="contactLinkingPanel"></div>
+            </div>
+            <div class="panel wide">
               <div class="monitor-tabs" id="monitoringTabButtons"></div>
               <div class="monitor-controls">
                 <div>
@@ -599,6 +639,8 @@
     </div>
 
     <script>
+      const GOOGLE_API_VERSION = "v1.1.0-patch1";
+
       const state = {
         payload: null,
         scenarioId: null,
@@ -614,6 +656,16 @@
         loadProfile: "20",
         showTechnicalExplanation: false,
         language: "en",
+        googleMode: "simulation",
+        googleTimeframe: "day",
+        googleCount: 6,
+        googleStatus: null,
+        googleLastResult: null,
+        googleContactLinking: null,
+        googleActionFeedback: null,
+        googleActionLoading: false,
+        googleLiveSync: null,
+        googleConflictResult: null,
       };
 
       const copy = {
@@ -730,6 +782,52 @@
           serviceBusText: "Think of the bus like a central highway. Each system sends messages there, but the systems do not depend on direct point-to-point links.",
           scalingTitle: "How the System Scales",
           scalingText: "At 20 users, many journeys run in parallel. At 100 users, stateless services can scale horizontally. At 1000 users, more containers, more CPU, more memory, a future queue, and database optimization are the main scaling knobs.",
+          googleOperatorLabel: "Google Demo Control",
+          googleOperatorTitle: "Google Test Mode",
+          googleTimeframe: "Timeframe",
+          googleCount: "Appointment Count",
+          googlePrepare: "Prepare Demo Calendar",
+          googleGenerate: "Generate Demo Appointments",
+          googleDelete: "Delete Demo Appointments",
+          googleReset: "Reset Demo Calendar",
+          googleActionLoading: "Google action is running...",
+          googleActionSuccess: "Google action finished successfully.",
+          googleActionError: "Google action failed.",
+          googlePrepareSuccess: "Prepared a preview of the demo calendar. No appointments were written yet.",
+          googleGenerateSuccess: "Demo appointments were created successfully.",
+          googleDeleteSuccess: "Demo appointments were deleted successfully.",
+          googleResetSuccess: "Demo calendar was reset successfully.",
+          previewOnly: "Preview Only",
+          googleSource: "Google Source",
+          lastGoogleSync: "Last Google Sync",
+          conflictBanner: "Conflict Banner",
+          conflictReason: "Conflict Reason",
+          nextActionsLabel: "Next Actions",
+          googleModeHint: "Simulation does not write to Google Calendar. Test writes to the real configured Google test calendar.",
+          googleModeStatusSimulation: "Current mode: Simulation. No real Google calendar entries will be created.",
+          googleModeStatusTest: "Current mode: Test. Generate, Delete, and Reset will change the real configured Google test calendar.",
+          simulationMode: "Simulation",
+          testMode: "Test",
+          today: "Today",
+          thisWeek: "This Week",
+          thisMonth: "This Month",
+          liveCalendarWrites: "Live Calendar Writes",
+          targetCalendar: "Target Calendar",
+          targetCalendarId: "Target Calendar ID",
+          lastCalendarAction: "Last Calendar Action",
+          generatedItems: "Generated Items",
+          deletedItems: "Deleted Items",
+          operatorWarning: "Operator Warning",
+          noGoogleActionYet: "No Google demo action has run yet.",
+          manualContactTitle: "Manual Entry and Contact Linking",
+          contactSources: "Contact Sources",
+          fallbackStates: "Fallback States",
+          generatedRule: "Generated Appointment Rule",
+          manualRule: "Manual Entry Rule",
+          workspaceNow: "Current Workspace",
+          workspaceLater: "Future Workspace",
+          modeRequested: "Requested Mode",
+          liveTestModeWarning: "Test mode changes the real configured Google test calendar.",
         },
         de: {
           pageTitle: "Appointment Agent Demo + Monitoring v1.0.0",
@@ -844,6 +942,52 @@
           serviceBusText: "Stell dir den Bus wie eine zentrale Autobahn vor. Jedes System sendet dort Nachrichten, aber die Systeme haengen nicht direkt aneinander.",
           scalingTitle: "So skaliert das System",
           scalingText: "Bei 20 Nutzern laufen viele Journeys parallel. Bei 100 Nutzern koennen stateless Dienste horizontal wachsen. Bei 1000 Nutzern sind mehr Container, mehr CPU, mehr Speicher, eine spaetere Queue und Datenbank-Optimierung die wichtigsten Hebel.",
+          googleOperatorLabel: "Google Demo Steuerung",
+          googleOperatorTitle: "Google Testmodus",
+          googleTimeframe: "Zeitraum",
+          googleCount: "Anzahl Termine",
+          googlePrepare: "Demo Kalender vorbereiten",
+          googleGenerate: "Demo Termine erzeugen",
+          googleDelete: "Demo Termine loeschen",
+          googleReset: "Demo Kalender zuruecksetzen",
+          googleActionLoading: "Google Aktion wird ausgefuehrt...",
+          googleActionSuccess: "Google Aktion wurde erfolgreich beendet.",
+          googleActionError: "Google Aktion ist fehlgeschlagen.",
+          googlePrepareSuccess: "Eine Vorschau des Demo Kalenders wurde vorbereitet. Es wurden noch keine Termine geschrieben.",
+          googleGenerateSuccess: "Demo Termine wurden erfolgreich erzeugt.",
+          googleDeleteSuccess: "Demo Termine wurden erfolgreich geloescht.",
+          googleResetSuccess: "Demo Kalender wurde erfolgreich zurueckgesetzt.",
+          previewOnly: "Nur Vorschau",
+          googleSource: "Google Quelle",
+          lastGoogleSync: "Letzter Google Sync",
+          conflictBanner: "Konflikt Hinweis",
+          conflictReason: "Konfliktgrund",
+          nextActionsLabel: "Naechste Schritte",
+          googleModeHint: "Simulation schreibt nicht in den Google Kalender. Test schreibt in den real konfigurierten Google Testkalender.",
+          googleModeStatusSimulation: "Aktueller Modus: Simulation. Es werden keine echten Google Kalendereintraege erzeugt.",
+          googleModeStatusTest: "Aktueller Modus: Test. Generate, Delete und Reset aendern den real konfigurierten Google Testkalender.",
+          simulationMode: "Simulation",
+          testMode: "Test",
+          today: "Heute",
+          thisWeek: "Diese Woche",
+          thisMonth: "Dieser Monat",
+          liveCalendarWrites: "Live Kalender Schreibzugriffe",
+          targetCalendar: "Zielkalender",
+          targetCalendarId: "Zielkalender ID",
+          lastCalendarAction: "Letzte Kalenderaktion",
+          generatedItems: "Erzeugte Elemente",
+          deletedItems: "Geloeschte Elemente",
+          operatorWarning: "Operator Warnung",
+          noGoogleActionYet: "Es wurde noch keine Google Demo Aktion ausgefuehrt.",
+          manualContactTitle: "Manuelle Eintraege und Kontaktverknuepfung",
+          contactSources: "Kontaktquellen",
+          fallbackStates: "Fallback Status",
+          generatedRule: "Regel fuer erzeugte Termine",
+          manualRule: "Regel fuer manuelle Eintraege",
+          workspaceNow: "Aktueller Workspace",
+          workspaceLater: "Spaeterer Workspace",
+          modeRequested: "Angeforderter Modus",
+          liveTestModeWarning: "Der Testmodus aendert den real konfigurierten Google Testkalender.",
         },
       };
 
@@ -861,6 +1005,16 @@
         technicalModeBtn: document.getElementById("technicalModeBtn"),
         noSlotBtn: document.getElementById("noSlotBtn"),
         failureBtn: document.getElementById("failureBtn"),
+        googleSimulationBtn: document.getElementById("googleSimulationBtn"),
+        googleTestBtn: document.getElementById("googleTestBtn"),
+        googleModeHint: document.getElementById("googleModeHint"),
+        googleModeStatus: document.getElementById("googleModeStatus"),
+        googleTimeframeSelect: document.getElementById("googleTimeframeSelect"),
+        googleCountSelect: document.getElementById("googleCountSelect"),
+        googlePrepareBtn: document.getElementById("googlePrepareBtn"),
+        googleGenerateBtn: document.getElementById("googleGenerateBtn"),
+        googleDeleteBtn: document.getElementById("googleDeleteBtn"),
+        googleResetBtn: document.getElementById("googleResetBtn"),
         helpBtn: document.getElementById("helpBtn"),
         helpMenu: document.getElementById("helpMenu"),
         langEnBtn: document.getElementById("langEnBtn"),
@@ -887,6 +1041,8 @@
         auditPanel: document.getElementById("auditPanel"),
         parameterPanel: document.getElementById("parameterPanel"),
         crmPanel: document.getElementById("crmPanel"),
+        googleOperatorPanel: document.getElementById("googleOperatorPanel"),
+        contactLinkingPanel: document.getElementById("contactLinkingPanel"),
         monitoringTabButtons: document.getElementById("monitoringTabButtons"),
         eventFilterSelect: document.getElementById("eventFilterSelect"),
         correlationSelect: document.getElementById("correlationSelect"),
@@ -907,6 +1063,9 @@
         simulationControlsLabel: document.getElementById("simulationControlsLabel"),
         autoplaySpeedLabel: document.getElementById("autoplaySpeedLabel"),
         technicalTogglesLabel: document.getElementById("technicalTogglesLabel"),
+        googleOperatorLabel: document.getElementById("googleOperatorLabel"),
+        googleTimeframeLabel: document.getElementById("googleTimeframeLabel"),
+        googleCountLabel: document.getElementById("googleCountLabel"),
         technicalHint: document.getElementById("technicalHint"),
         whatYouCanSayTitle: document.getElementById("whatYouCanSayTitle"),
         journeyStateTitle: document.getElementById("journeyStateTitle"),
@@ -917,6 +1076,8 @@
         auditLogTitle: document.getElementById("auditLogTitle"),
         keyParametersTitle: document.getElementById("keyParametersTitle"),
         crmEventsTitle: document.getElementById("crmEventsTitle"),
+        googleOperatorTitle: document.getElementById("googleOperatorTitle"),
+        contactLinkingTitle: document.getElementById("contactLinkingTitle"),
         eventFilterLabel: document.getElementById("eventFilterLabel"),
         correlationLabel: document.getElementById("correlationLabel"),
         loadProfileLabel: document.getElementById("loadProfileLabel"),
@@ -937,6 +1098,15 @@
 
       function metricRow(label, value) {
         return `<div class="metric"><strong>${label}</strong><span>${value ?? t("notSet")}</span></div>`;
+      }
+
+      function demoReleaseVersion() {
+        const match = window.location.pathname.match(/\/ui\/demo-monitoring\/([^/]+)/);
+        return match ? match[1] : "v1.0.0";
+      }
+
+      function demoApiBase() {
+        return `/api/demo-monitoring/${demoReleaseVersion()}`;
       }
 
       function localizeStatus(status) {
@@ -963,6 +1133,9 @@
         refs.simulationControlsLabel.textContent = t("simulationControls");
         refs.autoplaySpeedLabel.textContent = t("autoplaySpeed");
         refs.technicalTogglesLabel.textContent = t("technicalToggles");
+        refs.googleOperatorLabel.textContent = t("googleOperatorLabel");
+        refs.googleTimeframeLabel.textContent = t("googleTimeframe");
+        refs.googleCountLabel.textContent = t("googleCount");
         refs.technicalHint.textContent = t("technicalHint");
         refs.whatYouCanSayTitle.textContent = t("whatYouCanSay");
         refs.journeyStateTitle.textContent = t("journeyState");
@@ -973,6 +1146,8 @@
         refs.auditLogTitle.textContent = t("auditLog");
         refs.keyParametersTitle.textContent = t("keyParameters");
         refs.crmEventsTitle.textContent = t("crmEvents");
+        refs.googleOperatorTitle.textContent = t("googleOperatorTitle");
+        refs.contactLinkingTitle.textContent = t("manualContactTitle");
         refs.eventFilterLabel.textContent = t("eventFilter");
         refs.correlationLabel.textContent = t("correlationView");
         refs.loadProfileLabel.textContent = t("loadSimulation");
@@ -980,6 +1155,16 @@
         refs.helpMenu.querySelector('[data-doc="demo"]').textContent = t("demoGuide");
         refs.helpMenu.querySelector('[data-doc="user"]').textContent = t("userGuide");
         refs.helpMenu.querySelector('[data-doc="admin"]').textContent = t("adminGuide");
+        refs.googlePrepareBtn.textContent = t("googlePrepare");
+        refs.googleGenerateBtn.textContent = t("googleGenerate");
+        refs.googleDeleteBtn.textContent = t("googleDelete");
+        refs.googleResetBtn.textContent = t("googleReset");
+        refs.googleSimulationBtn.textContent = t("simulationMode");
+        refs.googleTestBtn.textContent = t("testMode");
+        refs.googleModeHint.textContent = t("googleModeHint");
+        refs.googleTimeframeSelect.options[0].textContent = t("today");
+        refs.googleTimeframeSelect.options[1].textContent = t("thisWeek");
+        refs.googleTimeframeSelect.options[2].textContent = t("thisMonth");
       }
 
       function renderModeButtons() {
@@ -1006,6 +1191,20 @@
           refs.scenarioSelect.appendChild(option);
         });
         refs.scenarioSelect.value = state.scenarioId;
+      }
+
+      function renderGoogleControls() {
+        refs.googleSimulationBtn.className = state.googleMode === "simulation" ? "active" : "secondary";
+        refs.googleTestBtn.className = state.googleMode === "test" ? "active" : "secondary";
+        refs.googleModeStatus.textContent = state.googleMode === "test"
+          ? t("googleModeStatusTest")
+          : t("googleModeStatusSimulation");
+        refs.googleTimeframeSelect.value = state.googleTimeframe;
+        refs.googleCountSelect.value = String(state.googleCount);
+        refs.googlePrepareBtn.disabled = state.googleActionLoading;
+        refs.googleGenerateBtn.disabled = state.googleActionLoading;
+        refs.googleDeleteBtn.disabled = state.googleActionLoading;
+        refs.googleResetBtn.disabled = state.googleActionLoading;
       }
 
       function renderLayout() {
@@ -1109,6 +1308,68 @@
 
         const crmEntries = (step.crm_events || []).length ? step.crm_events : [t("noCrmEventYet")];
         refs.crmPanel.innerHTML = crmEntries.map((entry) => `<div class="timeline-item">${entry}</div>`).join("");
+        renderGoogleOperatorPanels();
+      }
+
+      function renderGoogleOperatorPanels() {
+        const status = state.googleStatus;
+        const lastResult = state.googleLastResult;
+        const liveSync = state.googleLiveSync;
+        const conflict = state.googleConflictResult;
+        const feedback = state.googleActionFeedback;
+        const feedbackBlock = feedback
+          ? `<div class="timeline-item"><strong>${feedback.kind === "error" ? t("googleActionError") : t("googleActionSuccess")}</strong><br /><span class="small">${feedback.message}</span></div>`
+          : "";
+        refs.googleOperatorPanel.innerHTML = status
+          ? [
+              state.googleActionLoading ? `<div class="timeline-item">${t("googleActionLoading")}</div>` : "",
+              feedbackBlock,
+              liveSync ? metricRow(t("googleSource"), liveSync.google_source) : "",
+              liveSync ? metricRow(t("lastGoogleSync"), liveSync.checked_at_utc) : "",
+              metricRow(t("modeRequested"), status.requested_mode),
+              metricRow(t("liveCalendarWrites"), status.live_calendar_writes ? t("yes") : t("no")),
+              metricRow(t("targetCalendar"), status.calendar_summary || t("notSet")),
+              metricRow(t("targetCalendarId"), status.calendar_id_masked || status.calendar_id || t("notSet")),
+              metricRow(t("operatorWarning"), status.warning || t("notSet")),
+              lastResult ? metricRow(t("lastCalendarAction"), `${lastResult.action} / ${lastResult.timeframe}`) : "",
+              lastResult ? metricRow(t("generatedItems"), lastResult.generated_count) : "",
+              lastResult ? metricRow(t("deletedItems"), lastResult.deleted_count) : "",
+              lastResult && lastResult.preview_only ? metricRow(t("previewOnly"), t("yes")) : "",
+              conflict ? metricRow(t("conflictBanner"), conflict.conflict_detected ? t("yes") : t("no")) : "",
+              conflict && conflict.conflict_detected ? metricRow(t("conflictReason"), conflict.message) : "",
+              conflict && conflict.conflict_detected ? metricRow(t("nextActionsLabel"), (conflict.next_actions || []).join(", ")) : "",
+              state.googleMode === "test" ? `<div class="timeline-item">${t("liveTestModeWarning")}</div>` : "",
+              lastResult && lastResult.items && lastResult.items.length
+                ? lastResult.items
+                    .slice(0, 4)
+                    .map(
+                      (item) => `
+                        <div class="timeline-item">
+                          <strong>${item.title}</strong><br />
+                          <span class="small">${item.customer_name} | ${item.start_time}</span><br />
+                          <span class="small">${item.link_state}</span>
+                        </div>
+                      `
+                    )
+                    .join("")
+                : `<div class="timeline-item">${t("noGoogleActionYet")}</div>`,
+            ].join("")
+          : `<div class="timeline-item">${t("noGoogleActionYet")}</div>`;
+
+        const linking = state.googleContactLinking;
+        refs.contactLinkingPanel.innerHTML = linking
+          ? [
+              metricRow(t("workspaceNow"), linking.current_workspace_owner),
+              metricRow(t("workspaceLater"), linking.future_workspace_target),
+              metricRow(t("generatedRule"), linking.generated_appointments_rule),
+              metricRow(t("manualRule"), linking.manual_appointments_rule),
+              metricRow(t("contactSources"), (linking.contact_lookup_sources || []).join(", ")),
+              metricRow(t("fallbackStates"), (linking.fallback_states || []).join(", ")),
+              ...(linking.example_links || []).map(
+                (item) => `<div class="audit-item"><strong>${item.case}</strong><br />${item.what_it_means}</div>`
+              ),
+            ].join("")
+          : `<div class="timeline-item">${t("noGoogleActionYet")}</div>`;
       }
 
       function renderMonitoringTabs(scenario, step) {
@@ -1229,6 +1490,7 @@
         updateStaticCopy();
         renderModeButtons();
         renderScenarioSelect();
+        renderGoogleControls();
         renderLayout();
         renderDemo(step, scenario);
         renderMonitoring(step);
@@ -1254,14 +1516,129 @@
       }
 
       function loadPayload() {
-        return fetch(`/api/demo-monitoring/v1.0.0/scenarios?lang=${state.language}`)
-          .then((response) => response.json())
+        const scenarioRequest = fetch(`${demoApiBase()}/scenarios?lang=${state.language}`).then((response) => response.json());
+        const googleModeRequest = fetch(`${googleApiBase()}/mode?requested_mode=${state.googleMode}`).then((response) => response.json());
+        const contactLinkRequest = fetch(`${googleApiBase()}/contact-linking`).then((response) => response.json());
+        return Promise.all([scenarioRequest, googleModeRequest, contactLinkRequest]).then(([payload, googleStatus, contactLinking]) => {
+          const previousScenarioId = state.scenarioId;
+          state.payload = payload;
+          state.googleStatus = googleStatus;
+          state.googleContactLinking = contactLinking;
+          const scenarioStillExists = payload.scenarios.some((scenario) => scenario.id === previousScenarioId);
+          state.scenarioId = scenarioStillExists ? previousScenarioId : payload.scenarios[0].id;
+          state.stepIndex = 0;
+          return refreshGooglePanels().then(() => render());
+        });
+      }
+
+      function googleApiBase() {
+        return `/api/google/${GOOGLE_API_VERSION}`;
+      }
+
+      function googleActionEndpoint(action) {
+        if (action === "prepare") return `${googleApiBase()}/demo-calendar/prepare-preview`;
+        if (action === "generate") return `${googleApiBase()}/demo-calendar/generate`;
+        if (action === "delete") return `${googleApiBase()}/demo-calendar/delete`;
+        if (action === "reset") return `${googleApiBase()}/demo-calendar/reset`;
+        return `${googleApiBase()}/demo-calendar/prepare`;
+      }
+
+      function successMessageForAction(action, payload) {
+        if (payload && payload.message) {
+          return payload.message;
+        }
+        if (action === "prepare") return t("googlePrepareSuccess");
+        if (action === "generate") return t("googleGenerateSuccess");
+        if (action === "delete") return t("googleDeleteSuccess");
+        if (action === "reset") return t("googleResetSuccess");
+        return t("googleActionSuccess");
+      }
+
+      function fetchJson(url, options) {
+        return fetch(url, options).then(async (response) => {
+          const payload = await response.json();
+          if (!response.ok) {
+            const errorMessage = payload && payload.detail && payload.detail.message
+              ? payload.detail.message
+              : t("googleActionError");
+            throw new Error(errorMessage);
+          }
+          return payload;
+        });
+      }
+
+      function refreshGooglePanels() {
+        return Promise.all([
+          fetchJson(`${googleApiBase()}/mode?requested_mode=${state.googleMode}`),
+          fetchJson(`${googleApiBase()}/contact-linking`),
+          fetchJson(`${googleApiBase()}/live-sync/status`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              mode: state.googleMode,
+              timeframe: state.googleTimeframe,
+            }),
+          }),
+        ]).then(([statusPayload, contactLinking, liveSyncPayload]) => {
+          state.googleStatus = statusPayload;
+          state.googleContactLinking = contactLinking;
+          state.googleLiveSync = liveSyncPayload;
+        });
+      }
+
+      function refreshConflictProbe(payload) {
+        if (!payload || !payload.items || !payload.items.length) {
+          state.googleConflictResult = null;
+          return Promise.resolve();
+        }
+        const firstItem = payload.items[0];
+        return fetchJson(`${googleApiBase()}/live-sync/conflict-check`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: state.googleMode,
+            timeframe: state.googleTimeframe,
+            start_time: firstItem.start_time,
+            end_time: firstItem.end_time,
+            provider_reference: firstItem.provider_reference,
+            exclude_provider_reference: payload.action === "generate" ? firstItem.provider_reference : null,
+          }),
+        })
+          .then((conflictPayload) => {
+            state.googleConflictResult = conflictPayload;
+          })
+          .catch(() => {
+            state.googleConflictResult = null;
+          });
+      }
+
+      function runGoogleDemoAction(action) {
+        state.googleActionLoading = true;
+        state.googleActionFeedback = { kind: "loading", message: t("googleActionLoading") };
+        render();
+        return fetchJson(googleActionEndpoint(action), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: state.googleMode,
+            timeframe: state.googleTimeframe,
+            action,
+            count: state.googleCount,
+            include_customer_name: true,
+            include_description: true,
+            include_location: true,
+          }),
+        })
           .then((payload) => {
-            const previousScenarioId = state.scenarioId;
-            state.payload = payload;
-            const scenarioStillExists = payload.scenarios.some((scenario) => scenario.id === previousScenarioId);
-            state.scenarioId = scenarioStillExists ? previousScenarioId : payload.scenarios[0].id;
-            state.stepIndex = 0;
+            state.googleLastResult = payload;
+            state.googleActionFeedback = { kind: "success", message: successMessageForAction(action, payload) };
+            return refreshGooglePanels().then(() => refreshConflictProbe(payload));
+          })
+          .catch((error) => {
+            state.googleActionFeedback = { kind: "error", message: error.message || t("googleActionError") };
+          })
+          .finally(() => {
+            state.googleActionLoading = false;
             render();
           });
       }
@@ -1408,6 +1785,40 @@
         state.scenarioId = "provider-failure";
         state.stepIndex = 0;
         render();
+      });
+
+      refs.googleSimulationBtn.addEventListener("click", () => {
+        state.googleMode = "simulation";
+        loadPayload();
+      });
+
+      refs.googleTestBtn.addEventListener("click", () => {
+        state.googleMode = "test";
+        loadPayload();
+      });
+
+      refs.googleTimeframeSelect.addEventListener("change", (event) => {
+        state.googleTimeframe = event.target.value;
+      });
+
+      refs.googleCountSelect.addEventListener("change", (event) => {
+        state.googleCount = Number(event.target.value);
+      });
+
+      refs.googlePrepareBtn.addEventListener("click", () => {
+        runGoogleDemoAction("prepare");
+      });
+
+      refs.googleGenerateBtn.addEventListener("click", () => {
+        runGoogleDemoAction("generate");
+      });
+
+      refs.googleDeleteBtn.addEventListener("click", () => {
+        runGoogleDemoAction("delete");
+      });
+
+      refs.googleResetBtn.addEventListener("click", () => {
+        runGoogleDemoAction("reset");
       });
 
       loadPayload();

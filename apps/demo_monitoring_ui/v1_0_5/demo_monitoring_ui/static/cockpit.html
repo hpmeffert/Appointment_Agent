@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Appointment Agent Cockpit __VERSION__</title>
+    <style>
+      :root {
+        --bg: #edf2f7;
+        --bg-strong: #ffffff;
+        --panel: #f8fafc;
+        --panel-strong: #ffffff;
+        --line: #d8e0ec;
+        --ink: #132033;
+        --muted: #5f6d83;
+        --brand: #0f4c81;
+        --brand-strong: #153e75;
+        --accent: #ff9f1c;
+        --ok: #13795b;
+        --warn: #b54708;
+        --danger: #b42318;
+        --shadow: 0 18px 60px rgba(15, 32, 51, 0.12);
+      }
+
+      [data-theme="night"] {
+        --bg: #09111d;
+        --bg-strong: #0f1724;
+        --panel: #111d2d;
+        --panel-strong: #18263a;
+        --line: #24364f;
+        --ink: #edf3fb;
+        --muted: #92a3bd;
+        --brand: #64b5f6;
+        --brand-strong: #90caf9;
+        --accent: #f8b84e;
+        --ok: #5dd39e;
+        --warn: #ffb96b;
+        --danger: #ff8f8f;
+        --shadow: 0 22px 70px rgba(0, 0, 0, 0.45);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(100, 181, 246, 0.18), transparent 28%),
+          linear-gradient(180deg, var(--bg) 0%, var(--bg-strong) 100%);
+        color: var(--ink);
+        min-height: 100vh;
+      }
+
+      .shell { min-height: 100vh; display: flex; flex-direction: column; }
+      .header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 18px;
+        padding: 16px 24px;
+        background: rgba(11, 22, 36, 0.88);
+        color: #f5f9ff;
+        backdrop-filter: blur(18px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .brand-block { display: flex; flex-direction: column; gap: 4px; }
+      .brand-kicker { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.72; }
+      .brand-title { font-size: 24px; font-weight: 700; }
+      .brand-sub { font-size: 13px; color: #c6d3e6; max-width: 460px; }
+      .version-badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        margin-top: 8px;
+        padding: 2px 8px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.14);
+        color: #d7e4f4;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+      }
+
+      .nav, .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      .nav button, .header-actions button, .action-row button, .segment button, .vertical-grid button {
+        border: 1px solid transparent;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        color: inherit;
+        padding: 10px 14px;
+        cursor: pointer;
+        font: inherit;
+      }
+      .nav button.active, .segment button.active, .vertical-grid button.active {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+      }
+      .lang-switcher {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 2px 4px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.06);
+      }
+      .lang-switcher button {
+        min-width: 42px;
+        border-radius: 999px;
+        padding: 8px 10px;
+        background: transparent;
+      }
+      .lang-switcher .divider {
+        font-size: 12px;
+        color: rgba(255,255,255,0.45);
+      }
+      .icon-button {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0;
+      }
+      .icon-button svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .main { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+      .hero {
+        background: linear-gradient(135deg, rgba(15, 76, 129, 0.96), rgba(24, 40, 72, 0.95));
+        color: #f4f8ff;
+        border-radius: 28px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+      }
+      .hero h1 { margin: 0 0 10px; font-size: clamp(28px, 4.2vw, 46px); }
+      .hero p { margin: 0; max-width: 760px; line-height: 1.6; color: #d7e4f4; }
+      .release { margin-top: 12px; font-size: 13px; color: #b9cae0; }
+
+      .page { display: none; }
+      .page.active { display: block; }
+
+      .grid {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: 320px minmax(0, 1fr);
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+      }
+      .panel h2, .panel h3 { margin-top: 0; }
+      .stack { display: flex; flex-direction: column; gap: 12px; }
+      .metric {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: var(--panel-strong);
+        border: 1px solid var(--line);
+      }
+      .segment, .action-row { display: flex; flex-wrap: wrap; gap: 10px; }
+      .control label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 8px; }
+      .control select {
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: var(--panel-strong);
+        color: var(--ink);
+        padding: 12px;
+        font: inherit;
+      }
+      .operator-layout { display: grid; gap: 18px; grid-template-columns: 1fr 1fr; }
+      .vertical-grid { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .card-strip { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .mini-card {
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 16px;
+        background: var(--panel-strong);
+      }
+      .chat { display: grid; gap: 12px; }
+      .bubble {
+        padding: 14px 16px;
+        border-radius: 18px;
+        max-width: 88%;
+        line-height: 1.55;
+      }
+      .bubble.user { margin-left: auto; background: rgba(15, 76, 129, 0.12); }
+      .bubble.platform { background: rgba(255, 159, 28, 0.16); }
+      .monitor-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+      .record {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+        background: var(--panel-strong);
+      }
+      .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 14px;
+      }
+      .dashboard-header h2, .dashboard-header p { margin: 0; }
+      .dashboard-header p { color: var(--muted); }
+      .dashboard-header-action {
+        border-radius: 999px;
+        background: var(--brand);
+        color: #fff;
+        border: 1px solid var(--brand);
+        padding: 10px 14px;
+        cursor: pointer;
+      }
+      .code {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+      }
+      .small { font-size: 13px; color: var(--muted); }
+
+      @media (max-width: 1120px) {
+        .grid, .operator-layout, .card-strip, .vertical-grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body data-theme="day">
+    <div class="shell">
+      <header class="header">
+        <div class="brand-block">
+          <div class="brand-kicker" id="brandKicker">Incident-style appointment cockpit</div>
+          <div class="brand-title" id="brandTitle">Appointment Agent Cockpit</div>
+          <div class="brand-sub" id="brandSub">Product-style demo environment for operators, presenters, and technical stakeholders.</div>
+          <div class="version-badge" id="headerVersion">v__VERSION__</div>
+        </div>
+        <nav class="nav" id="navTabs"></nav>
+        <div class="header-actions">
+          <div class="lang-switcher">
+            <button id="langDeBtn">DE</button>
+            <span class="divider">|</span>
+            <button id="langEnBtn" class="active">EN</button>
+          </div>
+          <button id="themeToggle" class="icon-button" aria-label="Theme toggle" title="Theme toggle">
+            <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <button id="helpButton" class="icon-button" aria-label="Help" title="Help">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="main">
+        <section class="hero">
+          <h1 id="heroTitle">Appointment operations with live story and technical visibility</h1>
+          <p id="heroText">The dashboard is presentation-friendly. Monitoring is focused. Settings stay understandable for non-engineers.</p>
+          <div class="release" id="releaseText">Release: __VERSION__</div>
+        </section>
+
+        <section class="page active" id="page-dashboard">
+          <div class="dashboard-header">
+            <div>
+              <h2 id="dashboardPageTitle">Dashboard</h2>
+              <p id="dashboardPageSub">Operator-first view with live demo story and technical context.</p>
+            </div>
+            <button class="dashboard-header-action" id="dashboardAction">Prepare demo run</button>
+          </div>
+          <div class="grid">
+            <aside class="panel">
+              <h2 id="operatorTitle">Operator Panel</h2>
+              <div class="stack">
+                <div class="control">
+                  <label id="dashboardModeLabel">Dashboard Mode</label>
+                  <div class="segment" id="dashboardModeButtons"></div>
+                </div>
+                <div class="control">
+                  <label id="scenarioLabel">Scenario</label>
+                  <select id="scenarioSelect"></select>
+                </div>
+                <div class="control">
+                  <label id="googleModeLabel">Google Mode</label>
+                  <div class="segment">
+                    <button id="googleSimulationBtn" class="active">Simulation</button>
+                    <button id="googleTestBtn">Test</button>
+                  </div>
+                </div>
+                <div class="control">
+                  <label id="googleTimeframeLabel">Timeframe</label>
+                  <select id="googleTimeframeSelect">
+                    <option value="day">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                  </select>
+                </div>
+                <div class="control">
+                  <label id="googleCountLabel">Demo Appointments</label>
+                  <select id="googleCountSelect">
+                    <option value="4">4</option>
+                    <option value="6" selected>6</option>
+                    <option value="8">8</option>
+                    <option value="12">12</option>
+                  </select>
+                </div>
+                <div class="control" id="verticalWrap" style="display:none;">
+                  <label id="verticalLabel">Vertical Quick Start</label>
+                  <div class="vertical-grid" id="verticalButtons"></div>
+                </div>
+                <div class="action-row">
+                  <button id="prepareBtn">Prepare</button>
+                  <button id="generateBtn">Generate</button>
+                  <button id="deleteBtn">Delete</button>
+                  <button id="resetBtn">Reset</button>
+                </div>
+                <div class="action-row">
+                  <button id="restartBtn">Restart Story</button>
+                  <button id="nextBtn">Next Step</button>
+                </div>
+              </div>
+            </aside>
+
+            <section class="stack">
+              <div class="card-strip">
+                <div class="mini-card"><h3 id="summaryOneTitle">Current Story</h3><div id="summaryOne"></div></div>
+                <div class="mini-card"><h3 id="summaryTwoTitle">Live Google Status</h3><div id="summaryTwo"></div></div>
+                <div class="mini-card"><h3 id="summaryThreeTitle">Vertical Setup</h3><div id="summaryThree"></div></div>
+              </div>
+
+              <div class="operator-layout">
+                <article class="panel">
+                  <h2 id="demoPaneTitle">Demo</h2>
+                  <div class="chat" id="chatStream"></div>
+                  <div class="stack" id="slotList"></div>
+                  <div class="record small" id="speakerNotes"></div>
+                </article>
+                <article class="panel">
+                  <h2 id="monitorPaneTitle">Monitoring Snapshot</h2>
+                  <div class="stack" id="snapshotMetrics"></div>
+                  <div class="record" id="snapshotTimeline"></div>
+                </article>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-monitoring">
+          <div class="panel">
+            <h2 id="monitoringTitle">Monitoring</h2>
+            <div class="monitor-tabs" id="monitorTabs"></div>
+            <div id="monitoringBody"></div>
+          </div>
+        </section>
+
+        <section class="page" id="page-settings">
+          <div class="panel">
+            <h2 id="settingsTitle">Settings</h2>
+            <div class="card-strip" id="settingsGrid"></div>
+          </div>
+        </section>
+
+        <section class="page" id="page-help">
+          <div class="panel">
+            <h2 id="helpTitle">Help and Documentation</h2>
+            <div class="card-strip" id="helpGrid"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const VERSION = "__VERSION__";
+      const VERTICALS_ENABLED = "__VERTICALS_ENABLED__" === "true";
+      const state = {
+        payload: null,
+        language: "en",
+        theme: "day",
+        page: "dashboard",
+        dashboardMode: "combined",
+        scenarioId: null,
+        stepIndex: 0,
+        googleMode: "simulation",
+        googleTimeframe: "day",
+        googleCount: 6,
+        monitorTab: "timeline",
+        selectedVertical: "general",
+        googleStatus: null,
+        lastGoogleAction: null,
+      };
+
+      const copy = {
+        en: {
+          dashboard: "Dashboard",
+          monitoring: "Monitoring",
+          settings: "Settings",
+          help: "Help",
+          dashboardMode: "Dashboard Mode",
+          operatorTitle: "Operator Panel",
+          scenario: "Scenario",
+          googleMode: "Google Mode",
+          timeframe: "Timeframe",
+          count: "Demo Appointments",
+          simulation: "Simulation",
+          test: "Test",
+          today: "Today",
+          week: "This Week",
+          month: "This Month",
+          prepare: "Prepare",
+          generate: "Generate",
+          delete: "Delete",
+          reset: "Reset",
+          restart: "Restart Story",
+          next: "Next Step",
+          demo: "Demo",
+          monitoringSnapshot: "Monitoring Snapshot",
+          currentStory: "Current Story",
+          liveGoogle: "Live Google Status",
+          verticalSetup: "Vertical Setup",
+          speakerDefault: "Pick a scenario to start the walkthrough.",
+          settingsTitle: "Settings",
+          helpTitle: "Help and Documentation",
+          themeNight: "Night",
+          themeDay: "Day",
+          verticalLabel: "Vertical Quick Start",
+          monitoringTitle: "Monitoring",
+        },
+        de: {
+          dashboard: "Dashboard",
+          monitoring: "Monitoring",
+          settings: "Einstellungen",
+          help: "Hilfe",
+          dashboardMode: "Dashboard Modus",
+          operatorTitle: "Operator Panel",
+          scenario: "Szenario",
+          googleMode: "Google Modus",
+          timeframe: "Zeitraum",
+          count: "Demo Termine",
+          simulation: "Simulation",
+          test: "Test",
+          today: "Heute",
+          week: "Diese Woche",
+          month: "Dieser Monat",
+          prepare: "Vorbereiten",
+          generate: "Erzeugen",
+          delete: "Loeschen",
+          reset: "Reset",
+          restart: "Story neu starten",
+          next: "Naechster Schritt",
+          demo: "Demo",
+          monitoringSnapshot: "Monitoring Ueberblick",
+          currentStory: "Aktuelle Story",
+          liveGoogle: "Live Google Status",
+          verticalSetup: "Vertical Setup",
+          speakerDefault: "Waehle ein Szenario, um den Ablauf zu starten.",
+          settingsTitle: "Einstellungen",
+          helpTitle: "Hilfe und Dokumentation",
+          themeNight: "Nacht",
+          themeDay: "Tag",
+          verticalLabel: "Vertical Schnellstart",
+          monitoringTitle: "Monitoring",
+        },
+      };
+
+      const refs = {
+        navTabs: document.getElementById("navTabs"),
+        langDeBtn: document.getElementById("langDeBtn"),
+        langEnBtn: document.getElementById("langEnBtn"),
+        themeToggle: document.getElementById("themeToggle"),
+        themeIcon: document.getElementById("themeIcon"),
+        helpButton: document.getElementById("helpButton"),
+        dashboardAction: document.getElementById("dashboardAction"),
+        scenarioSelect: document.getElementById("scenarioSelect"),
+        dashboardModeButtons: document.getElementById("dashboardModeButtons"),
+        googleSimulationBtn: document.getElementById("googleSimulationBtn"),
+        googleTestBtn: document.getElementById("googleTestBtn"),
+        googleTimeframeSelect: document.getElementById("googleTimeframeSelect"),
+        googleCountSelect: document.getElementById("googleCountSelect"),
+        verticalWrap: document.getElementById("verticalWrap"),
+        verticalButtons: document.getElementById("verticalButtons"),
+        prepareBtn: document.getElementById("prepareBtn"),
+        generateBtn: document.getElementById("generateBtn"),
+        deleteBtn: document.getElementById("deleteBtn"),
+        resetBtn: document.getElementById("resetBtn"),
+        restartBtn: document.getElementById("restartBtn"),
+        nextBtn: document.getElementById("nextBtn"),
+        chatStream: document.getElementById("chatStream"),
+        slotList: document.getElementById("slotList"),
+        speakerNotes: document.getElementById("speakerNotes"),
+        snapshotMetrics: document.getElementById("snapshotMetrics"),
+        snapshotTimeline: document.getElementById("snapshotTimeline"),
+        summaryOne: document.getElementById("summaryOne"),
+        summaryTwo: document.getElementById("summaryTwo"),
+        summaryThree: document.getElementById("summaryThree"),
+        monitorTabs: document.getElementById("monitorTabs"),
+        monitoringBody: document.getElementById("monitoringBody"),
+        settingsGrid: document.getElementById("settingsGrid"),
+        helpGrid: document.getElementById("helpGrid"),
+      };
+
+      function t(key) { return (copy[state.language] || copy.en)[key] || key; }
+
+      function currentScenario() {
+        return state.payload.scenarios.find((scenario) => scenario.id === state.scenarioId) || state.payload.scenarios[0];
+      }
+
+      function currentStep() {
+        const scenario = currentScenario();
+        return scenario.steps[Math.min(state.stepIndex, scenario.steps.length - 1)];
+      }
+
+      function currentVerticalProfile() {
+        return (state.payload.verticals || []).find((vertical) => vertical.id === state.selectedVertical) || null;
+      }
+
+      function verticalizedStep(step) {
+        const vertical = currentVerticalProfile();
+        if (!VERTICALS_ENABLED || !vertical) {
+          return step;
+        }
+        const cloned = JSON.parse(JSON.stringify(step));
+        const exampleName = (vertical.customer_examples || ["Demo Customer"])[state.stepIndex % (vertical.customer_examples || ["Demo Customer"]).length];
+        if (!cloned.customer_message || cloned.customer_message === "...") {
+          cloned.customer_message = vertical.sample_titles[0];
+        }
+        if (cloned.platform_message && cloned.platform_message.startsWith("Reminder:")) {
+          cloned.platform_message = `${vertical.reminder_example} ${vertical.follow_up_prompt}`;
+        } else if (!cloned.platform_message || cloned.platform_message === "...") {
+          cloned.platform_message = `${vertical.sample_description} ${vertical.follow_up_prompt}`;
+        }
+        cloned.speaker_notes = [
+          vertical.operator_explanation,
+          `${vertical.label}: ${vertical.audience_fit}`,
+          `${exampleName} | ${vertical.sample_description}`,
+        ];
+        cloned.event_stream = (vertical.monitoring_labels || []).concat(cloned.event_stream || []);
+        cloned.customer_example = exampleName;
+        return cloned;
+      }
+
+      function apiBase() { return `/api/demo-monitoring/${VERSION}`; }
+
+      function loadPayload() {
+        return Promise.all([
+          fetch(`${apiBase()}/payload?lang=${state.language}`).then((response) => response.json()),
+          fetch(`/api/google/v1.1.0-patch1/mode?requested_mode=${state.googleMode}`).then((response) => response.json()),
+        ]).then(([payload, googleStatus]) => {
+          state.payload = payload;
+          state.googleStatus = googleStatus;
+          state.scenarioId = state.scenarioId || payload.scenarios[0].id;
+          render();
+        });
+      }
+
+      function renderNav() {
+        refs.navTabs.innerHTML = "";
+        state.payload.pages.forEach((page) => {
+          const button = document.createElement("button");
+          button.textContent = page.label;
+          button.className = state.page === page.id ? "active" : "";
+          button.addEventListener("click", () => {
+            state.page = page.id;
+            render();
+          });
+          refs.navTabs.appendChild(button);
+        });
+      }
+
+      function renderDashboardModes() {
+        refs.dashboardModeButtons.innerHTML = "";
+        state.payload.dashboard_modes.forEach((mode) => {
+          const button = document.createElement("button");
+          button.textContent = mode.label;
+          button.className = state.dashboardMode === mode.id ? "active" : "";
+          button.addEventListener("click", () => {
+            state.dashboardMode = mode.id;
+            render();
+          });
+          refs.dashboardModeButtons.appendChild(button);
+        });
+      }
+
+      function renderScenarioSelect() {
+        refs.scenarioSelect.innerHTML = "";
+        state.payload.scenarios.forEach((scenario) => {
+          const option = document.createElement("option");
+          option.value = scenario.id;
+          option.textContent = scenario.title;
+          refs.scenarioSelect.appendChild(option);
+        });
+        refs.scenarioSelect.value = state.scenarioId;
+      }
+
+      function renderVerticals() {
+        refs.verticalWrap.style.display = VERTICALS_ENABLED ? "block" : "none";
+        refs.verticalButtons.innerHTML = "";
+        (state.payload.verticals || []).forEach((vertical) => {
+          const button = document.createElement("button");
+          button.className = state.selectedVertical === vertical.id ? "active" : "";
+          button.textContent = vertical.label;
+          button.addEventListener("click", () => {
+            state.selectedVertical = vertical.id;
+            render();
+          });
+          refs.verticalButtons.appendChild(button);
+        });
+      }
+
+      function metric(label, value) {
+        return `<div class="metric"><strong>${label}</strong><span>${value}</span></div>`;
+      }
+
+      function renderDashboard() {
+        const step = verticalizedStep(currentStep());
+        refs.chatStream.innerHTML = `
+          <div class="bubble user">${step.customer_message || "..."}</div>
+          <div class="bubble platform">${step.platform_message || "..."}</div>
+        `;
+        refs.slotList.innerHTML = (step.slot_options || []).map((slot) => `<div class="record">${slot}</div>`).join("");
+        refs.speakerNotes.textContent = (step.speaker_notes || [t("speakerDefault")]).join(" ");
+        refs.summaryOne.innerHTML = metric(currentScenario().title, currentScenario().summary) + (step.customer_example ? metric("customer", step.customer_example) : "");
+        refs.summaryTwo.innerHTML = [
+          metric("mode", state.googleStatus.mode),
+          metric("calendar", state.googleStatus.calendar_summary || "-"),
+          metric("writes", state.googleStatus.live_calendar_writes ? "yes" : "no"),
+        ].join("") + (state.lastGoogleAction && state.lastGoogleAction.items && state.lastGoogleAction.items[0]
+          ? metric("appointment", state.lastGoogleAction.items[0].details.description || state.lastGoogleAction.items[0].title)
+          : "");
+        const verticalInfo = (state.payload.verticals || []).find((item) => item.id === state.selectedVertical);
+        refs.summaryThree.innerHTML = verticalInfo
+          ? [
+              metric(verticalInfo.label, verticalInfo.description),
+              metric("audience", verticalInfo.audience_fit),
+              metric("reminder", verticalInfo.reminder_example),
+              ...verticalInfo.sample_titles.map((title) => metric("sample", title)),
+            ].join("")
+          : metric("general", "Default cross-vertical demo");
+        refs.snapshotMetrics.innerHTML = [
+          metric("journey_state", step.journey_state),
+          metric("active_component", step.active_component),
+          metric("booking_reference", step.booking_reference || "-"),
+          metric("provider_reference", step.provider_reference || "-"),
+        ].join("");
+        refs.snapshotTimeline.innerHTML = (step.event_stream || []).map((item) => `<div class="record">${item}</div>`).join("");
+      }
+
+      function renderMonitoringPage() {
+        const scenario = currentScenario();
+        const step = verticalizedStep(currentStep());
+        const tabs = [
+          { id: "timeline", label: "Timeline" },
+          { id: "trace", label: "Trace" },
+          { id: "performance", label: "Performance" },
+        ];
+        refs.monitorTabs.innerHTML = "";
+        tabs.forEach((tab) => {
+          const button = document.createElement("button");
+          button.className = state.monitorTab === tab.id ? "active" : "";
+          button.textContent = tab.label;
+          button.addEventListener("click", () => {
+            state.monitorTab = tab.id;
+            render();
+          });
+          refs.monitorTabs.appendChild(button);
+        });
+        if (state.monitorTab === "timeline") {
+          refs.monitoringBody.innerHTML = step.event_stream.map((event) => `<div class="record"><strong>${event}</strong></div>`).join("");
+        } else if (state.monitorTab === "trace") {
+          refs.monitoringBody.innerHTML = scenario.all_events.map((event) => `<div class="record"><strong>${event.trace_id}</strong><div class="small">${event.correlation_id}</div><div class="code">${JSON.stringify(event.payload, null, 2)}</div></div>`).join("");
+        } else {
+          refs.monitoringBody.innerHTML = `<div class="record">${metric("avg_response_ms", step.performance.avg_response_ms)}${metric("max_response_ms", step.performance.max_response_ms)}${metric("events_per_second", step.performance.events_per_second)}</div>`;
+        }
+      }
+
+      function renderSettingsPage() {
+        refs.settingsGrid.innerHTML = state.payload.settings_snapshot.map((item) => `<div class="mini-card"><h3>${item.label}</h3><div>${item.value}</div></div>`).join("");
+      }
+
+      function renderHelpPage() {
+        refs.helpGrid.innerHTML = state.payload.help_links.map((link) => `<div class="mini-card"><h3>${link.label}</h3><div class="small">${link.href}</div><button onclick="window.open('${link.href}', '_blank')">Open</button></div>`).join("");
+      }
+
+      function renderStaticText() {
+        document.body.setAttribute("data-theme", state.theme);
+        document.querySelectorAll(".page").forEach((page) => page.classList.remove("active"));
+        document.getElementById(`page-${state.page}`).classList.add("active");
+        document.getElementById("operatorTitle").textContent = t("operatorTitle");
+        document.getElementById("dashboardPageTitle").textContent = t("dashboard");
+        document.getElementById("dashboardPageSub").textContent = state.language === "de"
+          ? "Operator-Sicht mit Live-Demo-Story und technischem Kontext."
+          : "Operator-first view with live demo story and technical context.";
+        document.getElementById("dashboardModeLabel").textContent = t("dashboardMode");
+        document.getElementById("scenarioLabel").textContent = t("scenario");
+        document.getElementById("googleModeLabel").textContent = t("googleMode");
+        document.getElementById("googleTimeframeLabel").textContent = t("timeframe");
+        document.getElementById("googleCountLabel").textContent = t("count");
+        document.getElementById("verticalLabel").textContent = t("verticalLabel");
+        document.getElementById("demoPaneTitle").textContent = t("demo");
+        document.getElementById("monitorPaneTitle").textContent = t("monitoringSnapshot");
+        document.getElementById("summaryOneTitle").textContent = t("currentStory");
+        document.getElementById("summaryTwoTitle").textContent = t("liveGoogle");
+        document.getElementById("summaryThreeTitle").textContent = t("verticalSetup");
+        document.getElementById("settingsTitle").textContent = t("settingsTitle");
+        document.getElementById("helpTitle").textContent = t("helpTitle");
+        document.getElementById("monitoringTitle").textContent = t("monitoringTitle");
+        refs.googleSimulationBtn.textContent = t("simulation");
+        refs.googleTestBtn.textContent = t("test");
+        refs.prepareBtn.textContent = t("prepare");
+        refs.generateBtn.textContent = t("generate");
+        refs.deleteBtn.textContent = t("delete");
+        refs.resetBtn.textContent = t("reset");
+        refs.restartBtn.textContent = t("restart");
+        refs.nextBtn.textContent = t("next");
+        refs.googleTimeframeSelect.options[0].textContent = t("today");
+        refs.googleTimeframeSelect.options[1].textContent = t("week");
+        refs.googleTimeframeSelect.options[2].textContent = t("month");
+        refs.dashboardAction.textContent = state.language === "de" ? "Demo-Lauf vorbereiten" : "Prepare demo run";
+        refs.langEnBtn.className = state.language === "en" ? "active" : "";
+        refs.langDeBtn.className = state.language === "de" ? "active" : "";
+        refs.themeIcon.innerHTML = state.theme === "day"
+          ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>'
+          : '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+      }
+
+      function render() {
+        renderStaticText();
+        renderNav();
+        renderDashboardModes();
+        renderScenarioSelect();
+        renderVerticals();
+        renderDashboard();
+        renderMonitoringPage();
+        renderSettingsPage();
+        renderHelpPage();
+        refs.googleSimulationBtn.className = state.googleMode === "simulation" ? "active" : "";
+        refs.googleTestBtn.className = state.googleMode === "test" ? "active" : "";
+      }
+
+      function runGoogleAction(action) {
+        return fetch("/api/google/v1.1.0-patch1/demo-calendar/prepare", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: state.googleMode,
+            timeframe: state.googleTimeframe,
+            action,
+            count: state.googleCount,
+            vertical: VERTICALS_ENABLED ? state.selectedVertical : "general",
+          }),
+        })
+          .then((response) => response.json())
+          .then((payload) => {
+            state.lastGoogleAction = payload;
+            return fetch(`/api/google/v1.1.0-patch1/mode?requested_mode=${state.googleMode}`);
+          })
+          .then((response) => response.json())
+          .then((googleStatus) => {
+            state.googleStatus = googleStatus;
+            render();
+          });
+      }
+
+      refs.langEnBtn.addEventListener("click", () => { state.language = "en"; loadPayload(); });
+      refs.langDeBtn.addEventListener("click", () => { state.language = "de"; loadPayload(); });
+      refs.themeToggle.addEventListener("click", () => { state.theme = state.theme === "day" ? "night" : "day"; render(); });
+      refs.helpButton.addEventListener("click", () => { state.page = "help"; render(); });
+      refs.dashboardAction.addEventListener("click", () => runGoogleAction("generate"));
+      refs.scenarioSelect.addEventListener("change", (event) => { state.scenarioId = event.target.value; state.stepIndex = 0; render(); });
+      refs.googleSimulationBtn.addEventListener("click", () => { state.googleMode = "simulation"; loadPayload(); });
+      refs.googleTestBtn.addEventListener("click", () => { state.googleMode = "test"; loadPayload(); });
+      refs.googleTimeframeSelect.addEventListener("change", (event) => { state.googleTimeframe = event.target.value; });
+      refs.googleCountSelect.addEventListener("change", (event) => { state.googleCount = Number(event.target.value); });
+      refs.prepareBtn.addEventListener("click", () => runGoogleAction("generate"));
+      refs.generateBtn.addEventListener("click", () => runGoogleAction("generate"));
+      refs.deleteBtn.addEventListener("click", () => runGoogleAction("delete"));
+      refs.resetBtn.addEventListener("click", () => runGoogleAction("reset"));
+      refs.restartBtn.addEventListener("click", () => { state.stepIndex = 0; render(); });
+      refs.nextBtn.addEventListener("click", () => { const scenario = currentScenario(); state.stepIndex = Math.min(state.stepIndex + 1, scenario.steps.length - 1); render(); });
+
+      loadPayload();
+    </script>
+  </body>
+</html>

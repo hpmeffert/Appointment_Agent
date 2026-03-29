@@ -6,7 +6,15 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from .contracts import ContactUpsertCommand, ConversationTurnPayload, ResolveCustomerCommand
-from .models import AppointmentJourneyRecord, AuditRecord, BookingRecord, CallbackReceipt, ContactRecord, ConversationTurnRecord
+from .models import (
+    AppointmentJourneyRecord,
+    AuditRecord,
+    BookingRecord,
+    CallbackReceipt,
+    ContactRecord,
+    ConversationTurnRecord,
+    GoogleDemoEventRecord,
+)
 
 
 class ContactRepository:
@@ -211,3 +219,85 @@ class AuditRepository:
                 select(AuditRecord).where(AuditRecord.journey_id == journey_id).order_by(AuditRecord.created_at_utc.asc())
             )
         )
+
+
+class GoogleDemoEventRepository:
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def save(
+        self,
+        *,
+        operation_id: str,
+        mode: str,
+        timeframe: str,
+        calendar_id: str,
+        event_id: Optional[str],
+        booking_reference: str,
+        title: str,
+        customer_name: Optional[str],
+        mobile_number: Optional[str],
+        start_time_utc,
+        end_time_utc,
+        timezone: str,
+        provider_reference: Optional[str],
+        details: dict,
+        is_demo_generated: bool = True,
+    ) -> GoogleDemoEventRecord:
+        record = self.session.scalar(
+            select(GoogleDemoEventRecord).where(GoogleDemoEventRecord.booking_reference == booking_reference)
+        )
+        if record is None:
+            record = GoogleDemoEventRecord(
+                booking_reference=booking_reference,
+                operation_id=operation_id,
+                mode=mode,
+                timeframe=timeframe,
+                calendar_id=calendar_id,
+                title=title,
+                start_time_utc=start_time_utc,
+                end_time_utc=end_time_utc,
+                timezone=timezone,
+                is_demo_generated=is_demo_generated,
+            )
+            self.session.add(record)
+        record.operation_id = operation_id
+        record.mode = mode
+        record.timeframe = timeframe
+        record.calendar_id = calendar_id
+        record.event_id = event_id
+        record.title = title
+        record.customer_name = customer_name
+        record.mobile_number = mobile_number
+        record.start_time_utc = start_time_utc
+        record.end_time_utc = end_time_utc
+        record.timezone = timezone
+        record.provider_reference = provider_reference
+        record.details = details
+        record.is_demo_generated = is_demo_generated
+        record.is_deleted = False
+        self.session.commit()
+        self.session.refresh(record)
+        return record
+
+    def list_active(self, calendar_id: str, timeframe: Optional[str] = None) -> list[GoogleDemoEventRecord]:
+        query = select(GoogleDemoEventRecord).where(
+            GoogleDemoEventRecord.calendar_id == calendar_id,
+            GoogleDemoEventRecord.is_demo_generated.is_(True),
+            GoogleDemoEventRecord.is_deleted.is_(False),
+        )
+        if timeframe:
+            query = query.where(GoogleDemoEventRecord.timeframe == timeframe)
+        return list(self.session.scalars(query.order_by(GoogleDemoEventRecord.start_time_utc.asc())))
+
+    def mark_deleted(self, booking_references: list[str]) -> None:
+        if not booking_references:
+            return
+        records = list(
+            self.session.scalars(
+                select(GoogleDemoEventRecord).where(GoogleDemoEventRecord.booking_reference.in_(booking_references))
+            )
+        )
+        for record in records:
+            record.is_deleted = True
+        self.session.commit()

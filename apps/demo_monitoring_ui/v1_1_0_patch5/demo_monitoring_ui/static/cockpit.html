@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Appointment Agent Cockpit __VERSION__</title>
+    <style>
+      :root {
+        --bg: #edf2f7;
+        --bg-strong: #ffffff;
+        --panel: #f8fafc;
+        --panel-strong: #ffffff;
+        --line: #d8e0ec;
+        --ink: #132033;
+        --muted: #5f6d83;
+        --brand: #0f4c81;
+        --brand-strong: #153e75;
+        --accent: #ff9f1c;
+        --ok: #13795b;
+        --warn: #b54708;
+        --danger: #b42318;
+        --shadow: 0 18px 60px rgba(15, 32, 51, 0.12);
+      }
+
+      [data-theme="night"] {
+        --bg: #09111d;
+        --bg-strong: #0f1724;
+        --panel: #111d2d;
+        --panel-strong: #18263a;
+        --line: #24364f;
+        --ink: #edf3fb;
+        --muted: #92a3bd;
+        --brand: #64b5f6;
+        --brand-strong: #90caf9;
+        --accent: #f8b84e;
+        --ok: #5dd39e;
+        --warn: #ffb96b;
+        --danger: #ff8f8f;
+        --shadow: 0 22px 70px rgba(0, 0, 0, 0.45);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(100, 181, 246, 0.18), transparent 28%),
+          linear-gradient(180deg, var(--bg) 0%, var(--bg-strong) 100%);
+        color: var(--ink);
+        min-height: 100vh;
+      }
+
+      .shell { min-height: 100vh; display: flex; flex-direction: column; }
+      .header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 18px;
+        padding: 16px 24px;
+        background: rgba(11, 22, 36, 0.88);
+        color: #f5f9ff;
+        backdrop-filter: blur(18px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .brand-block { display: flex; flex-direction: column; gap: 4px; }
+      .brand-kicker { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.72; }
+      .brand-title { font-size: 24px; font-weight: 700; }
+      .brand-sub { font-size: 13px; color: #c6d3e6; max-width: 460px; }
+      .version-badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        margin-top: 8px;
+        padding: 2px 8px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.14);
+        color: #d7e4f4;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+      }
+
+      .nav, .header-actions, .segment, .action-row, .monitor-tabs { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      .nav button, .header-actions button, .segment button, .action-row button, .link-card {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        color: inherit;
+        padding: 10px 14px;
+        cursor: pointer;
+        font: inherit;
+        text-decoration: none;
+      }
+      .nav button.active, .segment button.active, .action-row button.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+      }
+      .page .segment button,
+      .page .action-row button,
+      .page .link-card {
+        border-color: var(--line);
+        background: var(--panel-strong);
+        color: var(--ink);
+      }
+      .page .segment button.active,
+      .page .action-row button.primary {
+        color: #fff;
+      }
+      .lang-switcher {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 2px 4px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.06);
+      }
+      .lang-switcher button {
+        min-width: 42px;
+        border-radius: 999px;
+        padding: 8px 10px;
+        background: transparent;
+      }
+      .lang-switcher .active {
+        background: rgba(255,255,255,0.14);
+      }
+      .icon-button {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0;
+      }
+      .icon-button svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .main { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+      .hero {
+        background: linear-gradient(135deg, rgba(15, 76, 129, 0.96), rgba(24, 40, 72, 0.95));
+        color: #f4f8ff;
+        border-radius: 28px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+      }
+      .hero h1 { margin: 0 0 10px; font-size: clamp(28px, 4.2vw, 46px); }
+      .hero p { margin: 0; max-width: 760px; line-height: 1.6; color: #d7e4f4; }
+      .release { margin-top: 12px; font-size: 13px; color: #b9cae0; }
+
+      .page { display: none; }
+      .page.active { display: block; }
+      .grid { display: grid; gap: 18px; grid-template-columns: 320px minmax(0, 1fr); }
+      .page-grid { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+      }
+      .panel h2, .panel h3, .panel p { margin-top: 0; }
+      .stack { display: flex; flex-direction: column; gap: 12px; }
+      .metric, .record, .message-box, .link-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+        background: var(--panel-strong);
+      }
+      .metric { display: flex; justify-content: space-between; gap: 12px; }
+      .metric .label { color: var(--muted); }
+      .control label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 8px; }
+      .control select {
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: var(--panel-strong);
+        color: var(--ink);
+        padding: 12px;
+        font: inherit;
+      }
+      .card-strip { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .mini-card {
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 16px;
+        background: var(--panel-strong);
+      }
+      .chat { display: grid; gap: 12px; }
+      .bubble { padding: 14px 16px; border-radius: 18px; max-width: 88%; line-height: 1.55; }
+      .bubble.user { margin-left: auto; background: rgba(15, 76, 129, 0.12); }
+      .bubble.platform { background: rgba(255, 159, 28, 0.16); }
+      .small { font-size: 13px; color: var(--muted); }
+      .warning {
+        border: 1px solid rgba(181, 71, 8, 0.35);
+        background: rgba(181, 71, 8, 0.12);
+      }
+      .success {
+        border: 1px solid rgba(19, 121, 91, 0.35);
+        background: rgba(19, 121, 91, 0.12);
+      }
+      .danger {
+        border: 1px solid rgba(180, 35, 24, 0.35);
+        background: rgba(180, 35, 24, 0.12);
+      }
+      .header-row { display: flex; justify-content: space-between; align-items: start; gap: 16px; margin-bottom: 14px; }
+      .code { font-family: "IBM Plex Mono", monospace; font-size: 12px; white-space: pre-wrap; }
+
+      @media (max-width: 1120px) {
+        .grid, .page-grid, .card-strip { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body data-theme="day">
+    <div class="shell">
+      <header class="header">
+        <div class="brand-block">
+          <div class="brand-kicker" id="brandKicker">Incident-style appointment cockpit</div>
+          <div class="brand-title" id="brandTitle">Appointment Agent Cockpit</div>
+          <div class="brand-sub" id="brandSub">Shared shell for dashboard, monitoring, settings, Google demo control, and docs.</div>
+          <div class="version-badge" id="headerVersion">v__VERSION__</div>
+        </div>
+        <nav class="nav" id="navTabs"></nav>
+        <div class="header-actions">
+          <div class="lang-switcher">
+            <button id="langDeBtn">DE</button>
+            <button id="langEnBtn" class="active">EN</button>
+          </div>
+          <button id="themeToggle" class="icon-button" aria-label="Theme toggle" title="Theme toggle">
+            <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <button id="helpButton" class="icon-button" aria-label="Help" title="Help">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="main">
+        <section class="hero">
+          <h1 id="heroTitle">A stable Incident-style cockpit shell for every operator page</h1>
+          <p id="heroText">Dashboard explains the story, Monitoring shows the technical trail, Settings shows the parameters, and Google Demo Control keeps calendar actions in one dedicated place.</p>
+          <div class="release" id="releaseText">Release: __VERSION__</div>
+        </section>
+
+        <section class="page active" id="page-dashboard">
+          <div class="header-row">
+            <div>
+              <h2 id="dashboardPageTitle">Dashboard</h2>
+              <p id="dashboardPageSub">Business-first overview with current story, slots, and operator summary.</p>
+            </div>
+          </div>
+          <div class="grid">
+            <aside class="panel">
+              <h2 id="operatorTitle">Operator Panel</h2>
+              <div class="stack">
+                <div class="control">
+                  <label id="scenarioLabel">Scenario</label>
+                  <select id="scenarioSelect"></select>
+                </div>
+                <div class="control">
+                  <label id="dashboardModeLabel">Dashboard Mode</label>
+                  <div class="segment" id="dashboardModeButtons"></div>
+                </div>
+                <div class="action-row">
+                  <button id="restartBtn">Restart Story</button>
+                  <button id="nextBtn" class="primary">Next Step</button>
+                </div>
+                <div class="message-box warning" id="dashboardHint">Google calendar actions now live in the Google Demo Control page in the top header.</div>
+              </div>
+            </aside>
+            <section class="stack">
+              <div class="card-strip">
+                <div class="mini-card"><h3 id="summaryOneTitle">Current Story</h3><div id="summaryOne"></div></div>
+                <div class="mini-card"><h3 id="summaryTwoTitle">Current Mode</h3><div id="summaryTwo"></div></div>
+                <div class="mini-card"><h3 id="summaryThreeTitle">Google Workspace</h3><div id="summaryThree"></div></div>
+              </div>
+              <div class="page-grid">
+                <article class="panel">
+                  <h2 id="demoPaneTitle">Demo</h2>
+                  <div class="chat" id="chatStream"></div>
+                  <div class="stack" id="slotList"></div>
+                  <div class="record small" id="speakerNotes"></div>
+                </article>
+                <article class="panel">
+                  <h2 id="dashboardTechTitle">Operator Summary</h2>
+                  <div class="stack" id="dashboardSummary"></div>
+                </article>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-monitoring">
+          <div class="panel">
+            <h2 id="monitoringTitle">Monitoring</h2>
+            <p id="monitoringSub" class="small">Technical events, trace IDs, and timing data stay in one shared shell.</p>
+            <div class="monitor-tabs" id="monitorTabs"></div>
+            <div id="monitoringBody"></div>
+          </div>
+        </section>
+
+        <section class="page" id="page-settings">
+          <div class="panel">
+            <h2 id="settingsTitle">Settings</h2>
+            <p id="settingsSub" class="small">These are the main runtime parameters that shape scheduling and operator behavior.</p>
+            <div class="page-grid" id="settingsGrid"></div>
+          </div>
+        </section>
+
+        <section class="page" id="page-google-demo-control">
+          <div class="header-row">
+            <div>
+              <h2 id="googleControlTitle">Google Demo Control</h2>
+              <p id="googleControlSub">Use this page when you want to prepare, generate, delete, or reset demo appointments.</p>
+            </div>
+          </div>
+          <div class="page-grid">
+            <article class="panel">
+              <h3 id="googleModeTitle">Google Mode</h3>
+              <div class="stack">
+                <div class="segment">
+                  <button id="googleSimulationBtn" class="active">Simulation</button>
+                  <button id="googleTestBtn">Test</button>
+                </div>
+                <div class="message-box warning" id="googleModeHint">Simulation does not write to Google Calendar. Test writes to the real configured Google test calendar.</div>
+                <div class="message-box" id="googleModeStatus">Current mode: Simulation. No real Google calendar entries will be created.</div>
+                <div class="control">
+                  <label id="googleTimeframeLabel">Timeframe</label>
+                  <select id="googleTimeframeSelect">
+                    <option value="day">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                  </select>
+                </div>
+                <div class="control">
+                  <label id="googleCountLabel">Appointment Count</label>
+                  <select id="googleCountSelect">
+                    <option value="4">4</option>
+                    <option value="6" selected>6</option>
+                    <option value="8">8</option>
+                    <option value="12">12</option>
+                  </select>
+                </div>
+                <div class="control">
+                  <label id="googleVerticalLabel">Vertical / Scenario</label>
+                  <select id="googleVerticalSelect"></select>
+                </div>
+                <div class="action-row">
+                  <button id="googlePrepareBtn">Prepare Demo Calendar</button>
+                  <button id="googleGenerateBtn" class="primary">Generate Demo Appointments</button>
+                  <button id="googleDeleteBtn">Delete Demo Appointments</button>
+                  <button id="googleResetBtn">Reset Demo Calendar</button>
+                </div>
+                <div class="message-box" id="googleActionFeedback">No Google demo action has run yet.</div>
+              </div>
+            </article>
+
+            <article class="panel">
+              <h3 id="googleLiveTitle">Current Google Target</h3>
+              <div class="stack" id="googleLiveGrid"></div>
+            </article>
+
+            <article class="panel">
+              <h3 id="googleResultTitle">Last Calendar Result</h3>
+              <div class="stack" id="googleResultGrid"></div>
+            </article>
+
+            <article class="panel">
+              <h3 id="googleConflictTitle">Live Sync and Conflict Preview</h3>
+              <div class="stack" id="googleConflictGrid"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-help">
+          <div class="panel">
+            <h2 id="helpTitle">Help and Documentation</h2>
+            <p id="helpSub" class="small">The Incident-style shell is permanent. New UI work should extend this shell, not redesign it.</p>
+            <div class="page-grid" id="helpGrid"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const VERSION = "__VERSION__";
+      const GOOGLE_API_VERSION = "v1.1.0-patch3";
+      const state = {
+        payload: null,
+        language: "en",
+        theme: "day",
+        page: "dashboard",
+        scenarioId: null,
+        stepIndex: 0,
+        dashboardMode: "combined",
+        googleMode: "simulation",
+        googleTimeframe: "day",
+        googleCount: 6,
+        selectedVertical: "dentist",
+        monitorTab: "timeline",
+        googleStatus: null,
+        googleActionFeedback: null,
+        googleLastResult: null,
+        googleConflictResult: null,
+      };
+
+      const copy = {
+        en: {
+          dashboard: "Dashboard",
+          monitoring: "Monitoring",
+          settings: "Settings",
+          googleDemoControl: "Google Demo Control",
+          help: "Help",
+          heroTitle: "A stable Incident-style cockpit shell for every operator page",
+          heroText: "Dashboard explains the story, Monitoring shows the technical trail, Settings shows the parameters, and Google Demo Control keeps calendar actions in one dedicated place.",
+          dashboardPageTitle: "Dashboard",
+          dashboardPageSub: "Business-first overview with current story, slots, and operator summary.",
+          operatorTitle: "Operator Panel",
+          scenario: "Scenario",
+          dashboardMode: "Dashboard Mode",
+          dashboardHint: "Google calendar actions now live in the Google Demo Control page in the top header.",
+          restart: "Restart Story",
+          next: "Next Step",
+          currentStory: "Current Story",
+          currentMode: "Current Mode",
+          googleWorkspace: "Google Workspace",
+          demoPaneTitle: "Demo",
+          dashboardTechTitle: "Operator Summary",
+          monitoringTitle: "Monitoring",
+          monitoringSub: "Technical events, trace IDs, and timing data stay in one shared shell.",
+          settingsTitle: "Settings",
+          settingsSub: "These are the main runtime parameters that shape scheduling and operator behavior.",
+          googleControlTitle: "Google Demo Control",
+          googleControlSub: "Use this page when you want to prepare, generate, delete, or reset demo appointments.",
+          googleModeTitle: "Google Mode",
+          googleModeHint: "Simulation does not write to Google Calendar. Test writes to the real configured Google test calendar.",
+          googleModeStatusSimulation: "Current mode: Simulation. No real Google calendar entries will be created.",
+          googleModeStatusTest: "Current mode: Test. Generate, Delete, and Reset will change the real configured Google test calendar.",
+          timeframe: "Timeframe",
+          count: "Appointment Count",
+          vertical: "Vertical / Scenario",
+          prepare: "Prepare Demo Calendar",
+          generate: "Generate Demo Appointments",
+          deleteAction: "Delete Demo Appointments",
+          reset: "Reset Demo Calendar",
+          noGoogleActionYet: "No Google demo action has run yet.",
+          googleLiveTitle: "Current Google Target",
+          googleResultTitle: "Last Calendar Result",
+          googleConflictTitle: "Live Sync and Conflict Preview",
+          helpTitle: "Help and Documentation",
+          helpSub: "The Incident-style shell is permanent. New UI work should extend this shell, not redesign it.",
+          simulation: "Simulation",
+          test: "Test",
+          today: "Today",
+          thisWeek: "This Week",
+          thisMonth: "This Month",
+          themeDay: "Day",
+          themeNight: "Night",
+          loading: "Loading...",
+          mode: "Mode",
+          scenarioSummary: "Scenario",
+          traceId: "Trace ID",
+          correlationId: "Correlation ID",
+          liveWrites: "Live Calendar Writes",
+          targetCalendar: "Target Calendar",
+          targetCalendarId: "Target Calendar ID",
+          requestedMode: "Requested Mode",
+          generatedCount: "Generated Items",
+          deletedCount: "Deleted Items",
+          action: "Action",
+          success: "Success",
+          failure: "Failure",
+          conflict: "Conflict",
+          reason: "Reason",
+          nextActionsLabel: "Next Actions",
+          docsOpen: "Open guide",
+          tabsTimeline: "Timeline",
+          tabsTrace: "Trace",
+          tabsPerformance: "Performance",
+          prepareSuccess: "Preview prepared. No real calendar entries were written.",
+          generateSuccess: "Demo appointments were created successfully.",
+          deleteSuccess: "Demo appointments were deleted successfully.",
+          resetSuccess: "Demo calendar was reset successfully.",
+        },
+        de: {
+          dashboard: "Dashboard",
+          monitoring: "Monitoring",
+          settings: "Einstellungen",
+          googleDemoControl: "Google Demo Control",
+          help: "Hilfe",
+          heroTitle: "Eine stabile Incident-artige Cockpit-Shell fuer alle Operator-Seiten",
+          heroText: "Dashboard erklaert die Story, Monitoring zeigt die technische Spur, Einstellungen zeigen die Parameter und Google Demo Control buendelt alle Kalenderaktionen an einem Ort.",
+          dashboardPageTitle: "Dashboard",
+          dashboardPageSub: "Business-orientierter Ueberblick mit aktueller Story, Slots und Operator-Zusammenfassung.",
+          operatorTitle: "Operator Panel",
+          scenario: "Szenario",
+          dashboardMode: "Dashboard Modus",
+          dashboardHint: "Google Kalenderaktionen liegen jetzt im eigenen Google Demo Control Bereich im Kopfmenue.",
+          restart: "Story neu starten",
+          next: "Naechster Schritt",
+          currentStory: "Aktuelle Story",
+          currentMode: "Aktueller Modus",
+          googleWorkspace: "Google Arbeitsbereich",
+          demoPaneTitle: "Demo",
+          dashboardTechTitle: "Operator Zusammenfassung",
+          monitoringTitle: "Monitoring",
+          monitoringSub: "Technische Events, Trace IDs und Zeitdaten bleiben in einer gemeinsamen Shell.",
+          settingsTitle: "Einstellungen",
+          settingsSub: "Das sind die wichtigsten Laufzeitparameter fuer Scheduling und Operator-Verhalten.",
+          googleControlTitle: "Google Demo Control",
+          googleControlSub: "Nutze diese Seite, wenn du Demo-Termine vorbereiten, erzeugen, loeschen oder zuruecksetzen willst.",
+          googleModeTitle: "Google Modus",
+          googleModeHint: "Simulation schreibt nicht in den Google Kalender. Test schreibt in den real konfigurierten Google Testkalender.",
+          googleModeStatusSimulation: "Aktueller Modus: Simulation. Es werden keine echten Google Kalendereintraege erzeugt.",
+          googleModeStatusTest: "Aktueller Modus: Test. Generate, Delete und Reset aendern den real konfigurierten Google Testkalender.",
+          timeframe: "Zeitraum",
+          count: "Anzahl Termine",
+          vertical: "Vertical / Szenario",
+          prepare: "Demo Kalender vorbereiten",
+          generate: "Demo Termine erzeugen",
+          deleteAction: "Demo Termine loeschen",
+          reset: "Demo Kalender zuruecksetzen",
+          noGoogleActionYet: "Es wurde noch keine Google Demo Aktion ausgefuehrt.",
+          googleLiveTitle: "Aktuelles Google Ziel",
+          googleResultTitle: "Letztes Kalenderergebnis",
+          googleConflictTitle: "Live Sync und Konfliktvorschau",
+          helpTitle: "Hilfe und Dokumentation",
+          helpSub: "Die Incident-artige Shell ist dauerhaft. Neue UI-Arbeit soll diese Shell erweitern und nicht neu erfinden.",
+          simulation: "Simulation",
+          test: "Test",
+          today: "Heute",
+          thisWeek: "Diese Woche",
+          thisMonth: "Dieser Monat",
+          themeDay: "Tag",
+          themeNight: "Nacht",
+          loading: "Laedt...",
+          mode: "Modus",
+          scenarioSummary: "Szenario",
+          traceId: "Trace ID",
+          correlationId: "Correlation ID",
+          liveWrites: "Live Kalender Schreibzugriffe",
+          targetCalendar: "Zielkalender",
+          targetCalendarId: "Zielkalender ID",
+          requestedMode: "Angeforderter Modus",
+          generatedCount: "Erzeugte Elemente",
+          deletedCount: "Geloeschte Elemente",
+          action: "Aktion",
+          success: "Erfolg",
+          failure: "Fehler",
+          conflict: "Konflikt",
+          reason: "Grund",
+          nextActionsLabel: "Naechste Schritte",
+          docsOpen: "Leitfaden oeffnen",
+          tabsTimeline: "Timeline",
+          tabsTrace: "Trace",
+          tabsPerformance: "Performance",
+          prepareSuccess: "Vorschau vorbereitet. Es wurden keine echten Kalendereintraege geschrieben.",
+          generateSuccess: "Demo Termine wurden erfolgreich erzeugt.",
+          deleteSuccess: "Demo Termine wurden erfolgreich geloescht.",
+          resetSuccess: "Demo Kalender wurde erfolgreich zurueckgesetzt.",
+        },
+      };
+
+      const refs = {
+        navTabs: document.getElementById("navTabs"),
+        langDeBtn: document.getElementById("langDeBtn"),
+        langEnBtn: document.getElementById("langEnBtn"),
+        themeToggle: document.getElementById("themeToggle"),
+        helpButton: document.getElementById("helpButton"),
+        heroTitle: document.getElementById("heroTitle"),
+        heroText: document.getElementById("heroText"),
+        releaseText: document.getElementById("releaseText"),
+        dashboardPageTitle: document.getElementById("dashboardPageTitle"),
+        dashboardPageSub: document.getElementById("dashboardPageSub"),
+        operatorTitle: document.getElementById("operatorTitle"),
+        scenarioLabel: document.getElementById("scenarioLabel"),
+        dashboardModeLabel: document.getElementById("dashboardModeLabel"),
+        dashboardHint: document.getElementById("dashboardHint"),
+        restartBtn: document.getElementById("restartBtn"),
+        nextBtn: document.getElementById("nextBtn"),
+        summaryOneTitle: document.getElementById("summaryOneTitle"),
+        summaryTwoTitle: document.getElementById("summaryTwoTitle"),
+        summaryThreeTitle: document.getElementById("summaryThreeTitle"),
+        demoPaneTitle: document.getElementById("demoPaneTitle"),
+        dashboardTechTitle: document.getElementById("dashboardTechTitle"),
+        monitoringTitle: document.getElementById("monitoringTitle"),
+        monitoringSub: document.getElementById("monitoringSub"),
+        settingsTitle: document.getElementById("settingsTitle"),
+        settingsSub: document.getElementById("settingsSub"),
+        googleControlTitle: document.getElementById("googleControlTitle"),
+        googleControlSub: document.getElementById("googleControlSub"),
+        googleModeTitle: document.getElementById("googleModeTitle"),
+        googleModeHint: document.getElementById("googleModeHint"),
+        googleModeStatus: document.getElementById("googleModeStatus"),
+        googleTimeframeLabel: document.getElementById("googleTimeframeLabel"),
+        googleCountLabel: document.getElementById("googleCountLabel"),
+        googleVerticalLabel: document.getElementById("googleVerticalLabel"),
+        googlePrepareBtn: document.getElementById("googlePrepareBtn"),
+        googleGenerateBtn: document.getElementById("googleGenerateBtn"),
+        googleDeleteBtn: document.getElementById("googleDeleteBtn"),
+        googleResetBtn: document.getElementById("googleResetBtn"),
+        googleActionFeedback: document.getElementById("googleActionFeedback"),
+        googleLiveTitle: document.getElementById("googleLiveTitle"),
+        googleResultTitle: document.getElementById("googleResultTitle"),
+        googleConflictTitle: document.getElementById("googleConflictTitle"),
+        helpTitle: document.getElementById("helpTitle"),
+        helpSub: document.getElementById("helpSub"),
+        scenarioSelect: document.getElementById("scenarioSelect"),
+        dashboardModeButtons: document.getElementById("dashboardModeButtons"),
+        chatStream: document.getElementById("chatStream"),
+        slotList: document.getElementById("slotList"),
+        speakerNotes: document.getElementById("speakerNotes"),
+        dashboardSummary: document.getElementById("dashboardSummary"),
+        summaryOne: document.getElementById("summaryOne"),
+        summaryTwo: document.getElementById("summaryTwo"),
+        summaryThree: document.getElementById("summaryThree"),
+        monitorTabs: document.getElementById("monitorTabs"),
+        monitoringBody: document.getElementById("monitoringBody"),
+        settingsGrid: document.getElementById("settingsGrid"),
+        helpGrid: document.getElementById("helpGrid"),
+        googleSimulationBtn: document.getElementById("googleSimulationBtn"),
+        googleTestBtn: document.getElementById("googleTestBtn"),
+        googleTimeframeSelect: document.getElementById("googleTimeframeSelect"),
+        googleCountSelect: document.getElementById("googleCountSelect"),
+        googleVerticalSelect: document.getElementById("googleVerticalSelect"),
+        googleLiveGrid: document.getElementById("googleLiveGrid"),
+        googleResultGrid: document.getElementById("googleResultGrid"),
+        googleConflictGrid: document.getElementById("googleConflictGrid"),
+      };
+
+      function t(key) {
+        return (copy[state.language] || copy.en)[key] || key;
+      }
+
+      function fetchJson(url, options = undefined) {
+        return fetch(url, options).then(async (response) => {
+          const payload = await response.json();
+          if (!response.ok) {
+            const detail = payload.detail && payload.detail.message ? payload.detail.message : JSON.stringify(payload);
+            throw new Error(detail);
+          }
+          return payload;
+        });
+      }
+
+      function currentScenario() {
+        return state.payload.scenarios.find((scenario) => scenario.id === state.scenarioId) || state.payload.scenarios[0];
+      }
+
+      function currentStep() {
+        const scenario = currentScenario();
+        return scenario.steps[Math.min(state.stepIndex, scenario.steps.length - 1)];
+      }
+
+      function buildConversation(step) {
+        const conversation = [];
+        if (step.customer_message) {
+          conversation.push({ role: "user", text: step.customer_message });
+        }
+        if (step.platform_message) {
+          conversation.push({ role: "platform", text: step.platform_message });
+        }
+        if (Array.isArray(step.chat) && step.chat.length) {
+          return step.chat;
+        }
+        return conversation;
+      }
+
+      function buildVisibleSlots(step) {
+        if (Array.isArray(step.slots) && step.slots.length) {
+          return step.slots;
+        }
+        if (Array.isArray(step.slot_options) && step.slot_options.length) {
+          return step.slot_options.map((slot, index) => ({
+            label: slot.label || slot.start_time || `Slot ${index + 1}`,
+            status: slot.status || "available",
+          }));
+        }
+        return [];
+      }
+
+      function googleApiBase() {
+        return `/api/google/${GOOGLE_API_VERSION}`;
+      }
+
+      function successMessageForAction(action) {
+        if (action === "prepare") return t("prepareSuccess");
+        if (action === "generate") return t("generateSuccess");
+        if (action === "delete") return t("deleteSuccess");
+        return t("resetSuccess");
+      }
+
+      function renderNav() {
+        refs.navTabs.innerHTML = "";
+        state.payload.pages.forEach((page) => {
+          const button = document.createElement("button");
+          button.textContent = page.label;
+          if (page.id === state.page) {
+            button.classList.add("active");
+          }
+          button.addEventListener("click", () => {
+            state.page = page.id;
+            render();
+          });
+          refs.navTabs.appendChild(button);
+        });
+      }
+
+      function renderPages() {
+        document.querySelectorAll(".page").forEach((page) => {
+          page.classList.toggle("active", page.id === `page-${state.page}`);
+        });
+      }
+
+      function renderStaticCopy() {
+        document.title = `Appointment Agent Cockpit ${VERSION}`;
+        refs.heroTitle.textContent = t("heroTitle");
+        refs.heroText.textContent = t("heroText");
+        refs.releaseText.textContent = `Release: ${VERSION}`;
+        refs.dashboardPageTitle.textContent = t("dashboardPageTitle");
+        refs.dashboardPageSub.textContent = t("dashboardPageSub");
+        refs.operatorTitle.textContent = t("operatorTitle");
+        refs.scenarioLabel.textContent = t("scenario");
+        refs.dashboardModeLabel.textContent = t("dashboardMode");
+        refs.dashboardHint.textContent = t("dashboardHint");
+        refs.restartBtn.textContent = t("restart");
+        refs.nextBtn.textContent = t("next");
+        refs.summaryOneTitle.textContent = t("currentStory");
+        refs.summaryTwoTitle.textContent = t("currentMode");
+        refs.summaryThreeTitle.textContent = t("googleWorkspace");
+        refs.demoPaneTitle.textContent = t("demoPaneTitle");
+        refs.dashboardTechTitle.textContent = t("dashboardTechTitle");
+        refs.monitoringTitle.textContent = t("monitoringTitle");
+        refs.monitoringSub.textContent = t("monitoringSub");
+        refs.settingsTitle.textContent = t("settingsTitle");
+        refs.settingsSub.textContent = t("settingsSub");
+        refs.googleControlTitle.textContent = t("googleControlTitle");
+        refs.googleControlSub.textContent = t("googleControlSub");
+        refs.googleModeTitle.textContent = t("googleModeTitle");
+        refs.googleModeHint.textContent = t("googleModeHint");
+        refs.googleModeStatus.textContent = state.googleMode === "test" ? t("googleModeStatusTest") : t("googleModeStatusSimulation");
+        refs.googleTimeframeLabel.textContent = t("timeframe");
+        refs.googleCountLabel.textContent = t("count");
+        refs.googleVerticalLabel.textContent = t("vertical");
+        refs.googlePrepareBtn.textContent = t("prepare");
+        refs.googleGenerateBtn.textContent = t("generate");
+        refs.googleDeleteBtn.textContent = t("deleteAction");
+        refs.googleResetBtn.textContent = t("reset");
+        refs.googleLiveTitle.textContent = t("googleLiveTitle");
+        refs.googleResultTitle.textContent = t("googleResultTitle");
+        refs.googleConflictTitle.textContent = t("googleConflictTitle");
+        refs.helpTitle.textContent = t("helpTitle");
+        refs.helpSub.textContent = t("helpSub");
+        refs.googleTimeframeSelect.options[0].text = t("today");
+        refs.googleTimeframeSelect.options[1].text = t("thisWeek");
+        refs.googleTimeframeSelect.options[2].text = t("thisMonth");
+        refs.langDeBtn.classList.toggle("active", state.language === "de");
+        refs.langEnBtn.classList.toggle("active", state.language === "en");
+      }
+
+      function renderScenarioSelect() {
+        refs.scenarioSelect.innerHTML = "";
+        state.payload.scenarios.forEach((scenario) => {
+          const option = document.createElement("option");
+          option.value = scenario.id;
+          option.textContent = scenario.title;
+          option.selected = scenario.id === state.scenarioId;
+          refs.scenarioSelect.appendChild(option);
+        });
+      }
+
+      function renderDashboardModes() {
+        refs.dashboardModeButtons.innerHTML = "";
+        state.payload.dashboard_modes.forEach((mode) => {
+          const button = document.createElement("button");
+          button.textContent = mode.label;
+          if (mode.id === state.dashboardMode) {
+            button.classList.add("active");
+          }
+          button.addEventListener("click", () => {
+            state.dashboardMode = mode.id;
+            render();
+          });
+          refs.dashboardModeButtons.appendChild(button);
+        });
+      }
+
+      function renderDemo() {
+        const scenario = currentScenario();
+        const step = currentStep();
+        const conversation = buildConversation(step);
+        const visibleSlots = buildVisibleSlots(step);
+        refs.chatStream.innerHTML = "";
+        conversation.forEach((entry) => {
+          const bubble = document.createElement("div");
+          bubble.className = `bubble ${entry.role}`;
+          bubble.textContent = entry.text;
+          refs.chatStream.appendChild(bubble);
+        });
+        if (!conversation.length) {
+          const empty = document.createElement("div");
+          empty.className = "record small";
+          empty.textContent = scenario.simple_explanation || "No demo conversation available yet.";
+          refs.chatStream.appendChild(empty);
+        }
+        refs.slotList.innerHTML = "";
+        visibleSlots.forEach((slot) => {
+          const card = document.createElement("div");
+          card.className = "record";
+          card.textContent = `${slot.label} (${slot.status})`;
+          refs.slotList.appendChild(card);
+        });
+        if (!visibleSlots.length) {
+          const empty = document.createElement("div");
+          empty.className = "record small";
+          empty.textContent = "No visible slot list for this step.";
+          refs.slotList.appendChild(empty);
+        }
+        refs.speakerNotes.textContent = step.speaker_notes || scenario.simple_explanation;
+        refs.summaryOne.textContent = scenario.title;
+        refs.summaryTwo.textContent = `${t("mode")}: ${state.googleMode === "test" ? t("test") : t("simulation")}`;
+        refs.summaryThree.textContent = state.selectedVertical;
+        refs.dashboardSummary.innerHTML = "";
+        [
+          [t("scenarioSummary"), scenario.title],
+          [t("traceId"), step.trace_id || "-"],
+          [t("correlationId"), step.correlation_id || "-"],
+          ["Journey ID", step.journey_id || "-"],
+          ["Booking Ref", step.booking_reference || "-"],
+        ].forEach(([label, value]) => {
+          const metric = document.createElement("div");
+          metric.className = "metric";
+          metric.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.dashboardSummary.appendChild(metric);
+        });
+      }
+
+      function renderMonitoring() {
+        refs.monitorTabs.innerHTML = "";
+        const tabs = [
+          { id: "timeline", label: t("tabsTimeline") },
+          { id: "trace", label: t("tabsTrace") },
+          { id: "performance", label: t("tabsPerformance") },
+        ];
+        tabs.forEach((tab) => {
+          const button = document.createElement("button");
+          button.textContent = tab.label;
+          if (tab.id === state.monitorTab) {
+            button.classList.add("active");
+          }
+          button.addEventListener("click", () => {
+            state.monitorTab = tab.id;
+            renderMonitoring();
+          });
+          refs.monitorTabs.appendChild(button);
+        });
+        const step = currentStep();
+        const records =
+          state.monitorTab === "timeline" ? (step.events || []) :
+          state.monitorTab === "trace" ? [{ event_type: "trace", payload: { trace_id: step.trace_id, correlation_id: step.correlation_id } }] :
+          [{ event_type: "performance", payload: step.performance || { latency_ms: 120, services: 3 } }];
+        refs.monitoringBody.innerHTML = "";
+        if (!records.length) {
+          const entry = document.createElement("div");
+          entry.className = "record small";
+          entry.textContent = "No monitoring data available for this step.";
+          refs.monitoringBody.appendChild(entry);
+          return;
+        }
+        records.forEach((record) => {
+          const entry = document.createElement("div");
+          entry.className = "record";
+          entry.innerHTML = `<strong>${record.event_type || "event"}</strong><div class="code">${JSON.stringify(record.payload || record, null, 2)}</div>`;
+          refs.monitoringBody.appendChild(entry);
+        });
+      }
+
+      function renderSettings() {
+        refs.settingsGrid.innerHTML = "";
+        state.payload.settings_snapshot.forEach((item) => {
+          const card = document.createElement("div");
+          card.className = "mini-card";
+          card.innerHTML = `<h3>${item.label}</h3><p>${item.value}</p>`;
+          refs.settingsGrid.appendChild(card);
+        });
+      }
+
+      function renderHelp() {
+        refs.helpGrid.innerHTML = "";
+        state.payload.help_links.forEach((item) => {
+          const card = document.createElement("a");
+          card.className = "link-card";
+          card.href = item.href;
+          card.textContent = `${item.label} - ${t("docsOpen")}`;
+          refs.helpGrid.appendChild(card);
+        });
+      }
+
+      function renderVerticalSelect() {
+        refs.googleVerticalSelect.innerHTML = "";
+        state.payload.verticals.forEach((vertical) => {
+          const option = document.createElement("option");
+          option.value = vertical.id;
+          option.textContent = `${vertical.label} - ${vertical.description}`;
+          option.selected = vertical.id === state.selectedVertical;
+          refs.googleVerticalSelect.appendChild(option);
+        });
+      }
+
+      function renderGooglePanels() {
+        refs.googleSimulationBtn.classList.toggle("active", state.googleMode === "simulation");
+        refs.googleTestBtn.classList.toggle("active", state.googleMode === "test");
+        refs.googleModeStatus.textContent = state.googleMode === "test" ? t("googleModeStatusTest") : t("googleModeStatusSimulation");
+        refs.googleActionFeedback.className = "message-box";
+        refs.googleActionFeedback.textContent = state.googleActionFeedback ? state.googleActionFeedback.message : t("noGoogleActionYet");
+        if (state.googleActionFeedback?.kind === "success") refs.googleActionFeedback.classList.add("success");
+        if (state.googleActionFeedback?.kind === "error") refs.googleActionFeedback.classList.add("danger");
+        if (state.googleActionFeedback?.kind === "loading") refs.googleActionFeedback.classList.add("warning");
+
+        refs.googleLiveGrid.innerHTML = "";
+        const status = state.googleStatus || {};
+        [
+          [t("requestedMode"), status.mode || state.googleMode],
+          [t("liveWrites"), String(Boolean(status.live_calendar_writes))],
+          [t("targetCalendar"), status.calendar_summary || "-"],
+          [t("targetCalendarId"), status.calendar_id || "-"],
+        ].forEach(([label, value]) => {
+          const metric = document.createElement("div");
+          metric.className = "metric";
+          metric.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.googleLiveGrid.appendChild(metric);
+        });
+
+        refs.googleResultGrid.innerHTML = "";
+        const result = state.googleLastResult || {};
+        [
+          [t("action"), result.action || "-"],
+          [t("success"), String(Boolean(result.success))],
+          [t("generatedCount"), String(result.generated_count || 0)],
+          [t("deletedCount"), String(result.deleted_count || 0)],
+        ].forEach(([label, value]) => {
+          const metric = document.createElement("div");
+          metric.className = "metric";
+          metric.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.googleResultGrid.appendChild(metric);
+        });
+
+        refs.googleConflictGrid.innerHTML = "";
+        const conflict = state.googleConflictResult || {};
+        [
+          [t("conflict"), String(Boolean(conflict.has_conflict))],
+          [t("reason"), conflict.reason || "-"],
+          [t("nextActionsLabel"), (conflict.next_actions || []).join(", ") || "-"],
+        ].forEach(([label, value]) => {
+          const metric = document.createElement("div");
+          metric.className = "metric";
+          metric.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.googleConflictGrid.appendChild(metric);
+        });
+      }
+
+      function render() {
+        renderNav();
+        renderPages();
+        renderStaticCopy();
+        renderScenarioSelect();
+        renderDashboardModes();
+        renderDemo();
+        renderMonitoring();
+        renderSettings();
+        renderHelp();
+        renderVerticalSelect();
+        renderGooglePanels();
+      }
+
+      function loadPayload() {
+        return fetchJson(`/api/demo-monitoring/${VERSION}/payload?lang=${state.language}`).then((payload) => {
+          state.payload = payload;
+          if (!state.scenarioId) {
+            state.scenarioId = payload.scenarios[0].id;
+          }
+          render();
+          return refreshGoogleStatus();
+        });
+      }
+
+      function refreshGoogleStatus() {
+        return fetchJson(`${googleApiBase()}/mode?requested_mode=${state.googleMode}`)
+          .then((payload) => {
+            state.googleStatus = payload;
+            return fetchJson(`${googleApiBase()}/live-sync/status`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ mode: state.googleMode, timeframe: state.googleTimeframe }),
+            });
+          })
+          .then((payload) => {
+            state.googleConflictResult = {
+              has_conflict: Boolean(payload.conflicts_detected),
+              reason: payload.summary || "-",
+              next_actions: payload.next_actions || [],
+            };
+            renderGooglePanels();
+          })
+          .catch((error) => {
+            state.googleActionFeedback = { kind: "error", message: error.message };
+            renderGooglePanels();
+          });
+      }
+
+      function runGoogleDemoAction(action) {
+        state.googleActionFeedback = { kind: "loading", message: t("loading") };
+        renderGooglePanels();
+        return fetchJson(`${googleApiBase()}/demo-calendar/${action === "prepare" ? "prepare-preview" : action}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: state.googleMode,
+            timeframe: state.googleTimeframe,
+            action,
+            count: state.googleCount,
+            vertical: state.selectedVertical,
+            include_customer_name: true,
+            include_description: true,
+            include_location: true,
+          }),
+        })
+          .then((payload) => {
+            state.googleLastResult = payload;
+            state.googleActionFeedback = { kind: "success", message: successMessageForAction(action) };
+            return refreshGoogleStatus();
+          })
+          .catch((error) => {
+            state.googleActionFeedback = { kind: "error", message: error.message };
+            renderGooglePanels();
+          });
+      }
+
+      refs.langDeBtn.addEventListener("click", () => {
+        state.language = "de";
+        loadPayload();
+      });
+      refs.langEnBtn.addEventListener("click", () => {
+        state.language = "en";
+        loadPayload();
+      });
+      refs.themeToggle.addEventListener("click", () => {
+        state.theme = state.theme === "day" ? "night" : "day";
+        document.body.dataset.theme = state.theme;
+      });
+      refs.helpButton.addEventListener("click", () => {
+        state.page = "help";
+        render();
+      });
+      refs.scenarioSelect.addEventListener("change", (event) => {
+        state.scenarioId = event.target.value;
+        state.stepIndex = 0;
+        render();
+      });
+      refs.restartBtn.addEventListener("click", () => {
+        state.stepIndex = 0;
+        render();
+      });
+      refs.nextBtn.addEventListener("click", () => {
+        const scenario = currentScenario();
+        state.stepIndex = Math.min(state.stepIndex + 1, scenario.steps.length - 1);
+        render();
+      });
+      refs.googleSimulationBtn.addEventListener("click", () => {
+        state.googleMode = "simulation";
+        refreshGoogleStatus();
+      });
+      refs.googleTestBtn.addEventListener("click", () => {
+        state.googleMode = "test";
+        refreshGoogleStatus();
+      });
+      refs.googleTimeframeSelect.addEventListener("change", (event) => {
+        state.googleTimeframe = event.target.value;
+        refreshGoogleStatus();
+      });
+      refs.googleCountSelect.addEventListener("change", (event) => {
+        state.googleCount = Number(event.target.value);
+      });
+      refs.googleVerticalSelect.addEventListener("change", (event) => {
+        state.selectedVertical = event.target.value;
+      });
+      refs.googlePrepareBtn.addEventListener("click", () => runGoogleDemoAction("prepare"));
+      refs.googleGenerateBtn.addEventListener("click", () => runGoogleDemoAction("generate"));
+      refs.googleDeleteBtn.addEventListener("click", () => runGoogleDemoAction("delete"));
+      refs.googleResetBtn.addEventListener("click", () => runGoogleDemoAction("reset"));
+
+      loadPayload();
+    </script>
+  </body>
+</html>

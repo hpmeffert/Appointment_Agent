@@ -12,11 +12,11 @@ In simple words:
 
 ## Current Versions
 
-- Core internal integration line: `v1.0.4-patch2`
+- Core internal integration line: `v1.1.0-patch6`
 - Demo UI stable line: `v1.0.0`
 - Demo UI release preparation line: `v1.0.2`
-- Demo UI current patch line: `v1.0.4-patch2`
-- Docker runtime release line: `v1.0.4-patch2`
+- Demo UI current patch line: `v1.1.0-patch6`
+- Docker runtime release line: `v1.1.0-patch6`
 
 ## Main Modules
 
@@ -25,10 +25,15 @@ In simple words:
 - `apps/appointment_orchestrator/v1_0_1`
 - `apps/google_adapter/v1_0_0`
 - `apps/google_adapter/v1_0_1`
+- `apps/google_adapter/v1_1_0_patch1`
 - `apps/demo_monitoring_ui/v1_0_0`
 - `apps/demo_monitoring_ui/v1_0_2`
 - `apps/demo_monitoring_ui/v1_0_4_patch1`
 - `apps/demo_monitoring_ui/v1_0_4_patch2`
+- `apps/demo_monitoring_ui/v1_0_5`
+- `apps/demo_monitoring_ui/v1_0_6`
+- `apps/demo_monitoring_ui/v1_0_6_patch1`
+- `apps/demo_monitoring_ui/v1_1_0_patch1`
 - `apps/shared/v1_0_0`
 - `Docs/`
 
@@ -69,13 +74,13 @@ The container starts the API, demo UI routes, monitoring routes, docs routes, an
 
 The default port is `8080`.
 
-Current patch focus in `v1.0.4-patch2`:
+Current patch focus in `v1.1.0-patch6`:
 
-- event timeline view
-- correlation and trace view
-- load and concurrency simulation
-- performance panel
-- technical mode toggle
+- Google Demo Control now supports a real date range with `from_date` and `to_date`
+- appointment content is selected with `appointment_type`
+- supported types are dentist, wallbox, gas meter, and water meter
+- generated demo appointments are spread across the selected date range
+- the current recommended demo route is the dedicated cockpit line with these new controls
 
 ## How To Stop Or Reset Docker
 
@@ -97,10 +102,21 @@ Open:
 
 - Demo UI: `http://localhost:8080/ui/demo-monitoring/v1.0.0`
 - Demo UI Release Candidate: `http://localhost:8080/ui/demo-monitoring/v1.0.2`
-- Demo UI Current Patch: `http://localhost:8080/ui/demo-monitoring/v1.0.4-patch2`
+- Demo UI Current Patch: `http://localhost:8080/ui/demo-monitoring/v1.1.0-patch6`
+- Demo Cockpit v1.0.5: `http://localhost:8080/ui/demo-monitoring/v1.0.5`
+- Demo Cockpit v1.0.6: `http://localhost:8080/ui/demo-monitoring/v1.0.6`
+- Demo Cockpit v1.0.6 Patch 1: `http://localhost:8080/ui/demo-monitoring/v1.0.6-patch1`
 - Demo scenarios API: `http://localhost:8080/api/demo-monitoring/v1.0.0/scenarios`
 - Demo scenarios API Release Candidate: `http://localhost:8080/api/demo-monitoring/v1.0.2/scenarios`
-- Demo scenarios API Current Patch: `http://localhost:8080/api/demo-monitoring/v1.0.4-patch2/scenarios`
+- Demo cockpit payload Current Patch: `http://localhost:8080/api/demo-monitoring/v1.1.0-patch6/payload`
+- Demo help API Current Patch: `http://localhost:8080/api/demo-monitoring/v1.1.0-patch6/help`
+- Demo cockpit payload v1.0.5: `http://localhost:8080/api/demo-monitoring/v1.0.5/payload`
+- Demo cockpit payload v1.0.6: `http://localhost:8080/api/demo-monitoring/v1.0.6/payload`
+- Demo cockpit payload v1.0.6 Patch 1: `http://localhost:8080/api/demo-monitoring/v1.0.6-patch1/payload`
+- Google test mode status API: `http://localhost:8080/api/google/v1.1.0-patch6/mode`
+- Google live sync status API: `http://localhost:8080/api/google/v1.1.0-patch6/live-sync/status`
+- Google conflict check API: `http://localhost:8080/api/google/v1.1.0-patch6/live-sync/conflict-check`
+- Google demo calendar prepare API: `http://localhost:8080/api/google/v1.1.0-patch6/demo-calendar/prepare`
 - Help overview: `http://localhost:8080/help`
 - Health check: `http://localhost:8080/health`
 - Demo Guide: `http://localhost:8080/docs/demo`
@@ -135,10 +151,12 @@ For a quick Docker smoke test after startup:
 - Do not commit real credentials.
 - Use `.env.example` as your sample configuration.
 - Runtime database files stay local in `data/`.
+- Use `Simulation` mode until your Google test calendar is intentionally configured for live demo writes.
 
 ## Common Docker Problems
 
 - If Docker says the port is already in use, stop the other app that already uses port `8080`, or change `APPOINTMENT_AGENT_APP_PORT` in `.env`.
 - If the app cannot start, check `docker compose logs` and look for module import or path errors.
-- If the UI opens but looks empty, test the API route `/api/demo-monitoring/v1.0.4-patch2/scenarios`.
+- If the UI opens but looks empty, test the API route `/api/demo-monitoring/v1.1.0-patch6/payload`.
+- If `Test` mode says it is unavailable, check `.env` for `GOOGLE_REAL_INTEGRATION_ENABLED`, `GOOGLE_REFRESH_TOKEN`, and `GOOGLE_CALENDAR_ID`.
 - If the database cannot be written, reset with `docker compose down -v` and start again.

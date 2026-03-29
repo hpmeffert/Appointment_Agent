@@ -16,6 +16,9 @@ def test_demo_ui_page_loads() -> None:
     assert "Performance" in response.text
     assert "Combined" in response.text
     assert "Monitoring Mode" in response.text
+    assert "Google Demo Control" in response.text
+    assert "Simulation does not write to Google Calendar" in response.text
+    assert "Current mode: Simulation. No real Google calendar entries will be created." in response.text
     assert "?" in response.text
 
 
@@ -75,11 +78,11 @@ def test_docs_routes_render_markdown_in_new_pages() -> None:
 
     assert demo_response.status_code == 200
     assert "Demo Guide" in demo_response.text
-    assert "Version: v1.0.4 Patch 2" in demo_response.text
+    assert "Version: v1.1.0-patch6" in demo_response.text
     assert user_response.status_code == 200
     assert "Sprache: DE" in user_response.text
-    assert "Demo Monitoring UI Benutzerleitfaden v1.0.0 DE" in user_response.text
-    assert "Version: v1.0.4 Patch 2" in user_response.text
+    assert "User Guide Demo Monitoring UI v1.1.0 Patch 6" in user_response.text
+    assert "Version: v1.1.0-patch6" in user_response.text
     assert admin_response.status_code == 200
     assert "Admin Guide" in admin_response.text
 
@@ -93,7 +96,7 @@ def test_demo_ui_v102_release_routes_are_available() -> None:
 
     assert ui_response.status_code == 200
     assert "Appointment Agent Demo + Monitoring v1.0.2" in ui_response.text
-    assert "/api/demo-monitoring/v1.0.2/scenarios" in ui_response.text
+    assert "demoApiBase()" in ui_response.text
 
     assert help_response.status_code == 200
     assert help_response.json()["version"] == "v1.0.2"
@@ -112,10 +115,187 @@ def test_demo_ui_v104_patch1_release_routes_are_available() -> None:
     assert ui_response.status_code == 200
     assert "Appointment Agent Demo + Monitoring v1.0.4-patch2" in ui_response.text
     assert "Release shown: v1.0.4 Patch 2" in ui_response.text
-    assert "/api/demo-monitoring/v1.0.4-patch2/scenarios" in ui_response.text
+    assert "demoApiBase()" in ui_response.text
 
     assert help_response.status_code == 200
     assert help_response.json()["version"] == "v1.0.4-patch2"
 
     assert scenarios_response.status_code == 200
     assert "scenarios" in scenarios_response.json()
+
+
+def test_demo_ui_v110_patch1_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.1.0-patch1")
+    help_response = client.get("/api/demo-monitoring/v1.1.0-patch1/help")
+    scenarios_response = client.get("/api/demo-monitoring/v1.1.0-patch1/scenarios")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Demo + Monitoring v1.1.0-patch1" in ui_response.text
+    assert "Release shown: v1.1.0 Patch 1" in ui_response.text
+    assert "Google Demo Control" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.1.0-patch1"
+    assert "simulation_test_switch" in help_response.json()["google_operator_features"]
+
+    assert scenarios_response.status_code == 200
+    assert "scenarios" in scenarios_response.json()
+
+
+def test_demo_ui_v110_patch2_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.1.0-patch2")
+    help_response = client.get("/api/demo-monitoring/v1.1.0-patch2/help")
+    scenarios_response = client.get("/api/demo-monitoring/v1.1.0-patch2/scenarios")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Demo + Monitoring v1.1.0-patch2" in ui_response.text
+    assert "Release shown: v1.1.0 Patch 2" in ui_response.text
+    assert "Prepare Demo Calendar" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.1.0-patch2"
+    assert "prepare_preview" in help_response.json()["google_operator_features"]
+
+    assert scenarios_response.status_code == 200
+    assert "scenarios" in scenarios_response.json()
+
+
+def test_demo_ui_v110_patch4_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.1.0-patch4")
+    help_response = client.get("/api/demo-monitoring/v1.1.0-patch4/help")
+    scenarios_response = client.get("/api/demo-monitoring/v1.1.0-patch4/scenarios")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Demo + Monitoring v1.1.0-patch4" in ui_response.text
+    assert "Release shown: v1.1.0 Patch 4" in ui_response.text
+    assert "Google Source" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.1.0-patch4"
+    assert help_response.json()["design_baseline"] == "Incident Demo UI"
+
+    assert scenarios_response.status_code == 200
+    assert "scenarios" in scenarios_response.json()
+
+
+def test_demo_ui_v110_patch5_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.1.0-patch5")
+    help_response = client.get("/api/demo-monitoring/v1.1.0-patch5/help")
+    payload_response = client.get("/api/demo-monitoring/v1.1.0-patch5/payload")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.1.0-patch5" in ui_response.text
+    assert "Google Demo Control" in ui_response.text
+    assert "Simulation does not write to Google Calendar" in ui_response.text
+    assert "const GOOGLE_API_VERSION = \"v1.1.0-patch3\";" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.1.0-patch5"
+    assert "google-demo-control" in help_response.json()["pages"]
+    assert "dedicated_google_demo_control_page" in help_response.json()["google_demo_control_features"]
+
+    assert payload_response.status_code == 200
+    payload = payload_response.json()
+    assert payload["version"] == "v1.1.0-patch5"
+    assert payload["pages"][3]["id"] == "google-demo-control"
+    assert payload["google_demo_control"]["title"] == "Google Demo Control"
+
+
+def test_demo_ui_v110_patch6_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.1.0-patch6")
+    help_response = client.get("/api/demo-monitoring/v1.1.0-patch6/help")
+    payload_response = client.get("/api/demo-monitoring/v1.1.0-patch6/payload")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.1.0-patch6" in ui_response.text
+    assert "From Date" in ui_response.text
+    assert "Appointment Type" in ui_response.text
+    assert "const GOOGLE_API_VERSION = \"v1.1.0-patch6\";" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.1.0-patch6"
+    assert "date_range_selection" in help_response.json()["google_demo_control_features"]
+    assert "appointment_type_dropdown" in help_response.json()["google_demo_control_features"]
+
+    assert payload_response.status_code == 200
+    payload = payload_response.json()
+    assert payload["version"] == "v1.1.0-patch6"
+    assert payload["google_demo_control"]["default_from_date"]
+    assert payload["google_demo_control"]["appointment_types"][0]["id"] == "dentist"
+
+
+def test_demo_ui_v105_cockpit_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.0.5")
+    help_response = client.get("/api/demo-monitoring/v1.0.5/help")
+    payload_response = client.get("/api/demo-monitoring/v1.0.5/payload")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.0.5" in ui_response.text
+    assert "Dashboard" in ui_response.text
+    assert "Settings" in ui_response.text
+    assert "Night" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.0.5"
+    assert "dashboard" in help_response.json()["pages"]
+
+    assert payload_response.status_code == 200
+    assert payload_response.json()["version"] == "v1.0.5"
+    assert payload_response.json()["pages"][0]["id"] == "dashboard"
+
+
+def test_demo_ui_v106_vertical_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.0.6")
+    help_response = client.get("/api/demo-monitoring/v1.0.6/help")
+    payload_response = client.get("/api/demo-monitoring/v1.0.6/payload")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.0.6" in ui_response.text
+    assert "Vertical Quick Start" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.0.6"
+    assert "dentist" in help_response.json()["verticals"]
+
+    assert payload_response.status_code == 200
+    assert payload_response.json()["version"] == "v1.0.6"
+    assert payload_response.json()["verticals"][0]["id"] == "dentist"
+
+
+def test_demo_ui_v106_patch1_vertical_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.0.6-patch1")
+    help_response = client.get("/api/demo-monitoring/v1.0.6-patch1/help")
+    payload_response = client.get("/api/demo-monitoring/v1.0.6-patch1/payload")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.0.6-patch1" in ui_response.text
+    assert "Vertical Quick Start" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.0.6-patch1"
+    assert "dentist" in help_response.json()["verticals"]
+    assert "vertical_descriptions" in help_response.json()
+
+    assert payload_response.status_code == 200
+    payload = payload_response.json()
+    assert payload["version"] == "v1.0.6-patch1"
+    assert payload["verticals"][0]["id"] == "dentist"
+    assert payload["verticals"][0]["audience_fit"]
+    assert payload["verticals"][1]["reminder_example"]
+    assert payload["verticals"][2]["sample_description"]

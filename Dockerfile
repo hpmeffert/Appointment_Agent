@@ -16,7 +16,7 @@ COPY Docs /app/Docs
 COPY scripts /app/scripts
 
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -e . && \
+    pip install --no-cache-dir -e '.[google]' && \
     chmod +x /app/scripts/docker_start.sh /app/scripts/docker_smoke_test.sh && \
     mkdir -p /app/data /app/test-results
 

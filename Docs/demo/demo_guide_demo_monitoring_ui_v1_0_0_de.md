@@ -147,6 +147,110 @@ Das kannst du sagen:
 2. Der Kunde bekommt eine sichere Antwort.
 3. Audit-Trail und Eskalationsweg bleiben sichtbar.
 
+## Vorbereitung einer Google Kalender Demo
+
+### Ziel
+
+Vor einer Live-Demo soll der Kalender realistisch aussehen:
+
+- einige Zeiten sind schon belegt
+- einige Zeiten sind noch frei
+- der Kalender wirkt wie ein echter Arbeitsalltag
+
+### Schritt 1 - Auf Testmodus umschalten
+
+Im UI:
+
+- gehe zu `Google Demo Control`
+- waehle `Test`
+
+Das bedeutet:
+
+- `Simulation` bleibt komplett fake und sicher
+- `Test` benutzt den echten Google Testkalender aus deinem lokalen Setup
+
+Wichtiger Praesentationssatz:
+
+"Jetzt wechsle ich von der sicheren Simulation auf den echten Testkalender."
+
+### Schritt 2 - Kalender vorbereiten
+
+Im UI:
+
+- klicke `Prepare Demo Calendar` oder `Generate Demo Appointments`
+- waehle `Heute`, `Diese Woche` oder `Dieser Monat`
+- waehle, wie viele Termine erzeugt werden sollen
+
+Praktische Regel:
+
+- `Heute` ist gut fuer eine kurze fokussierte Demo
+- `Diese Woche` ist gut, wenn du freie und belegte Tage zeigen willst
+- `Dieser Monat` ist gut, wenn der Kalender voll und realistisch wirken soll
+
+### Was das System erzeugt
+
+Das System erzeugt realistische Demo-Eintraege, zum Beispiel:
+
+- `Dentist Appointment - Dr. Zahn (Check-up)`
+- `Heating Maintenance - Annual Inspection`
+- `Wallbox Inspection - Check Wall Box Installation`
+
+Warum das wichtig ist:
+
+- unklare Titel wirken kuenstlich
+- echte Titel machen den Google Kalender in der Live-Demo leichter verstaendlich
+
+### Schritt 3 - Kalender pruefen
+
+Oeffne:
+
+- `https://calendar.google.com`
+
+Pruefe:
+
+- welche Slots belegt sind
+- welche Slots frei sind
+- ob die echten Demo-Titel sichtbar sind
+
+Guter Praesentationssatz:
+
+"Das ist ein echter Kalender. Das System versteht Verfuegbarkeit."
+
+### Schritt 4 - Nach der Demo zuruecksetzen
+
+Im UI:
+
+- klicke `Delete Demo Appointments`
+
+Was das macht:
+
+- es entfernt nur Demo-Termine, die vom System erzeugt wurden
+- normale manuelle echte Termine sollen nicht geloescht werden
+
+Das ist sicher, weil Demo-Ereignisse klar markiert werden, bevor sie geloescht werden duerfen.
+
+### Technische Sicht
+
+- `events.insert`
+  Damit werden die Demo-Kalendertermine erzeugt.
+
+- `freeBusy`
+  Damit wird erkannt, welche Zeitfenster noch verfuegbar sind.
+
+### Parameter einfach erklaert
+
+- `mode`
+  Legt fest, ob das System fake bleibt oder in den echten Testkalender schreibt.
+
+- `timeframe`
+  Legt fest, ob die Demo-Vorbereitung fuer einen Tag, eine Woche oder einen Monat passiert.
+
+- `count`
+  Legt fest, wie viele Demo-Termine erzeugt werden sollen.
+
+- `action`
+  Legt fest, ob das System Demo-Termine erzeugen, loeschen oder komplett zuruecksetzen soll.
+
 ## So funktioniert der Service Bus
 
 Einfache Erklaerung:

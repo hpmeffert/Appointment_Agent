@@ -246,3 +246,27 @@ class AuditRecord(Base):
     human_readable_message: Mapped[str] = mapped_column(String(255))
     payload: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at_utc: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class GoogleDemoEventRecord(Base):
+    __tablename__ = "google_demo_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    operation_id: Mapped[str] = mapped_column(String(80), index=True)
+    mode: Mapped[str] = mapped_column(String(20), index=True)
+    timeframe: Mapped[str] = mapped_column(String(20), index=True)
+    calendar_id: Mapped[str] = mapped_column(String(160), index=True)
+    event_id: Mapped[Optional[str]] = mapped_column(String(160), nullable=True, index=True)
+    booking_reference: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    title: Mapped[str] = mapped_column(String(255))
+    customer_name: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    mobile_number: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    start_time_utc: Mapped[datetime] = mapped_column(DateTime, index=True)
+    end_time_utc: Mapped[datetime] = mapped_column(DateTime, index=True)
+    timezone: Mapped[str] = mapped_column(String(60), default="Europe/Berlin")
+    provider_reference: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    is_demo_generated: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    details: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

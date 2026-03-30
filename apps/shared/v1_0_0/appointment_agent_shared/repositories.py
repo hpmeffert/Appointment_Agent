@@ -14,6 +14,7 @@ from .models import (
     ContactRecord,
     ConversationTurnRecord,
     GoogleDemoEventRecord,
+    SlotHoldRecord,
 )
 
 
@@ -301,3 +302,112 @@ class GoogleDemoEventRepository:
         for record in records:
             record.is_deleted = True
         self.session.commit()
+
+
+class SlotHoldRepository:
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def create(
+        self,
+        *,
+        hold_id: str,
+        journey_id: str,
+        customer_id: Optional[str],
+        slot_id: str,
+        provider: str,
+        slot_label: Optional[str],
+        start_time_utc,
+        end_time_utc,
+        expires_at_utc,
+        reason: Optional[str],
+        details: dict,
+    ) -> SlotHoldRecord:
+        record = SlotHoldRecord(
+            hold_id=hold_id,
+            journey_id=journey_id,
+            customer_id=customer_id,
+            slot_id=slot_id,
+            provider=provider,
+            slot_label=slot_label,
+            start_time_utc=start_time_utc,
+            end_time_utc=end_time_utc,
+            expires_at_utc=expires_at_utc,
+            reason=reason,
+            details=details,
+        )
+        self.session.add(record)
+        self.session.commit()
+        self.session.refresh(record)
+        return record
+
+    def get_active_by_hold_id(self, hold_id: str):
+        return self.session.scalar(
+            select(SlotHoldRecord).where(
+                SlotHoldRecord.hold_id == hold_id,
+                SlotHoldRecord.status == "ACTIVE",
+            )
+        )
+
+    def list_active(self) -> list[SlotHoldRecord]:
+        return list(
+            self.session.scalars(
+                select(SlotHoldRecord).where(SlotHoldRecord.status == "ACTIVE").order_by(SlotHoldRecord.created_at.asc())
+            )
+        )
+
+    def find_active_for_slot(self, *, slot_id: str, start_time_utc, end_time_utc):
+        records = list(
+            self.session.scalars(
+                select(SlotHoldRecord).where(
+                    SlotHoldRecord.slot_id == slot_id,
+                    SlotHoldRecord.status == "ACTIVE",
+                )
+            )
+        )
+        return [
+            record
+            for record in records
+            if record.start_time_utc < end_time_utc and record.end_time_utc > start_time_utc
+        ]
+
+    def expire_stale(self, now_utc) -> list[SlotHoldRecord]:
+        records = list(
+            self.session.scalars(
+                select(SlotHoldRecord).where(
+                    SlotHoldRecord.status == "ACTIVE",
+                    SlotHoldRecord.expires_at_utc <= now_utc,
+                )
+            )
+        )
+        for record in records:
+            record.status = "EXPIRED"
+        self.session.commit()
+        return records
+
+    def release(self, hold_id: str, status: str = "RELEASED") -> Optional[SlotHoldRecord]:
+        record = self.session.scalar(select(SlotHoldRecord).where(SlotHoldRecord.hold_id == hold_id))
+        if record is None:
+            return None
+        record.status = status
+        self.session.commit()
+        self.session.refresh(record)
+        return record
+
+    def release_for_journey(self, journey_id: str, keep_hold_id: Optional[str] = None) -> list[SlotHoldRecord]:
+        records = list(
+            self.session.scalars(
+                select(SlotHoldRecord).where(
+                    SlotHoldRecord.journey_id == journey_id,
+                    SlotHoldRecord.status == "ACTIVE",
+                )
+            )
+        )
+        changed: list[SlotHoldRecord] = []
+        for record in records:
+            if keep_hold_id and record.hold_id == keep_hold_id:
+                continue
+            record.status = "RELEASED"
+            changed.append(record)
+        self.session.commit()
+        return changed

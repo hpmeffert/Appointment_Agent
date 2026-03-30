@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "Appointment Agent"
-    app_version: str = "v1.1.0-patch6"
+    app_version: str = "v1.2.0"
     app_host: str = "0.0.0.0"
     app_port: int = 8080
     log_level: str = "info"
@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     booking_window_days: int = 30
     max_slots_per_offer: int = 3
     default_duration_minutes: int = 30
-    slot_hold_minutes: int = 10
+    slot_hold_minutes: int = 2
     reschedule_cutoff_hours: int = 24
     quiet_hours: str = "21:00-08:00"
     default_language: str = "en"
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     idempotency_enabled: bool = True
     google_mock_mode: bool = True
     lekab_mock_mode: bool = True
-    demo_base_path: str = "/ui/demo-monitoring/v1.1.0-patch6"
+    demo_base_path: str = "/ui/demo-monitoring/v1.2.0"
     google_real_integration_enabled: bool = Field(default=False, validation_alias="GOOGLE_REAL_INTEGRATION_ENABLED")
     google_client_id: str = Field(default="", validation_alias="GOOGLE_CLIENT_ID")
     google_client_secret: str = Field(default="", validation_alias="GOOGLE_CLIENT_SECRET")

@@ -270,3 +270,23 @@ class GoogleDemoEventRecord(Base):
     details: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class SlotHoldRecord(Base):
+    __tablename__ = "slot_holds"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    hold_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    journey_id: Mapped[str] = mapped_column(String(80), index=True)
+    customer_id: Mapped[Optional[str]] = mapped_column(String(80), nullable=True, index=True)
+    slot_id: Mapped[str] = mapped_column(String(120), index=True)
+    provider: Mapped[str] = mapped_column(String(40), default="google", index=True)
+    slot_label: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    start_time_utc: Mapped[datetime] = mapped_column(DateTime, index=True)
+    end_time_utc: Mapped[datetime] = mapped_column(DateTime, index=True)
+    expires_at_utc: Mapped[datetime] = mapped_column(DateTime, index=True)
+    status: Mapped[str] = mapped_column(String(20), default=SlotHoldStatus.ACTIVE.value, index=True)
+    reason: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    details: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

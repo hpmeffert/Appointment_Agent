@@ -78,11 +78,11 @@ def test_docs_routes_render_markdown_in_new_pages() -> None:
 
     assert demo_response.status_code == 200
     assert "Demo Guide" in demo_response.text
-    assert "Version: v1.1.0-patch6" in demo_response.text
+    assert "Version: v1.2.0" in demo_response.text
     assert user_response.status_code == 200
     assert "Sprache: DE" in user_response.text
-    assert "User Guide Demo Monitoring UI v1.1.0 Patch 6" in user_response.text
-    assert "Version: v1.1.0-patch6" in user_response.text
+    assert "User Guide Demo Monitoring UI v1.2.0" in user_response.text
+    assert "Version: v1.2.0" in user_response.text
     assert admin_response.status_code == 200
     assert "Admin Guide" in admin_response.text
 
@@ -232,6 +232,134 @@ def test_demo_ui_v110_patch6_release_routes_are_available() -> None:
     assert payload["version"] == "v1.1.0-patch6"
     assert payload["google_demo_control"]["default_from_date"]
     assert payload["google_demo_control"]["appointment_types"][0]["id"] == "dentist"
+
+
+def test_demo_ui_v110_patch7_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.1.0-patch7")
+    help_response = client.get("/api/demo-monitoring/v1.1.0-patch7/help")
+    payload_response = client.get("/api/demo-monitoring/v1.1.0-patch7/payload")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.1.0-patch7" in ui_response.text
+    assert "Reply Actions" in ui_response.text
+    assert "Available Time Slots" in ui_response.text
+    assert "const GOOGLE_API_VERSION = \"v1.1.0-patch6\";" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.1.0-patch7"
+    assert "interactive_reply_buttons" in help_response.json()["communication_features"]
+    assert "interactive_slot_buttons" in help_response.json()["communication_features"]
+
+    assert payload_response.status_code == 200
+    payload = payload_response.json()
+    assert payload["version"] == "v1.1.0-patch7"
+    first_step = payload["scenarios"][0]["steps"][0]
+    assert first_step["communication_message"]["actions"][0]["value"] == "keep"
+    assert payload["communication_model"]["provider_neutral"] is True
+
+
+def test_demo_ui_v110_patch7_payload_is_localized_for_interactive_controls() -> None:
+    client = TestClient(app)
+
+    payload_response = client.get("/api/demo-monitoring/v1.1.0-patch7/payload?lang=de")
+
+    assert payload_response.status_code == 200
+    payload = payload_response.json()
+    first_step = payload["scenarios"][0]["steps"][0]
+    action_labels = [action["label"] for action in first_step["communication_message"]["actions"]]
+    assert "Termin behalten" in action_labels
+    assert "Google Demo Control" == payload["pages"][3]["label"]
+
+
+def test_demo_ui_v110_patch8_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.1.0-patch8")
+    help_response = client.get("/api/demo-monitoring/v1.1.0-patch8/help")
+    payload_response = client.get("/api/demo-monitoring/v1.1.0-patch8/payload")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.1.0-patch8" in ui_response.text
+    assert "const GOOGLE_API_VERSION = \"v1.1.0-patch8\";" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.1.0-patch8"
+    assert "availability_slots" in help_response.json()["google_live_features"]
+    assert "real_booking_create_cancel_reschedule" in help_response.json()["google_live_features"]
+
+    assert payload_response.status_code == 200
+    payload = payload_response.json()
+    assert payload["version"] == "v1.1.0-patch8"
+    assert payload["communication_model"]["booking_backend"] == "google_adapter_v1.1.0_patch8"
+
+
+def test_demo_ui_v110_patch8a_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.1.0-patch8a")
+    help_response = client.get("/api/demo-monitoring/v1.1.0-patch8a/help")
+    payload_response = client.get("/api/demo-monitoring/v1.1.0-patch8a/payload")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.1.0-patch8a" in ui_response.text
+    assert "Slot Hold Minutes" in ui_response.text
+    assert "const GOOGLE_API_VERSION = \"v1.1.0-patch8a\";" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.1.0-patch8a"
+    assert "slot_hold_duration_adjustable" in help_response.json()["slot_hold_features"]
+
+    assert payload_response.status_code == 200
+    payload = payload_response.json()
+    assert payload["version"] == "v1.1.0-patch8a"
+    assert payload["hold_settings"]["slot_hold_minutes"] == 2
+
+
+def test_demo_ui_v110_patch8b_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.1.0-patch8b")
+    help_response = client.get("/api/demo-monitoring/v1.1.0-patch8b/help")
+    payload_response = client.get("/api/demo-monitoring/v1.1.0-patch8b/payload")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.1.0-patch8b" in ui_response.text
+    assert "const GOOGLE_API_VERSION = \"v1.1.0-patch8b\";" in ui_response.text
+    assert "Slot Hold Minutes" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.1.0-patch8b"
+    assert "end_to_end_booking_flow" in help_response.json()["communication_features"]
+    assert "interactive_live_revalidation_before_booking" in help_response.json()["google_live_features"]
+
+    assert payload_response.status_code == 200
+    payload = payload_response.json()
+    assert payload["version"] == "v1.1.0-patch8b"
+    assert payload["communication_model"]["booking_backend"] == "google_adapter_v1.1.0_patch8b"
+    assert payload["interactive_demo_flow"]["booking_confirmation_actions"][0]["value"] == "confirm"
+
+
+def test_demo_ui_v120_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.2.0")
+    help_response = client.get("/api/demo-monitoring/v1.2.0/help")
+    payload_response = client.get("/api/demo-monitoring/v1.2.0/payload")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.2.0" in ui_response.text
+    assert "const GOOGLE_API_VERSION = \"v1.2.0\";" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.2.0"
+    assert "end_to_end_booking_flow" in help_response.json()["communication_features"]
+
+    assert payload_response.status_code == 200
+    payload = payload_response.json()
+    assert payload["version"] == "v1.2.0"
+    assert payload["communication_model"]["booking_backend"] == "google_adapter_v1_2_0"
 
 
 def test_demo_ui_v105_cockpit_routes_are_available() -> None:

@@ -10,10 +10,10 @@ def test_root_exposes_version_and_silence_threshold() -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["version"] == "v1.1.0-patch6"
+    assert body["version"] == "v1.2.0"
     assert body["silence_threshold_ms"] == 1300
     assert body["health_path"] == "/health"
-    assert body["demo_path"] == "/ui/demo-monitoring/v1.1.0-patch6"
+    assert body["demo_path"] == "/ui/demo-monitoring/v1.2.0"
 
 
 def test_help_lists_modules() -> None:
@@ -28,9 +28,18 @@ def test_help_lists_modules() -> None:
     assert "demo_monitoring_ui/v1_1_0_patch4" in response.json()["modules"]
     assert "demo_monitoring_ui/v1_1_0_patch5" in response.json()["modules"]
     assert "demo_monitoring_ui/v1_1_0_patch6" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_1_0_patch7" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_1_0_patch8" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_1_0_patch8a" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_1_0_patch8b" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_2_0" in response.json()["modules"]
     assert "google_adapter/v1_1_0_patch2" in response.json()["modules"]
     assert "google_adapter/v1_1_0_patch3" in response.json()["modules"]
     assert "google_adapter/v1_1_0_patch6" in response.json()["modules"]
+    assert "google_adapter/v1_1_0_patch8" in response.json()["modules"]
+    assert "google_adapter/v1_1_0_patch8a" in response.json()["modules"]
+    assert "google_adapter/v1_1_0_patch8b" in response.json()["modules"]
+    assert "google_adapter/v1_2_0" in response.json()["modules"]
     assert response.json()["docker_start"] == "docker compose up --build"
 
 
@@ -42,4 +51,4 @@ def test_health_reports_ok() -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ok"
-    assert body["version"] == "v1.1.0-patch6"
+    assert body["version"] == "v1.2.0"

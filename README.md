@@ -12,11 +12,11 @@ In simple words:
 
 ## Current Versions
 
-- Core internal integration line: `v1.1.0-patch6`
+- Core public release line: `v1.2.0`
 - Demo UI stable line: `v1.0.0`
 - Demo UI release preparation line: `v1.0.2`
-- Demo UI current patch line: `v1.1.0-patch6`
-- Docker runtime release line: `v1.1.0-patch6`
+- Demo UI current release line: `v1.2.0`
+- Docker runtime release line: `v1.2.0`
 
 ## Main Modules
 
@@ -74,13 +74,13 @@ The container starts the API, demo UI routes, monitoring routes, docs routes, an
 
 The default port is `8080`.
 
-Current patch focus in `v1.1.0-patch6`:
+Current release focus in `v1.2.0`:
 
-- Google Demo Control now supports a real date range with `from_date` and `to_date`
-- appointment content is selected with `appointment_type`
-- supported types are dentist, wallbox, gas meter, and water meter
-- generated demo appointments are spread across the selected date range
-- the current recommended demo route is the dedicated cockpit line with these new controls
+- reply buttons now drive the real booking path instead of only local UI state
+- reschedule loads live or simulated slots directly from the Google adapter
+- slot clicks create real temporary holds in the platform state
+- confirm performs final live revalidation before booking or reschedule
+- conflicts reload alternative slots instead of breaking the flow
 
 ## How To Stop Or Reset Docker
 
@@ -102,21 +102,24 @@ Open:
 
 - Demo UI: `http://localhost:8080/ui/demo-monitoring/v1.0.0`
 - Demo UI Release Candidate: `http://localhost:8080/ui/demo-monitoring/v1.0.2`
-- Demo UI Current Patch: `http://localhost:8080/ui/demo-monitoring/v1.1.0-patch6`
+- Demo UI Current Release: `http://localhost:8080/ui/demo-monitoring/v1.2.0`
 - Demo Cockpit v1.0.5: `http://localhost:8080/ui/demo-monitoring/v1.0.5`
 - Demo Cockpit v1.0.6: `http://localhost:8080/ui/demo-monitoring/v1.0.6`
 - Demo Cockpit v1.0.6 Patch 1: `http://localhost:8080/ui/demo-monitoring/v1.0.6-patch1`
 - Demo scenarios API: `http://localhost:8080/api/demo-monitoring/v1.0.0/scenarios`
 - Demo scenarios API Release Candidate: `http://localhost:8080/api/demo-monitoring/v1.0.2/scenarios`
-- Demo cockpit payload Current Patch: `http://localhost:8080/api/demo-monitoring/v1.1.0-patch6/payload`
-- Demo help API Current Patch: `http://localhost:8080/api/demo-monitoring/v1.1.0-patch6/help`
+- Demo cockpit payload Current Release: `http://localhost:8080/api/demo-monitoring/v1.2.0/payload`
+- Demo help API Current Release: `http://localhost:8080/api/demo-monitoring/v1.2.0/help`
 - Demo cockpit payload v1.0.5: `http://localhost:8080/api/demo-monitoring/v1.0.5/payload`
 - Demo cockpit payload v1.0.6: `http://localhost:8080/api/demo-monitoring/v1.0.6/payload`
 - Demo cockpit payload v1.0.6 Patch 1: `http://localhost:8080/api/demo-monitoring/v1.0.6-patch1/payload`
-- Google test mode status API: `http://localhost:8080/api/google/v1.1.0-patch6/mode`
-- Google live sync status API: `http://localhost:8080/api/google/v1.1.0-patch6/live-sync/status`
-- Google conflict check API: `http://localhost:8080/api/google/v1.1.0-patch6/live-sync/conflict-check`
-- Google demo calendar prepare API: `http://localhost:8080/api/google/v1.1.0-patch6/demo-calendar/prepare`
+- Google test mode status API: `http://localhost:8080/api/google/v1.2.0/mode`
+- Google live sync status API: `http://localhost:8080/api/google/v1.2.0/live-sync/status`
+- Google conflict check API: `http://localhost:8080/api/google/v1.2.0/live-sync/conflict-check`
+- Google availability slots API: `http://localhost:8080/api/google/v1.2.0/availability/slots`
+- Google slot hold create API: `http://localhost:8080/api/google/v1.2.0/slot-hold/create`
+- Google slot hold release API: `http://localhost:8080/api/google/v1.2.0/slot-hold/release`
+- Google booking create API: `http://localhost:8080/api/google/v1.2.0/booking/create`
 - Help overview: `http://localhost:8080/help`
 - Health check: `http://localhost:8080/health`
 - Demo Guide: `http://localhost:8080/docs/demo`
@@ -157,6 +160,6 @@ For a quick Docker smoke test after startup:
 
 - If Docker says the port is already in use, stop the other app that already uses port `8080`, or change `APPOINTMENT_AGENT_APP_PORT` in `.env`.
 - If the app cannot start, check `docker compose logs` and look for module import or path errors.
-- If the UI opens but looks empty, test the API route `/api/demo-monitoring/v1.1.0-patch6/payload`.
+- If the UI opens but looks empty, test the API route `/api/demo-monitoring/v1.2.0/payload`.
 - If `Test` mode says it is unavailable, check `.env` for `GOOGLE_REAL_INTEGRATION_ENABLED`, `GOOGLE_REFRESH_TOKEN`, and `GOOGLE_CALENDAR_ID`.
 - If the database cannot be written, reset with `docker compose down -v` and start again.

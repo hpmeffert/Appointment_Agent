@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 from fastapi import APIRouter, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 
 def _resolve_docs_root() -> Path:
     project_root = Path(__file__).resolve().parents[4]
@@ -21,16 +22,16 @@ router = APIRouter(tags=["demo-docs-v1.0.2"])
 
 DOC_MAP = {
     "demo": {
-        "en": DOCS_ROOT / "demo" / "demo_guide_demo_monitoring_ui_v1_2_0_en.md",
-        "de": DOCS_ROOT / "demo" / "demo_guide_demo_monitoring_ui_v1_2_0_de.md",
+        "en": DOCS_ROOT / "demo" / "demo_guide_demo_monitoring_ui_v1_2_1_patch4_en.md",
+        "de": DOCS_ROOT / "demo" / "demo_guide_demo_monitoring_ui_v1_2_1_patch4_de.md",
     },
     "user": {
-        "en": DOCS_ROOT / "user" / "user_guide_demo_monitoring_ui_v1_2_0_en.md",
-        "de": DOCS_ROOT / "user" / "user_guide_demo_monitoring_ui_v1_2_0_de.md",
+        "en": DOCS_ROOT / "user" / "user_guide_demo_monitoring_ui_v1_2_1_patch4_en.md",
+        "de": DOCS_ROOT / "user" / "user_guide_demo_monitoring_ui_v1_2_1_patch4_de.md",
     },
     "admin": {
-        "en": DOCS_ROOT / "admin" / "demo_monitoring_ui_v1_2_0_en.md",
-        "de": DOCS_ROOT / "admin" / "demo_monitoring_ui_v1_2_0_de.md",
+        "en": DOCS_ROOT / "admin" / "demo_monitoring_ui_v1_2_1_patch4_en.md",
+        "de": DOCS_ROOT / "admin" / "demo_monitoring_ui_v1_2_1_patch4_de.md",
     },
 }
 
@@ -74,6 +75,14 @@ def _markdown_to_html(markdown: str) -> str:
                 html.append("<ul>")
                 in_list = True
             html.append(f"<li>{line[2:]}</li>")
+            continue
+        image_match = re.match(r"!\[(.*?)\]\((.*?)\)", line)
+        if image_match:
+            if in_list:
+                html.append("</ul>")
+                in_list = False
+            alt_text, src = image_match.groups()
+            html.append(f'<figure><img src="{src}" alt="{alt_text}" /><figcaption>{alt_text}</figcaption></figure>')
             continue
         if raw_line.startswith("1. "):
             if in_list:
@@ -131,6 +140,24 @@ def _render_doc(doc_type: str, lang: str) -> HTMLResponse:
             color: #0f766e;
             border-radius: 999px;
           }}
+          figure {{
+            margin: 24px 0;
+            padding: 18px;
+            background: #fffdf8;
+            border: 1px solid #d9cfbb;
+            border-radius: 20px;
+          }}
+          img {{
+            max-width: 100%;
+            display: block;
+            border-radius: 16px;
+            border: 1px solid #d9cfbb;
+          }}
+          figcaption {{
+            margin-top: 10px;
+            color: #59675f;
+            font-size: 14px;
+          }}
         </style>
       </head>
       <body>
@@ -160,3 +187,8 @@ def user_doc(lang: str = Query(default="en")) -> HTMLResponse:
 @router.get("/docs/admin")
 def admin_doc(lang: str = Query(default="en")) -> HTMLResponse:
     return _render_doc("admin", "de" if lang == "de" else "en")
+
+
+@router.get("/docs/assets/{asset_path:path}")
+def docs_asset(asset_path: str) -> FileResponse:
+    return FileResponse(DOCS_ROOT / "assets" / asset_path)

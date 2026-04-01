@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="820" viewBox="0 0 1280 820" role="img" aria-labelledby="title desc">
+  <title id="title">RCS settings page screenshot</title>
+  <desc id="desc">Annotated overview of the RCS settings page with parameter groups, readiness cards, and action buttons.</desc>
+  <rect width="1280" height="820" fill="#edf2f7"/>
+  <rect x="40" y="40" width="1200" height="740" rx="28" fill="#f8fafc" stroke="#d8e0ec"/>
+  <text x="76" y="94" fill="#132033" font-family="IBM Plex Sans, Arial, sans-serif" font-size="34" font-weight="700">Settings -&gt; RCS</text>
+  <text x="76" y="126" fill="#5f6d83" font-family="IBM Plex Sans, Arial, sans-serif" font-size="18">One operator page for environment, authentication, RCS, SMS, addressbook, and readiness.</text>
+  <rect x="76" y="160" width="1128" height="64" rx="18" fill="#fff7e6" stroke="#f2c86d"/>
+  <text x="104" y="200" fill="#7a4e00" font-family="IBM Plex Sans, Arial, sans-serif" font-size="18">Readiness banner explains if the setup is already usable for test messaging.</text>
+  <rect x="76" y="252" width="270" height="120" rx="20" fill="#ffffff" stroke="#d8e0ec"/>
+  <rect x="370" y="252" width="270" height="120" rx="20" fill="#ffffff" stroke="#d8e0ec"/>
+  <rect x="664" y="252" width="270" height="120" rx="20" fill="#ffffff" stroke="#d8e0ec"/>
+  <rect x="958" y="252" width="246" height="120" rx="20" fill="#ffffff" stroke="#d8e0ec"/>
+  <text x="100" y="294" fill="#132033" font-family="IBM Plex Sans, Arial, sans-serif" font-size="20" font-weight="700">Ready</text>
+  <text x="100" y="326" fill="#13795b" font-family="IBM Plex Sans, Arial, sans-serif" font-size="28" font-weight="700">yes / no</text>
+  <text x="394" y="294" fill="#132033" font-family="IBM Plex Sans, Arial, sans-serif" font-size="20" font-weight="700">Missing</text>
+  <text x="394" y="326" fill="#5f6d83" font-family="IBM Plex Sans, Arial, sans-serif" font-size="18">Shows which required fields still block messaging.</text>
+  <text x="688" y="294" fill="#132033" font-family="IBM Plex Sans, Arial, sans-serif" font-size="20" font-weight="700">Warnings</text>
+  <text x="688" y="326" fill="#5f6d83" font-family="IBM Plex Sans, Arial, sans-serif" font-size="18">Example: SMS fallback enabled or production mode selected.</text>
+  <text x="982" y="294" fill="#132033" font-family="IBM Plex Sans, Arial, sans-serif" font-size="20" font-weight="700">Actions</text>
+  <text x="982" y="326" fill="#5f6d83" font-family="IBM Plex Sans, Arial, sans-serif" font-size="18">Reload, Validate, Test Connection, Save</text>
+  <rect x="76" y="402" width="550" height="146" rx="22" fill="#ffffff" stroke="#d8e0ec"/>
+  <rect x="654" y="402" width="550" height="146" rx="22" fill="#ffffff" stroke="#d8e0ec"/>
+  <rect x="76" y="572" width="550" height="146" rx="22" fill="#ffffff" stroke="#d8e0ec"/>
+  <rect x="654" y="572" width="550" height="146" rx="22" fill="#ffffff" stroke="#d8e0ec"/>
+  <text x="102" y="438" fill="#132033" font-family="IBM Plex Sans, Arial, sans-serif" font-size="22" font-weight="700">Environment / Workspace</text>
+  <text x="102" y="470" fill="#5f6d83" font-family="IBM Plex Sans, Arial, sans-serif" font-size="16">Environment name, workspace id, messaging environment, dispatch, RIME, SMS, addressbook base URLs.</text>
+  <text x="680" y="438" fill="#132033" font-family="IBM Plex Sans, Arial, sans-serif" font-size="22" font-weight="700">Authentication</text>
+  <text x="680" y="470" fill="#5f6d83" font-family="IBM Plex Sans, Arial, sans-serif" font-size="16">Auth base URL, client id, masked client secret, username, masked password, token endpoints.</text>
+  <text x="102" y="608" fill="#132033" font-family="IBM Plex Sans, Arial, sans-serif" font-size="22" font-weight="700">RCS and SMS</text>
+  <text x="102" y="640" fill="#5f6d83" font-family="IBM Plex Sans, Arial, sans-serif" font-size="16">Channel priority, sender profile, SMS fallback, SMS sender, SMS length mode, default language.</text>
+  <text x="680" y="608" fill="#132033" font-family="IBM Plex Sans, Arial, sans-serif" font-size="22" font-weight="700">Addressbook and Diagnostics</text>
+  <text x="680" y="640" fill="#5f6d83" font-family="IBM Plex Sans, Arial, sans-serif" font-size="16">Contact lookup mode, phone normalization, readiness state, and missing field summary.</text>
+  <rect x="958" y="176" width="98" height="38" rx="12" fill="#5d6878" stroke="#44515f"/>
+  <rect x="1068" y="176" width="98" height="38" rx="12" fill="#5d6878" stroke="#44515f"/>
+  <rect x="1178" y="176" width="98" height="38" rx="12" fill="#0f4c81" stroke="#153e75"/>
+  <text x="983" y="200" fill="#f8fbff" font-family="IBM Plex Sans, Arial, sans-serif" font-size="15">Reload</text>
+  <text x="1087" y="200" fill="#f8fbff" font-family="IBM Plex Sans, Arial, sans-serif" font-size="15">Validate</text>
+  <text x="1200" y="200" fill="#ffffff" font-family="IBM Plex Sans, Arial, sans-serif" font-size="15">Save</text>
+</svg>

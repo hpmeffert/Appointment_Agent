@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export PYTHONPATH="./.vendor:${PYTHONPATH:-}"
+export PYTHONPATH="apps:apps/shared/v1_0_0:./.vendor:${PYTHONPATH:-}"
 
 mkdir -p \
   test-results/lekab_adapter/v1_0_0 \

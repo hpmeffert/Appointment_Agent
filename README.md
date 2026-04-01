@@ -12,11 +12,11 @@ In simple words:
 
 ## Current Versions
 
-- Core public release line: `v1.2.0`
+- Core public release line: `v1.2.1-patch4`
 - Demo UI stable line: `v1.0.0`
 - Demo UI release preparation line: `v1.0.2`
-- Demo UI current release line: `v1.2.0`
-- Docker runtime release line: `v1.2.0`
+- Demo UI current release line: `v1.2.1-patch4`
+- Docker runtime release line: `v1.2.1-patch4`
 
 ## Main Modules
 
@@ -74,13 +74,14 @@ The container starts the API, demo UI routes, monitoring routes, docs routes, an
 
 The default port is `8080`.
 
-Current release focus in `v1.2.0`:
+Current release focus in `v1.2.1-patch4`:
 
-- reply buttons now drive the real booking path instead of only local UI state
-- reschedule loads live or simulated slots directly from the Google adapter
-- slot clicks create real temporary holds in the platform state
-- confirm performs final live revalidation before booking or reschedule
-- conflicts reload alternative slots instead of breaking the flow
+- guided demo mode now supports `Free` and `Guided`
+- auto-demo can walk through the presenter story step by step
+- the dashboard is more messaging-first and shows live guided status
+- platform visibility is clearer for channels, integrations, and AI building blocks
+- message monitor, story engine, and operator summary now support a stronger live-demo narrative
+- docs now explain the new guided parameters and presenter flow more clearly
 
 ## How To Stop Or Reset Docker
 
@@ -102,14 +103,16 @@ Open:
 
 - Demo UI: `http://localhost:8080/ui/demo-monitoring/v1.0.0`
 - Demo UI Release Candidate: `http://localhost:8080/ui/demo-monitoring/v1.0.2`
-- Demo UI Current Release: `http://localhost:8080/ui/demo-monitoring/v1.2.0`
+- Demo UI Current Release: `http://localhost:8080/ui/demo-monitoring/v1.2.1-patch4`
 - Demo Cockpit v1.0.5: `http://localhost:8080/ui/demo-monitoring/v1.0.5`
 - Demo Cockpit v1.0.6: `http://localhost:8080/ui/demo-monitoring/v1.0.6`
 - Demo Cockpit v1.0.6 Patch 1: `http://localhost:8080/ui/demo-monitoring/v1.0.6-patch1`
 - Demo scenarios API: `http://localhost:8080/api/demo-monitoring/v1.0.0/scenarios`
 - Demo scenarios API Release Candidate: `http://localhost:8080/api/demo-monitoring/v1.0.2/scenarios`
-- Demo cockpit payload Current Release: `http://localhost:8080/api/demo-monitoring/v1.2.0/payload`
-- Demo help API Current Release: `http://localhost:8080/api/demo-monitoring/v1.2.0/help`
+- Demo cockpit payload Current Release: `http://localhost:8080/api/demo-monitoring/v1.2.1-patch4/payload`
+- Demo help API Current Release: `http://localhost:8080/api/demo-monitoring/v1.2.1-patch4/help`
+- LEKAB RCS settings API: `http://localhost:8080/api/lekab/v1.2.1-patch4/settings/rcs`
+- LEKAB RCS validation API: `http://localhost:8080/api/lekab/v1.2.1-patch4/settings/rcs/validate`
 - Demo cockpit payload v1.0.5: `http://localhost:8080/api/demo-monitoring/v1.0.5/payload`
 - Demo cockpit payload v1.0.6: `http://localhost:8080/api/demo-monitoring/v1.0.6/payload`
 - Demo cockpit payload v1.0.6 Patch 1: `http://localhost:8080/api/demo-monitoring/v1.0.6-patch1/payload`
@@ -160,6 +163,6 @@ For a quick Docker smoke test after startup:
 
 - If Docker says the port is already in use, stop the other app that already uses port `8080`, or change `APPOINTMENT_AGENT_APP_PORT` in `.env`.
 - If the app cannot start, check `docker compose logs` and look for module import or path errors.
-- If the UI opens but looks empty, test the API route `/api/demo-monitoring/v1.2.0/payload`.
+- If the UI opens but looks empty, test the API route `/api/demo-monitoring/v1.2.1-patch4/payload`.
 - If `Test` mode says it is unavailable, check `.env` for `GOOGLE_REAL_INTEGRATION_ENABLED`, `GOOGLE_REFRESH_TOKEN`, and `GOOGLE_CALENDAR_ID`.
 - If the database cannot be written, reset with `docker compose down -v` and start again.

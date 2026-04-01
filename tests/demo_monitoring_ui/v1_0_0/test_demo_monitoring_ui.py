@@ -78,11 +78,12 @@ def test_docs_routes_render_markdown_in_new_pages() -> None:
 
     assert demo_response.status_code == 200
     assert "Demo Guide" in demo_response.text
-    assert "Version: v1.2.0" in demo_response.text
+    assert "Version: v1.2.1-patch4" in demo_response.text
+    assert "/docs/assets/screenshots/v1_2_1_patch4/cockpit-overview.svg" in demo_response.text
     assert user_response.status_code == 200
     assert "Sprache: DE" in user_response.text
-    assert "User Guide Demo Monitoring UI v1.2.0" in user_response.text
-    assert "Version: v1.2.0" in user_response.text
+    assert "User Guide Demo Monitoring UI v1.2.1-patch4" in user_response.text
+    assert "Version: v1.2.1-patch4" in user_response.text
     assert admin_response.status_code == 200
     assert "Admin Guide" in admin_response.text
 
@@ -360,6 +361,138 @@ def test_demo_ui_v120_release_routes_are_available() -> None:
     payload = payload_response.json()
     assert payload["version"] == "v1.2.0"
     assert payload["communication_model"]["booking_backend"] == "google_adapter_v1_2_0"
+
+
+def test_demo_ui_v121_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.2.1")
+    help_response = client.get("/api/demo-monitoring/v1.2.1/help")
+    payload_response = client.get("/api/demo-monitoring/v1.2.1/payload")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.2.1" in ui_response.text
+    assert "Message Monitor" in ui_response.text
+    assert "Communications Reports" in ui_response.text
+    assert "const GOOGLE_API_VERSION = \"v1.2.0\";" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.2.1"
+    assert "message_monitor_page" in help_response.json()["communication_features"]
+
+    assert payload_response.status_code == 200
+    payload = payload_response.json()
+    assert payload["version"] == "v1.2.1"
+    assert payload["pages"][1]["id"] == "message-monitor"
+    assert payload["communication_model"]["messaging_backend"] == "lekab_adapter_v1_2_1"
+
+
+def test_demo_ui_v121_patch1_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.2.1-patch1")
+    help_response = client.get("/api/demo-monitoring/v1.2.1-patch1/help")
+    payload_response = client.get("/api/demo-monitoring/v1.2.1-patch1/payload")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.2.1-patch1" in ui_response.text
+    assert "RCS Settings" in ui_response.text
+    assert "Save RCS Settings" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.2.1-patch1"
+    assert "settings_to_rcs_header_navigation" in help_response.json()["settings_features"]
+
+    assert payload_response.status_code == 200
+    payload = payload_response.json()
+    assert payload["version"] == "v1.2.1-patch1"
+    assert payload["pages"][4]["id"] == "settings-general"
+    assert payload["pages"][5]["id"] == "settings-rcs"
+
+
+def test_demo_ui_v121_patch2_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.2.1-patch2")
+    help_response = client.get("/api/demo-monitoring/v1.2.1-patch2/help")
+    payload_response = client.get("/api/demo-monitoring/v1.2.1-patch2/payload")
+    docs_asset_response = client.get("/docs/assets/screenshots/v1_2_1_patch2/cockpit-overview.svg")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.2.1-patch2" in ui_response.text
+    assert "--action-surface" in ui_response.text
+    assert "RCS Settings" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.2.1-patch2"
+    assert "day_mode_high_contrast_buttons" in help_response.json()["settings_features"]
+    assert "slot_hold_story" in help_response.json()["demo_features"]
+
+    assert payload_response.status_code == 200
+    payload = payload_response.json()
+    assert payload["version"] == "v1.2.1-patch2"
+    assert payload["pages"][5]["id"] == "settings-rcs"
+    assert payload["documentation_highlights"]
+
+    assert docs_asset_response.status_code == 200
+    assert "<svg" in docs_asset_response.text
+
+
+def test_demo_ui_v121_patch3_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.2.1-patch3")
+    help_response = client.get("/api/demo-monitoring/v1.2.1-patch3/help")
+    payload_response = client.get("/api/demo-monitoring/v1.2.1-patch3/payload")
+    docs_asset_response = client.get("/docs/assets/screenshots/v1_2_1_patch3/platform-flow.svg")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.2.1-patch3" in ui_response.text
+    assert "How the Platform Works" in ui_response.text
+    assert "Demo Storyboard" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.2.1-patch3"
+    assert "platform_story_cards" in help_response.json()["platform_features"]
+
+    assert payload_response.status_code == 200
+    payload = payload_response.json()
+    assert payload["version"] == "v1.2.1-patch3"
+    assert payload["platform_overview"]["items"][0]["title"]
+    assert payload["demo_storyboard"]["stories"][0]["title"] == "Booking"
+
+    assert docs_asset_response.status_code == 200
+    assert "<svg" in docs_asset_response.text
+
+
+def test_demo_ui_v121_patch4_release_routes_are_available() -> None:
+    client = TestClient(app)
+
+    ui_response = client.get("/ui/demo-monitoring/v1.2.1-patch4")
+    help_response = client.get("/api/demo-monitoring/v1.2.1-patch4/help")
+    payload_response = client.get("/api/demo-monitoring/v1.2.1-patch4/payload")
+    docs_asset_response = client.get("/docs/assets/screenshots/v1_2_1_patch4/platform-flow.svg")
+
+    assert ui_response.status_code == 200
+    assert "Appointment Agent Cockpit v1.2.1-patch4" in ui_response.text
+    assert "Guided Demo Mode" in ui_response.text
+    assert "Auto Demo Off" in ui_response.text
+    assert "Messages and Customer Journey" in ui_response.text
+
+    assert help_response.status_code == 200
+    assert help_response.json()["version"] == "v1.2.1-patch4"
+    assert "story_engine_steps" in help_response.json()["guided_demo_features"]
+    assert "message_monitor_visibility" in help_response.json()["message_experience_features"]
+
+    assert payload_response.status_code == 200
+    payload = payload_response.json()
+    assert payload["version"] == "v1.2.1-patch4"
+    assert payload["guided_demo"]["modes"][0]["id"] == "free"
+    assert payload["guided_demo"]["steps"][0]["step_id"] == "intro"
+    assert payload["platform_visibility"]["channels"][0] == "RCS"
+
+    assert docs_asset_response.status_code == 200
+    assert "<svg" in docs_asset_response.text
 
 
 def test_demo_ui_v105_cockpit_routes_are_available() -> None:

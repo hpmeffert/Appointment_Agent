@@ -18,6 +18,11 @@ from demo_monitoring_ui.v1_1_0_patch8.demo_monitoring_ui.app import router as de
 from demo_monitoring_ui.v1_1_0_patch8a.demo_monitoring_ui.app import router as demo_monitoring_router_v110_patch8a
 from demo_monitoring_ui.v1_1_0_patch8b.demo_monitoring_ui.app import router as demo_monitoring_router_v110_patch8b
 from demo_monitoring_ui.v1_2_0.demo_monitoring_ui.app import router as demo_monitoring_router_v120
+from demo_monitoring_ui.v1_2_1.demo_monitoring_ui.app import router as demo_monitoring_router_v121
+from demo_monitoring_ui.v1_2_1_patch1.demo_monitoring_ui.app import router as demo_monitoring_router_v121_patch1
+from demo_monitoring_ui.v1_2_1_patch2.demo_monitoring_ui.app import router as demo_monitoring_router_v121_patch2
+from demo_monitoring_ui.v1_2_1_patch3.demo_monitoring_ui.app import router as demo_monitoring_router_v121_patch3
+from demo_monitoring_ui.v1_2_1_patch4.demo_monitoring_ui.app import router as demo_monitoring_router_v121_patch4
 from appointment_orchestrator.v1_0_0.appointment_orchestrator.app import router as orchestrator_router
 from appointment_orchestrator.v1_0_1.appointment_orchestrator.app import router as orchestrator_router_v101
 from google_adapter.v1_0_0.google_adapter.app import router as google_router
@@ -31,6 +36,11 @@ from google_adapter.v1_1_0_patch8a.google_adapter.app import router as google_ro
 from google_adapter.v1_1_0_patch8b.google_adapter.app import router as google_router_v110_patch8b
 from google_adapter.v1_2_0.google_adapter.app import router as google_router_v120
 from lekab_adapter.v1_0_0.lekab_adapter.app import router as lekab_router
+from lekab_adapter.v1_2_1.lekab_adapter.app import router as lekab_router_v121
+from lekab_adapter.v1_2_1_patch1.lekab_adapter.app import router as lekab_router_v121_patch1
+from lekab_adapter.v1_2_1_patch2.lekab_adapter.app import router as lekab_router_v121_patch2
+from lekab_adapter.v1_2_1_patch3.lekab_adapter.app import router as lekab_router_v121_patch3
+from lekab_adapter.v1_2_1_patch4.lekab_adapter.app import router as lekab_router_v121_patch4
 from microsoft_adapter.v1_0_0.microsoft_adapter.app import router as microsoft_router
 
 from .config import settings
@@ -74,6 +84,11 @@ def help_view() -> dict[str, object]:
         "docker_start": "docker compose up --build",
         "modules": [
             "lekab_adapter/v1_0_0",
+            "lekab_adapter/v1_2_1",
+            "lekab_adapter/v1_2_1_patch1",
+            "lekab_adapter/v1_2_1_patch2",
+            "lekab_adapter/v1_2_1_patch3",
+            "lekab_adapter/v1_2_1_patch4",
             "demo_monitoring_ui/v1_0_0",
             "demo_monitoring_ui/v1_0_2",
             "demo_monitoring_ui/v1_0_4_patch1",
@@ -91,6 +106,11 @@ def help_view() -> dict[str, object]:
             "demo_monitoring_ui/v1_1_0_patch8a",
             "demo_monitoring_ui/v1_1_0_patch8b",
             "demo_monitoring_ui/v1_2_0",
+            "demo_monitoring_ui/v1_2_1",
+            "demo_monitoring_ui/v1_2_1_patch1",
+            "demo_monitoring_ui/v1_2_1_patch2",
+            "demo_monitoring_ui/v1_2_1_patch3",
+            "demo_monitoring_ui/v1_2_1_patch4",
             "appointment_orchestrator/v1_0_0",
             "appointment_orchestrator/v1_0_1",
             "google_adapter/v1_0_0",
@@ -109,6 +129,11 @@ def help_view() -> dict[str, object]:
 
 
 app.include_router(lekab_router)
+app.include_router(lekab_router_v121)
+app.include_router(lekab_router_v121_patch1)
+app.include_router(lekab_router_v121_patch2)
+app.include_router(lekab_router_v121_patch3)
+app.include_router(lekab_router_v121_patch4)
 app.include_router(demo_monitoring_router)
 app.include_router(demo_monitoring_router_v102)
 app.include_router(demo_monitoring_router_v104_patch1)
@@ -126,6 +151,11 @@ app.include_router(demo_monitoring_router_v110_patch8)
 app.include_router(demo_monitoring_router_v110_patch8a)
 app.include_router(demo_monitoring_router_v110_patch8b)
 app.include_router(demo_monitoring_router_v120)
+app.include_router(demo_monitoring_router_v121)
+app.include_router(demo_monitoring_router_v121_patch1)
+app.include_router(demo_monitoring_router_v121_patch2)
+app.include_router(demo_monitoring_router_v121_patch3)
+app.include_router(demo_monitoring_router_v121_patch4)
 app.include_router(orchestrator_router)
 app.include_router(orchestrator_router_v101)
 app.include_router(google_router)

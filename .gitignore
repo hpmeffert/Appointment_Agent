@@ -31,3 +31,4 @@ secrets/
 apps/google_adapter/json/
 google-token*.json
 credentials.json
+runtime-artifacts/

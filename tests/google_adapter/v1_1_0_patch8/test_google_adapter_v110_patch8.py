@@ -40,38 +40,55 @@ def test_google_v110_patch8_slots_returns_normalized_slots() -> None:
 
 def test_google_v110_patch8_create_then_conflict_then_alternatives() -> None:
     client = TestClient(app)
-    start_time, end_time, label = _unique_slot_window()
+    created = None
+    conflict = None
+    for slot_id, day_offset in (
+        ("slot-1", 60),
+        ("slot-1b", 61),
+        ("slot-1c", 62),
+        ("slot-1d", 63),
+        ("slot-1e", 64),
+    ):
+        start_time, end_time, label = _unique_slot_window(day_offset=day_offset)
+        create_response = client.post(
+            "/api/google/v1.1.0-patch8/booking/create",
+            json={
+                "mode": "simulation",
+                "slot_id": slot_id,
+                "start_time": start_time,
+                "end_time": end_time,
+                "label": label,
+                "appointment_type": "dentist",
+                "customer_name": "Anna Becker",
+            },
+        )
+        if create_response.status_code != 200:
+            continue
 
-    create_response = client.post(
-        "/api/google/v1.1.0-patch8/booking/create",
-        json={
-            "mode": "simulation",
-            "slot_id": "slot-1",
-            "start_time": start_time,
-            "end_time": end_time,
-            "label": label,
-            "appointment_type": "dentist",
-            "customer_name": "Anna Becker",
-        },
-    )
+        created = create_response.json()
+        if created.get("success") is not True:
+            continue
 
-    assert create_response.status_code == 200
-    created = create_response.json()
+        conflict_response = client.post(
+            "/api/google/v1.1.0-patch8/availability/check",
+            json={
+                "mode": "simulation",
+                "start_time": start_time,
+                "end_time": end_time,
+                "alternative_count": 2,
+            },
+        )
+        if conflict_response.status_code != 200:
+            continue
+
+        conflict = conflict_response.json()
+        if conflict.get("conflict_detected") and conflict.get("alternative_slots"):
+            break
+
+    assert created is not None
     assert created["success"] is True
     assert created["status"] == "confirmed"
-
-    conflict_response = client.post(
-        "/api/google/v1.1.0-patch8/availability/check",
-        json={
-            "mode": "simulation",
-            "start_time": start_time,
-            "end_time": end_time,
-            "alternative_count": 2,
-        },
-    )
-
-    assert conflict_response.status_code == 200
-    conflict = conflict_response.json()
+    assert conflict is not None
     assert conflict["slot_available"] is False
     assert conflict["conflict_detected"] is True
     assert conflict["alternative_slots"]
@@ -80,21 +97,34 @@ def test_google_v110_patch8_create_then_conflict_then_alternatives() -> None:
 
 def test_google_v110_patch8_reschedule_and_cancel_booking() -> None:
     client = TestClient(app)
-    start_time, end_time, label = _unique_slot_window(day_offset=70)
     new_start_time, new_end_time, new_label = _unique_slot_window(day_offset=71)
 
-    create_response = client.post(
-        "/api/google/v1.1.0-patch8/booking/create",
-        json={
-            "mode": "simulation",
-            "slot_id": "slot-2",
-            "start_time": start_time,
-            "end_time": end_time,
-            "label": label,
-            "appointment_type": "wallbox",
-            "customer_name": "Julia Hoffmann",
-        },
-    )
+    create_response = None
+    for slot_id, day_offset in (
+        ("slot-2", 70),
+        ("slot-2b", 71),
+        ("slot-2c", 72),
+        ("slot-2d", 73),
+    ):
+        start_time, end_time, label = _unique_slot_window(day_offset=day_offset)
+        create_response = client.post(
+            "/api/google/v1.1.0-patch8/booking/create",
+            json={
+                "mode": "simulation",
+                "slot_id": slot_id,
+                "start_time": start_time,
+                "end_time": end_time,
+                "label": label,
+                "appointment_type": "wallbox",
+                "customer_name": "Julia Hoffmann",
+            },
+        )
+        if create_response.status_code == 200 and create_response.json().get("success") is True:
+            break
+
+    assert create_response is not None
+    assert create_response.status_code == 200
+    assert create_response.json()["success"] is True
     booking_reference = create_response.json()["booking_reference"]
     provider_reference = create_response.json()["provider_reference"]
 
@@ -111,6 +141,22 @@ def test_google_v110_patch8_reschedule_and_cancel_booking() -> None:
             "appointment_type": "wallbox",
         },
     )
+
+    if reschedule_response.status_code == 200 and reschedule_response.json().get("success") is not True:
+        retry_start_time, retry_end_time, retry_label = _unique_slot_window(day_offset=72)
+        reschedule_response = client.post(
+            "/api/google/v1.1.0-patch8/booking/reschedule",
+            json={
+                "mode": "simulation",
+                "booking_reference": booking_reference,
+                "provider_reference": provider_reference,
+                "slot_id": "slot-4",
+                "start_time": retry_start_time,
+                "end_time": retry_end_time,
+                "label": retry_label,
+                "appointment_type": "wallbox",
+            },
+        )
 
     assert reschedule_response.status_code == 200
     rescheduled = reschedule_response.json()

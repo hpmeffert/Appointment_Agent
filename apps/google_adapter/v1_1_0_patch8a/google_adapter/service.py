@@ -4,6 +4,7 @@ from datetime import date, datetime, time, timedelta, timezone
 import logging
 from typing import Any, Literal, Optional
 from uuid import uuid4
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.orm import Session
@@ -476,6 +477,7 @@ class GoogleAvailabilitySlotsRequest(BaseModel):
     max_slots: int = Field(default=5, ge=1, le=20)
     duration_minutes: int = Field(default=45, ge=15, le=240)
     appointment_type: Literal["dentist", "wallbox", "gas_meter", "water_meter"] = "dentist"
+    timezone: Optional[str] = None
 
     @model_validator(mode="after")
     def validate_range(self) -> "GoogleAvailabilitySlotsRequest":
@@ -497,6 +499,7 @@ class GoogleAvailabilityCheckRequest(BaseModel):
     provider_reference: Optional[str] = None
     exclude_provider_reference: Optional[str] = None
     alternative_count: int = Field(default=3, ge=1, le=10)
+    timezone: Optional[str] = None
 
 
 class GoogleBookingCreateRequest(BaseModel):
@@ -510,6 +513,13 @@ class GoogleBookingCreateRequest(BaseModel):
     customer_email: Optional[str] = None
     customer_mobile: Optional[str] = None
     booking_reference: Optional[str] = None
+    correlation_id: Optional[str] = None
+    appointment_id: Optional[str] = None
+    address_id: Optional[str] = None
+    linked_contact_reference_id: Optional[str] = None
+    linked_address_full_details: Optional[str] = None
+    context_label: Optional[str] = None
+    timezone: Optional[str] = None
 
 
 class GoogleBookingCancelRequest(BaseModel):
@@ -528,6 +538,16 @@ class GoogleBookingRescheduleRequest(BaseModel):
     end_time: datetime
     label: str
     appointment_type: Literal["dentist", "wallbox", "gas_meter", "water_meter"] = "dentist"
+    correlation_id: Optional[str] = None
+    appointment_id: Optional[str] = None
+    address_id: Optional[str] = None
+    linked_contact_reference_id: Optional[str] = None
+    linked_address_full_details: Optional[str] = None
+    customer_name: Optional[str] = None
+    customer_email: Optional[str] = None
+    customer_mobile: Optional[str] = None
+    context_label: Optional[str] = None
+    timezone: Optional[str] = None
 
 
 class GoogleAvailabilityResult(BaseModel):
@@ -614,6 +634,21 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
     def __init__(self, session: Session) -> None:
         super().__init__(session)
         self.slot_holds = SlotHoldRepository(session)
+
+    def _resolve_zoneinfo(self, timezone_name: Optional[str]):
+        candidate = str(timezone_name or settings.google_default_timezone).strip() or settings.google_default_timezone
+        try:
+            return ZoneInfo(candidate)
+        except ZoneInfoNotFoundError:
+            return ZoneInfo(settings.google_default_timezone)
+
+    def _request_timezone(self, request: Any) -> str:
+        candidate = str(getattr(request, "timezone", "") or "").strip()
+        return candidate or settings.google_default_timezone
+
+    def _as_timezone(self, value: datetime, timezone_name: Optional[str]) -> datetime:
+        aware = value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+        return aware.astimezone(self._resolve_zoneinfo(timezone_name))
 
     def _expire_stale_holds(self) -> list:
         return self.slot_holds.expire_stale(datetime.utcnow())
@@ -739,6 +774,7 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
                 from_date_value=request.from_date,
                 to_date_value=request.to_date,
                 duration_minutes=request.duration_minutes,
+                timezone_name=request.timezone,
             ),
             start=1,
         ):
@@ -758,6 +794,7 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
                     end_time,
                     slot_id="patch8-slot-{}".format(index),
                     provider="google" if status.live_calendar_writes else "simulated",
+                    timezone_name=request.timezone,
                 )
             )
             if len(slots) >= request.max_slots:
@@ -841,10 +878,10 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
             )
         return status
 
-    def _normalize_slot(self, start_time: datetime, end_time: datetime, *, slot_id: str, provider: str) -> dict[str, Any]:
+    def _normalize_slot(self, start_time: datetime, end_time: datetime, *, slot_id: str, provider: str, timezone_name: Optional[str] = None) -> dict[str, Any]:
         # The UI should not care whether the slot came from simulation, Google,
         # or a future Microsoft adapter. This normalized shape keeps that boundary stable.
-        local_start = start_time.astimezone()
+        local_start = self._as_timezone(start_time, timezone_name)
         return {
             "slot_id": slot_id,
             "start": start_time.isoformat(),
@@ -860,8 +897,9 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
         from_date_value: date,
         to_date_value: date,
         duration_minutes: int,
+        timezone_name: Optional[str] = None,
     ) -> list[tuple[datetime, datetime]]:
-        tz = datetime.now(timezone.utc).astimezone().tzinfo or timezone.utc
+        tz = self._resolve_zoneinfo(timezone_name)
         windows: list[tuple[datetime, datetime]] = []
         slot_hours = [9, 11, 14, 16]
         day_count = (to_date_value - from_date_value).days + 1
@@ -923,8 +961,8 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
                 conflicts.append(event)
         return conflicts
 
-    def _slot_range_from_start(self, start_time: datetime, days: int = 3) -> tuple[date, date]:
-        start_day = start_time.astimezone().date()
+    def _slot_range_from_start(self, start_time: datetime, days: int = 3, timezone_name: Optional[str] = None) -> tuple[date, date]:
+        start_day = self._as_timezone(start_time, timezone_name).date()
         return start_day, start_day + timedelta(days=days)
 
     def get_available_slots_patch8(self, request: GoogleAvailabilitySlotsRequest) -> GoogleAvailabilitySlotsResult:
@@ -985,20 +1023,23 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
             end_time=request.end_time,
             exclude_provider_reference=request.exclude_provider_reference,
         )
+        request_timezone = self._request_timezone(request)
         selected_slot = self._normalize_slot(
             request.start_time,
             request.end_time,
             slot_id="selected-slot",
             provider="google" if status.live_calendar_writes else "simulated",
+            timezone_name=request_timezone,
         )
         if conflicts:
-            from_date_value, to_date_value = self._slot_range_from_start(request.start_time)
+            from_date_value, to_date_value = self._slot_range_from_start(request.start_time, timezone_name=request_timezone)
             alternatives = self.get_available_slots_patch8(
                 GoogleAvailabilitySlotsRequest(
                     mode=request.mode,
                     from_date=from_date_value,
                     to_date=to_date_value,
                     max_slots=request.alternative_count,
+                    timezone=request_timezone,
                 )
             ).slots
             return GoogleAvailabilityResult(
@@ -1030,11 +1071,13 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
 
     def create_booking_patch8(self, request: GoogleBookingCreateRequest) -> GoogleBookingActionResult:
         status = self._require_supported_mode(request.mode) if request.mode == "test" else self.get_mode_status(request.mode)
+        request_timezone = self._request_timezone(request)
         availability = self.check_availability_patch8(
             GoogleAvailabilityCheckRequest(
                 mode=request.mode,
                 start_time=request.start_time,
                 end_time=request.end_time,
+                timezone=request_timezone,
             )
         )
         if not availability.slot_available:
@@ -1062,6 +1105,7 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
                 location=None,
                 start_time=request.start_time,
                 end_time=request.end_time,
+                timezone_name=request_timezone,
                 metadata={
                     "appointment_agent_demo": "true",
                     "appointment_agent_release": "v1.1.0-patch8",
@@ -1098,7 +1142,7 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
             mobile_number=request.customer_mobile,
             start_time_utc=request.start_time.astimezone(timezone.utc).replace(tzinfo=None),
             end_time_utc=request.end_time.astimezone(timezone.utc).replace(tzinfo=None),
-            timezone=settings.google_default_timezone,
+            timezone=request_timezone,
             provider_reference=provider_reference,
             details={"label": request.label, "appointment_type": request.appointment_type},
             is_demo_generated=True,
@@ -1112,7 +1156,13 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
             provider_reference=provider_reference,
             message="Booking created successfully.",
             status="confirmed",
-            selected_slot=self._normalize_slot(request.start_time, request.end_time, slot_id=request.slot_id, provider="google" if status.live_calendar_writes else "simulated"),
+            selected_slot=self._normalize_slot(
+                request.start_time,
+                request.end_time,
+                slot_id=request.slot_id,
+                provider="google" if status.live_calendar_writes else "simulated",
+                timezone_name=self._request_timezone(request),
+            ),
             monitoring_labels=["slot.checked", "booking.created"],
         )
 
@@ -1166,12 +1216,14 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
                 )
             )
         current_provider_reference = request.provider_reference or record.external_id
+        request_timezone = self._request_timezone(request)
         availability = self.check_availability_patch8(
             GoogleAvailabilityCheckRequest(
                 mode=request.mode,
                 start_time=request.start_time,
                 end_time=request.end_time,
                 exclude_provider_reference=current_provider_reference,
+                timezone=request_timezone,
             )
         )
         if not availability.slot_available:
@@ -1201,6 +1253,7 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
                 location=None,
                 start_time=request.start_time,
                 end_time=request.end_time,
+                timezone_name=request_timezone,
                 metadata={
                     "appointment_agent_demo": "true",
                     "appointment_agent_release": "v1.1.0-patch8",
@@ -1238,7 +1291,7 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
             mobile_number=None,
             start_time_utc=request.start_time.astimezone(timezone.utc).replace(tzinfo=None),
             end_time_utc=request.end_time.astimezone(timezone.utc).replace(tzinfo=None),
-            timezone=settings.google_default_timezone,
+            timezone=request_timezone,
             provider_reference=provider_reference,
             details={"label": request.label, "appointment_type": request.appointment_type},
             is_demo_generated=True,
@@ -1252,6 +1305,12 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
             provider_reference=provider_reference,
             message="Booking rescheduled successfully.",
             status="rescheduled",
-            selected_slot=self._normalize_slot(request.start_time, request.end_time, slot_id=request.slot_id, provider="google" if status.live_calendar_writes else "simulated"),
+            selected_slot=self._normalize_slot(
+                request.start_time,
+                request.end_time,
+                slot_id=request.slot_id,
+                provider="google" if status.live_calendar_writes else "simulated",
+                timezone_name=self._request_timezone(request),
+            ),
             monitoring_labels=["slot.checked", "booking.rescheduled"],
         )

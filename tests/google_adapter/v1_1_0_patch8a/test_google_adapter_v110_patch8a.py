@@ -14,6 +14,22 @@ def _future_date_range(day_offset: int = 90) -> tuple[str, str]:
     return start_day.isoformat(), end_day.isoformat()
 
 
+def _first_available_slot(client: TestClient, base_path: str, *, day_offset: int) -> dict:
+    """Find a slot in a future window even if earlier tests already reserved one."""
+
+    for offset in range(day_offset, day_offset + 15):
+        from_date, to_date = _future_date_range(day_offset=offset)
+        response = client.post(
+            f"{base_path}/availability/slots",
+            json={"mode": "simulation", "from_date": from_date, "to_date": to_date, "max_slots": 3},
+        )
+        assert response.status_code == 200
+        slots = response.json()["slots"]
+        if slots:
+            return slots[0]
+    raise AssertionError("No simulation slot was available in the checked date windows.")
+
+
 def test_google_v110_patch8a_hold_hides_slot_and_blocks_parallel_hold() -> None:
     client = TestClient(app)
     from_date, to_date = _future_date_range()
@@ -72,13 +88,7 @@ def test_google_v110_patch8a_hold_hides_slot_and_blocks_parallel_hold() -> None:
 
 def test_google_v110_patch8a_booking_requires_active_matching_hold() -> None:
     client = TestClient(app)
-    from_date, to_date = _future_date_range(day_offset=95)
-
-    slots_response = client.post(
-        "/api/google/v1.1.0-patch8a/availability/slots",
-        json={"mode": "simulation", "from_date": from_date, "to_date": to_date, "max_slots": 1},
-    )
-    slot = slots_response.json()["slots"][0]
+    slot = _first_available_slot(client, "/api/google/v1.1.0-patch8a", day_offset=95)
 
     hold_response = client.post(
         "/api/google/v1.1.0-patch8a/slot-hold/create",
@@ -119,13 +129,7 @@ def test_google_v110_patch8a_booking_requires_active_matching_hold() -> None:
 
 def test_google_v110_patch8a_expired_hold_blocks_booking() -> None:
     client = TestClient(app)
-    from_date, to_date = _future_date_range(day_offset=100)
-
-    slots_response = client.post(
-        "/api/google/v1.1.0-patch8a/availability/slots",
-        json={"mode": "simulation", "from_date": from_date, "to_date": to_date, "max_slots": 1},
-    )
-    slot = slots_response.json()["slots"][0]
+    slot = _first_available_slot(client, "/api/google/v1.1.0-patch8a", day_offset=100)
 
     hold_response = client.post(
         "/api/google/v1.1.0-patch8a/slot-hold/create",

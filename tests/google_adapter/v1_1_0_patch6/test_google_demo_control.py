@@ -63,3 +63,34 @@ def test_google_v110_patch6_rejects_invalid_date_range() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_google_v110_patch6_generate_uses_selected_address_for_title_and_linkage() -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/google/v1.1.0-patch6/demo-calendar/generate",
+        json={
+            "mode": "simulation",
+            "from_date": "2026-03-29",
+            "to_date": "2026-04-03",
+            "appointment_type": "dentist",
+            "count": 1,
+            "linked_address_id": "addr-demo-001",
+            "linked_address_name": "Anna Berger",
+            "linked_contact_phone": "491705707716",
+            "linked_contact_email": "anna.berger@example.com",
+            "linked_correlation_ref": "corr-addr-demo-001",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["generated_count"] == 1
+    item = body["items"][0]
+    assert item["title"] == "Dentist Appointment - Anna Berger"
+    assert item["details"]["linked_address_id"] == "addr-demo-001"
+    assert item["details"]["linked_address_name"] == "Anna Berger"
+    assert item["details"]["linked_contact_phone"] == "491705707716"
+    assert item["details"]["linked_contact_email"] == "anna.berger@example.com"
+    assert item["details"]["title_strategy"] == "appointment_type_plus_selected_address"

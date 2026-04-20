@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Appointment Agent Reminder Scheduler __VERSION__</title>
+    <style>
+      :root {
+        --bg: #eef2f7;
+        --bg-strong: #ffffff;
+        --panel: #f8fafc;
+        --panel-strong: #ffffff;
+        --line: #d9e2ec;
+        --ink: #122033;
+        --muted: #5a687b;
+        --brand: #0f4c81;
+        --brand-strong: #173b6c;
+        --accent: #c77d00;
+        --ok: #13795b;
+        --warn: #b54708;
+        --danger: #b42318;
+        --shadow: 0 18px 60px rgba(15, 32, 51, 0.12);
+      }
+
+      [data-theme="night"] {
+        --bg: #09111d;
+        --bg-strong: #0f1724;
+        --panel: #111d2d;
+        --panel-strong: #18263a;
+        --line: #23364f;
+        --ink: #edf3fb;
+        --muted: #92a3bd;
+        --brand: #64b5f6;
+        --brand-strong: #90caf9;
+        --accent: #f8b84e;
+        --ok: #5dd39e;
+        --warn: #ffb96b;
+        --danger: #ff8f8f;
+        --shadow: 0 22px 70px rgba(0, 0, 0, 0.45);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(100, 181, 246, 0.16), transparent 26%),
+          linear-gradient(180deg, var(--bg) 0%, var(--bg-strong) 100%);
+        color: var(--ink);
+      }
+
+      .shell { min-height: 100vh; display: flex; flex-direction: column; }
+      .header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 16px 24px;
+        background: rgba(11, 22, 36, 0.88);
+        color: #f5f9ff;
+        backdrop-filter: blur(18px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .brand-block { display: flex; flex-direction: column; gap: 4px; }
+      .brand-kicker { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.72; }
+      .brand-title { font-size: 24px; font-weight: 700; }
+      .brand-sub { font-size: 13px; color: #c6d3e6; max-width: 720px; }
+      .version-badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        margin-top: 8px;
+        padding: 2px 8px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.14);
+        color: #d7e4f4;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+      }
+
+      .nav, .header-actions, .action-row, .segment, .pill-row, .story-grid { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      .nav button, .header-actions button, .segment button, .action-row button {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        color: inherit;
+        padding: 10px 14px;
+        cursor: pointer;
+        font: inherit;
+      }
+      .nav button.active, .segment button.active, .action-row button.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+      }
+
+      .main { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+      .hero {
+        background: linear-gradient(135deg, rgba(15, 76, 129, 0.96), rgba(24, 40, 72, 0.95));
+        color: #f4f8ff;
+        border-radius: 28px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+      }
+      .hero h1 { margin: 0 0 10px; font-size: clamp(28px, 4.2vw, 44px); }
+      .hero p { margin: 0; max-width: 820px; line-height: 1.6; color: #d7e4f4; }
+      .release { margin-top: 12px; font-size: 13px; color: #b9cae0; }
+
+      .page { display: none; }
+      .page.active { display: block; }
+      .grid { display: grid; gap: 18px; grid-template-columns: 320px minmax(0, 1fr); }
+      .page-grid { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+      }
+      .panel h2, .panel h3, .panel p { margin-top: 0; }
+      .stack { display: flex; flex-direction: column; gap: 12px; }
+      .metric, .card, .note, .mini-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+        background: var(--panel-strong);
+      }
+      .metric { display: flex; justify-content: space-between; gap: 12px; }
+      .metric .label { color: var(--muted); }
+      .control label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 8px; }
+      .small { font-size: 13px; color: var(--muted); line-height: 1.55; }
+      .story-card, .job-card, .health-card, .info-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+        background: var(--panel-strong);
+      }
+      .story-card strong, .job-card strong, .health-card strong, .info-card strong { display: block; margin-bottom: 4px; }
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .status-pill.ok { border-color: rgba(19, 121, 91, 0.4); color: var(--ok); }
+      .status-pill.warn { border-color: rgba(181, 71, 8, 0.4); color: var(--warn); }
+      .status-pill.danger { border-color: rgba(180, 35, 24, 0.4); color: var(--danger); }
+      .status-pill.neutral { border-color: rgba(90, 104, 123, 0.34); color: var(--muted); }
+      .timeline { display: flex; flex-direction: column; gap: 10px; }
+      .timeline-item {
+        border-left: 3px solid var(--brand);
+        background: rgba(255,255,255,0.02);
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+      }
+      .timeline-item small { display: block; color: var(--muted); margin-top: 4px; }
+      .help-list { display: grid; gap: 10px; }
+      .help-list a {
+        color: inherit;
+        text-decoration: none;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 12px 14px;
+        background: var(--panel-strong);
+      }
+
+      @media (max-width: 1120px) {
+        .grid, .page-grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body data-theme="day">
+    <div class="shell">
+      <header class="header">
+        <div class="brand-block">
+          <div class="brand-kicker" id="brandKicker">Combined reminder cockpit</div>
+          <div class="brand-title" id="brandTitle">Appointment Agent Reminder Scheduler</div>
+          <div class="brand-sub" id="brandSub">The cockpit shows the appointment source, Google linkage, appointment details, reminder policy, preview, jobs, and health in one view.</div>
+          <div class="version-badge" id="headerVersion">v__VERSION__</div>
+        </div>
+        <nav class="nav" id="navTabs"></nav>
+        <div class="header-actions">
+          <div class="segment">
+            <button id="langDeBtn">DE</button>
+            <button id="langEnBtn" class="active">EN</button>
+          </div>
+          <button id="themeToggle">Theme</button>
+        </div>
+      </header>
+
+      <main class="main">
+        <section class="hero">
+          <h1 id="heroTitle">A simple cockpit for appointment source, Google linkage, and reminder jobs</h1>
+          <p id="heroText">A new colleague can understand the full reminder path: where the appointment came from, what Google shows, what rules apply, what reminders will be created, which jobs are open, and whether the system is healthy.</p>
+          <div class="release" id="releaseText">Release: __VERSION__</div>
+        </section>
+
+        <section class="page active" id="page-dashboard">
+          <div class="grid">
+            <article class="panel">
+              <h2 id="dashboardTitle">Dashboard</h2>
+              <p class="small" id="dashboardSub">This overview shows the combined story in one short screen.</p>
+              <div class="stack" id="dashboardSummary"></div>
+            </article>
+            <article class="panel">
+              <h2 id="storiesTitle">Demo Stories</h2>
+              <div class="story-grid" id="currentStoryCard"></div>
+              <div class="stack" id="storiesBody"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-source">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="sourceTitle">Appointment Source</h2>
+              <p class="small" id="sourceSub">The source tells us where the appointment started.</p>
+              <div class="stack" id="sourceOverview"></div>
+            </article>
+            <article class="panel">
+              <h2 id="linkageTitle">Google Linkage</h2>
+              <p class="small" id="linkageSub">The linkage tells us which Google calendar entry belongs to this appointment.</p>
+              <div class="stack" id="linkageBody"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-details">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="detailsTitle">Appointment Details</h2>
+              <p class="small" id="detailsSub">The details page explains who, when, where, and what kind of appointment this is.</p>
+              <div class="stack" id="detailsOverview"></div>
+            </article>
+            <article class="panel">
+              <h2 id="operatorTitle">Operator Summary</h2>
+              <div class="stack" id="operatorBody"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-policy">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="policyTitle">Reminder Policy</h2>
+              <p class="small" id="policySub">The policy decides when reminders are sent and which channel is tried first.</p>
+              <div class="stack" id="policyOverview"></div>
+            </article>
+            <article class="panel">
+              <h2 id="policyRulesTitle">Policy Rules</h2>
+              <div class="stack" id="policyRules"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-preview">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="previewTitle">Reminder Preview</h2>
+              <p class="small" id="previewSub">The preview shows what reminder jobs will be created from the appointment.</p>
+              <div class="stack" id="previewSummary"></div>
+            </article>
+            <article class="panel">
+              <h2 id="previewTimelineTitle">Preview Timeline</h2>
+              <div class="timeline" id="previewTimeline"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-jobs">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="jobsTitle">Reminder Jobs</h2>
+              <p class="small" id="jobsSub">This page shows planned, updated, cancelled, and sent jobs.</p>
+              <div class="stack" id="jobsSummary"></div>
+            </article>
+            <article class="panel">
+              <h2 id="jobsListTitle">Job Timeline</h2>
+              <div class="stack" id="jobsList"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-health">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="healthTitle">Health</h2>
+              <p class="small" id="healthSub">The health page shows if the runtime is ready for the next reminder.</p>
+              <div class="stack" id="healthSummary"></div>
+            </article>
+            <article class="panel">
+              <h2 id="healthNotesTitle">Diagnostics</h2>
+              <div class="stack" id="healthNotes"></div>
+              <div class="stack" id="healthChecks"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-help">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="helpTitle">Help</h2>
+              <p id="helpSub" class="small">Short explanations for operators and new colleagues.</p>
+              <div class="help-list" id="helpLinks"></div>
+            </article>
+            <article class="panel">
+              <h2 id="parameterTitle">Important Parameters</h2>
+              <div class="stack" id="parameterBody"></div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const VERSION = "__VERSION__";
+      const state = {
+        payload: null,
+        page: "dashboard",
+        language: "en",
+        theme: "day",
+      };
+
+      const refs = {
+        navTabs: document.getElementById("navTabs"),
+        langDeBtn: document.getElementById("langDeBtn"),
+        langEnBtn: document.getElementById("langEnBtn"),
+        themeToggle: document.getElementById("themeToggle"),
+        brandKicker: document.getElementById("brandKicker"),
+        brandTitle: document.getElementById("brandTitle"),
+        brandSub: document.getElementById("brandSub"),
+        headerVersion: document.getElementById("headerVersion"),
+        heroTitle: document.getElementById("heroTitle"),
+        heroText: document.getElementById("heroText"),
+        releaseText: document.getElementById("releaseText"),
+        dashboardTitle: document.getElementById("dashboardTitle"),
+        dashboardSub: document.getElementById("dashboardSub"),
+        storiesTitle: document.getElementById("storiesTitle"),
+        sourceTitle: document.getElementById("sourceTitle"),
+        sourceSub: document.getElementById("sourceSub"),
+        linkageTitle: document.getElementById("linkageTitle"),
+        linkageSub: document.getElementById("linkageSub"),
+        detailsTitle: document.getElementById("detailsTitle"),
+        detailsSub: document.getElementById("detailsSub"),
+        operatorTitle: document.getElementById("operatorTitle"),
+        policyTitle: document.getElementById("policyTitle"),
+        policySub: document.getElementById("policySub"),
+        policyRulesTitle: document.getElementById("policyRulesTitle"),
+        previewTitle: document.getElementById("previewTitle"),
+        previewSub: document.getElementById("previewSub"),
+        previewTimelineTitle: document.getElementById("previewTimelineTitle"),
+        jobsTitle: document.getElementById("jobsTitle"),
+        jobsSub: document.getElementById("jobsSub"),
+        jobsListTitle: document.getElementById("jobsListTitle"),
+        healthTitle: document.getElementById("healthTitle"),
+        healthSub: document.getElementById("healthSub"),
+        healthNotesTitle: document.getElementById("healthNotesTitle"),
+        helpTitle: document.getElementById("helpTitle"),
+        helpSub: document.getElementById("helpSub"),
+        parameterTitle: document.getElementById("parameterTitle"),
+        dashboardSummary: document.getElementById("dashboardSummary"),
+        currentStoryCard: document.getElementById("currentStoryCard"),
+        storiesBody: document.getElementById("storiesBody"),
+        sourceOverview: document.getElementById("sourceOverview"),
+        linkageBody: document.getElementById("linkageBody"),
+        detailsOverview: document.getElementById("detailsOverview"),
+        operatorBody: document.getElementById("operatorBody"),
+        policyOverview: document.getElementById("policyOverview"),
+        policyRules: document.getElementById("policyRules"),
+        previewSummary: document.getElementById("previewSummary"),
+        previewTimeline: document.getElementById("previewTimeline"),
+        jobsSummary: document.getElementById("jobsSummary"),
+        jobsList: document.getElementById("jobsList"),
+        healthSummary: document.getElementById("healthSummary"),
+        healthNotes: document.getElementById("healthNotes"),
+        healthChecks: document.getElementById("healthChecks"),
+        helpLinks: document.getElementById("helpLinks"),
+        parameterBody: document.getElementById("parameterBody"),
+      };
+
+      function t(key) {
+        const lang = state.language === "de" ? "de" : "en";
+        const payload = state.payload || {};
+        const page = payload[`${key}_${lang}`];
+        return page || key;
+      }
+
+      function fetchJson(url) {
+        return fetch(url).then(async (response) => {
+          const body = await response.json();
+          if (!response.ok) {
+            throw new Error(body.detail?.message || JSON.stringify(body));
+          }
+          return body;
+        });
+      }
+
+      function setPage(page) {
+        state.page = page;
+        render();
+      }
+
+      function renderNav() {
+        refs.navTabs.innerHTML = "";
+        (state.payload?.pages || []).forEach((page) => {
+          const button = document.createElement("button");
+          button.textContent = page.label;
+          if (page.id === state.page) {
+            button.classList.add("active");
+          }
+          button.addEventListener("click", () => setPage(page.id));
+          refs.navTabs.appendChild(button);
+        });
+      }
+
+      function renderPages() {
+        document.querySelectorAll(".page").forEach((page) => {
+          page.classList.toggle("active", page.id === `page-${state.page}`);
+        });
+      }
+
+      function createMetricRow(label, value) {
+        const row = document.createElement("div");
+        row.className = "metric";
+        row.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+        return row;
+      }
+
+      function createInfoCard(item) {
+        const card = document.createElement("div");
+        card.className = "info-card";
+        const stateClass = item.state || "neutral";
+        card.innerHTML = `
+          <strong>${item.title}</strong>
+          <div class="status-pill ${stateClass}">${stateClass}</div>
+          <div class="small" style="margin-top:8px;">${item.body}</div>
+        `;
+        return card;
+      }
+
+      function createStoryCard(story) {
+        const card = document.createElement("div");
+        card.className = "story-card";
+        card.innerHTML = `
+          <strong>${story.title}</strong>
+          <div class="small">${story.summary}</div>
+          <div class="small" style="margin-top:8px;"><strong>Say:</strong> ${story.what_to_say}</div>
+          <div class="small"><strong>Why:</strong> ${story.why_it_matters}</div>
+        `;
+        return card;
+      }
+
+      function createJobCard(job) {
+        const card = document.createElement("div");
+        card.className = "job-card";
+        card.innerHTML = `
+          <strong>${job.job_id}</strong>
+          <div class="small">${job.kind}</div>
+          <div class="small">Status: ${job.status}</div>
+          <div class="small">Channel: ${job.channel}</div>
+          <div class="small">Due: ${job.due_at}</div>
+          <div class="small">${job.note}</div>
+        `;
+        return card;
+      }
+
+      function createTimelineItem(item) {
+        const node = document.createElement("div");
+        node.className = "timeline-item";
+        node.innerHTML = `
+          <strong>${item.step}</strong>
+          <div>${item.body}</div>
+          <small>${item.when} | ${item.channel}</small>
+        `;
+        return node;
+      }
+
+      function createHelpCard(item) {
+        const link = document.createElement("a");
+        link.href = item.href;
+        link.textContent = `${item.label} - ${item.href}`;
+        return link;
+      }
+
+      function renderDashboard() {
+        refs.dashboardSummary.innerHTML = "";
+        refs.currentStoryCard.innerHTML = "";
+        refs.storiesBody.innerHTML = "";
+
+        (state.payload?.dashboard_summary?.metrics || []).forEach((metric) => {
+          refs.dashboardSummary.appendChild(createMetricRow(metric.label, metric.value));
+        });
+
+        const currentStory = state.payload?.current_story;
+        if (currentStory) {
+          const card = document.createElement("div");
+          card.className = "mini-card";
+          card.innerHTML = `
+            <strong>${currentStory.title}</strong>
+            <div class="small">${currentStory.summary}</div>
+          `;
+          refs.currentStoryCard.appendChild(card);
+        }
+
+        (state.payload?.demo_stories || []).forEach((story) => {
+          refs.storiesBody.appendChild(createStoryCard(story));
+        });
+      }
+
+      function renderSource() {
+        refs.sourceOverview.innerHTML = "";
+        refs.linkageBody.innerHTML = "";
+        (state.payload?.appointment_source?.metrics || []).forEach((metric) => {
+          refs.sourceOverview.appendChild(createMetricRow(metric.label, metric.value));
+        });
+        (state.payload?.appointment_source?.cards || []).forEach((item) => {
+          refs.sourceOverview.appendChild(createInfoCard(item));
+        });
+        (state.payload?.google_linkage?.metrics || []).forEach((metric) => {
+          refs.linkageBody.appendChild(createMetricRow(metric.label, metric.value));
+        });
+        (state.payload?.google_linkage?.cards || []).forEach((item) => {
+          refs.linkageBody.appendChild(createInfoCard(item));
+        });
+      }
+
+      function renderDetails() {
+        refs.detailsOverview.innerHTML = "";
+        refs.operatorBody.innerHTML = "";
+        (state.payload?.appointment_details?.metrics || []).forEach((metric) => {
+          refs.detailsOverview.appendChild(createMetricRow(metric.label, metric.value));
+        });
+        (state.payload?.appointment_details?.cards || []).forEach((item) => {
+          refs.detailsOverview.appendChild(createInfoCard(item));
+        });
+        const summary = state.payload?.operator_summary || { bullets: [], flow_steps: [] };
+        const intro = document.createElement("div");
+        intro.className = "info-card";
+        intro.innerHTML = `<strong>${summary.title || "Operator summary"}</strong><div class="small">${summary.subtitle || ""}</div>`;
+        refs.operatorBody.appendChild(intro);
+        (summary.bullets || []).forEach((bullet) => {
+          const item = document.createElement("div");
+          item.className = "note";
+          item.textContent = bullet;
+          refs.operatorBody.appendChild(item);
+        });
+        (summary.flow_steps || []).forEach((step, index) => {
+          const item = document.createElement("div");
+          item.className = "timeline-item";
+          item.innerHTML = `<strong>${index + 1}. ${step}</strong><small>Operator flow</small>`;
+          refs.operatorBody.appendChild(item);
+        });
+      }
+
+      function renderPolicy() {
+        refs.policyOverview.innerHTML = "";
+        refs.policyRules.innerHTML = "";
+        (state.payload?.reminder_policy?.metrics || []).forEach((metric) => {
+          refs.policyOverview.appendChild(createMetricRow(metric.label, metric.value));
+        });
+        (state.payload?.reminder_policy?.cards || []).forEach((item) => {
+          refs.policyOverview.appendChild(createInfoCard(item));
+        });
+        (state.payload?.reminder_policy?.rules || []).forEach((rule) => {
+          const item = document.createElement("div");
+          item.className = "note";
+          item.textContent = rule;
+          refs.policyRules.appendChild(item);
+        });
+      }
+
+      function renderPreview() {
+        refs.previewSummary.innerHTML = "";
+        refs.previewTimeline.innerHTML = "";
+        (state.payload?.reminder_preview?.metrics || []).forEach((metric) => {
+          refs.previewSummary.appendChild(createMetricRow(metric.label, metric.value));
+        });
+        (state.payload?.reminder_preview?.cards || []).forEach((item) => {
+          refs.previewSummary.appendChild(createInfoCard(item));
+        });
+        (state.payload?.reminder_preview?.timeline || []).forEach((item) => {
+          refs.previewTimeline.appendChild(createTimelineItem(item));
+        });
+      }
+
+      function renderJobs() {
+        refs.jobsSummary.innerHTML = "";
+        refs.jobsList.innerHTML = "";
+        const statusOverview = state.payload?.status_overview || {};
+        Object.entries(statusOverview).forEach(([label, value]) => {
+          refs.jobsSummary.appendChild(createMetricRow(label, value));
+        });
+        (state.payload?.reminder_jobs?.cards || []).forEach((item) => {
+          refs.jobsSummary.appendChild(createInfoCard(item));
+        });
+        (state.payload?.reminder_jobs?.jobs || []).forEach((job) => {
+          refs.jobsList.appendChild(createJobCard(job));
+        });
+      }
+
+      function renderHealth() {
+        refs.healthSummary.innerHTML = "";
+        refs.healthNotes.innerHTML = "";
+        refs.healthChecks.innerHTML = "";
+        (state.payload?.runtime_health?.metrics || []).forEach((metric) => {
+          refs.healthSummary.appendChild(createMetricRow(metric.label, metric.value));
+        });
+        (state.payload?.runtime_health?.notes || []).forEach((note) => {
+          const item = document.createElement("div");
+          item.className = "note";
+          item.textContent = note;
+          refs.healthNotes.appendChild(item);
+        });
+        (state.payload?.runtime_health?.checks || []).forEach((check) => {
+          refs.healthChecks.appendChild(createMetricRow(check.label, check.value));
+        });
+      }
+
+      function renderHelp() {
+        refs.helpLinks.innerHTML = "";
+        (state.payload?.help_links || []).forEach((item) => {
+          refs.helpLinks.appendChild(createHelpCard(item));
+        });
+        if (!(state.payload?.help_links || []).length) {
+          const empty = document.createElement("div");
+          empty.className = "note";
+          empty.textContent = "No help links loaded yet.";
+          refs.helpLinks.appendChild(empty);
+        }
+        refs.parameterBody.innerHTML = "";
+        (state.payload?.parameter_explanations || []).forEach((parameter) => {
+          const item = document.createElement("div");
+          item.className = "info-card";
+          item.innerHTML = `<strong>${parameter.name}</strong><div class="small">Value: ${parameter.value}</div><div class="small">${parameter.description}</div>`;
+          refs.parameterBody.appendChild(item);
+        });
+      }
+
+      function renderStaticCopy() {
+        const payload = state.payload || {};
+        document.title = `Appointment Agent Reminder Scheduler ${VERSION}`;
+        refs.brandKicker.textContent = "Combined reminder cockpit";
+        refs.brandTitle.textContent = "Appointment Agent Reminder Scheduler";
+        refs.brandSub.textContent = payload.ui_meta?.tagline || refs.brandSub.textContent;
+        refs.headerVersion.textContent = VERSION;
+        refs.heroTitle.textContent = "A simple cockpit for appointment source, Google linkage, and reminder jobs";
+        refs.heroText.textContent = payload.dashboard_summary?.subtitle || refs.heroText.textContent;
+        refs.releaseText.textContent = `Release: ${VERSION}`;
+        refs.dashboardTitle.textContent = payload.dashboard_summary?.title || "Dashboard";
+        refs.dashboardSub.textContent = payload.dashboard_summary?.subtitle || "";
+        refs.storiesTitle.textContent = "Demo Stories";
+        refs.sourceTitle.textContent = payload.appointment_source?.title || "Appointment Source";
+        refs.sourceSub.textContent = payload.appointment_source?.subtitle || "";
+        refs.linkageTitle.textContent = payload.google_linkage?.title || "Google Linkage";
+        refs.linkageSub.textContent = payload.google_linkage?.subtitle || "";
+        refs.detailsTitle.textContent = payload.appointment_details?.title || "Appointment Details";
+        refs.detailsSub.textContent = payload.appointment_details?.subtitle || "";
+        refs.operatorTitle.textContent = payload.operator_summary?.title || "Operator Summary";
+        refs.policyTitle.textContent = payload.reminder_policy?.title || "Reminder Policy";
+        refs.policySub.textContent = payload.reminder_policy?.subtitle || "";
+        refs.policyRulesTitle.textContent = "Policy Rules";
+        refs.previewTitle.textContent = payload.reminder_preview?.title || "Reminder Preview";
+        refs.previewSub.textContent = payload.reminder_preview?.subtitle || "";
+        refs.previewTimelineTitle.textContent = "Preview Timeline";
+        refs.jobsTitle.textContent = payload.reminder_jobs?.title || "Reminder Jobs";
+        refs.jobsSub.textContent = payload.reminder_jobs?.subtitle || "";
+        refs.jobsListTitle.textContent = "Job Timeline";
+        refs.healthTitle.textContent = payload.runtime_health?.title || "Health";
+        refs.healthSub.textContent = payload.runtime_health?.subtitle || "";
+        refs.healthNotesTitle.textContent = "Diagnostics";
+        refs.helpTitle.textContent = "Help";
+        refs.helpSub.textContent = "Short explanations for operators and new colleagues.";
+        refs.parameterTitle.textContent = "Important Parameters";
+        refs.langDeBtn.classList.toggle("active", state.language === "de");
+        refs.langEnBtn.classList.toggle("active", state.language === "en");
+      }
+
+      function render() {
+        renderStaticCopy();
+        renderNav();
+        renderPages();
+        renderDashboard();
+        renderSource();
+        renderDetails();
+        renderPolicy();
+        renderPreview();
+        renderJobs();
+        renderHealth();
+        renderHelp();
+      }
+
+      function loadPayload() {
+        return fetchJson(`/api/reminder-ui/${VERSION}/payload?lang=${state.language}`)
+          .then((payload) => {
+            state.payload = payload;
+            render();
+          });
+      }
+
+      refs.langDeBtn.addEventListener("click", () => {
+        state.language = "de";
+        loadPayload();
+      });
+      refs.langEnBtn.addEventListener("click", () => {
+        state.language = "en";
+        loadPayload();
+      });
+      refs.themeToggle.addEventListener("click", () => {
+        state.theme = state.theme === "day" ? "night" : "day";
+        document.body.dataset.theme = state.theme;
+      });
+
+      loadPayload();
+    </script>
+  </body>
+</html>

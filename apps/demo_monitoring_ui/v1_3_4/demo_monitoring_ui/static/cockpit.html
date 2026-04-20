@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Appointment Agent Reminder Scheduler __VERSION__</title>
+    <style>
+      :root {
+        --bg: #eef2f7;
+        --bg-strong: #ffffff;
+        --panel: #f8fafc;
+        --panel-strong: #ffffff;
+        --line: #d9e2ec;
+        --ink: #122033;
+        --muted: #5a687b;
+        --brand: #0f4c81;
+        --brand-strong: #173b6c;
+        --accent: #c77d00;
+        --ok: #13795b;
+        --warn: #b54708;
+        --danger: #b42318;
+        --shadow: 0 18px 60px rgba(15, 32, 51, 0.12);
+      }
+
+      [data-theme="night"] {
+        --bg: #09111d;
+        --bg-strong: #0f1724;
+        --panel: #111d2d;
+        --panel-strong: #18263a;
+        --line: #23364f;
+        --ink: #edf3fb;
+        --muted: #92a3bd;
+        --brand: #64b5f6;
+        --brand-strong: #90caf9;
+        --accent: #f8b84e;
+        --ok: #5dd39e;
+        --warn: #ffb96b;
+        --danger: #ff8f8f;
+        --shadow: 0 22px 70px rgba(0, 0, 0, 0.45);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(100, 181, 246, 0.16), transparent 26%),
+          linear-gradient(180deg, var(--bg) 0%, var(--bg-strong) 100%);
+        color: var(--ink);
+      }
+
+      .shell { min-height: 100vh; display: flex; flex-direction: column; }
+      .header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 16px 24px;
+        background: rgba(11, 22, 36, 0.88);
+        color: #f5f9ff;
+        backdrop-filter: blur(18px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .brand-block { display: flex; flex-direction: column; gap: 4px; }
+      .brand-kicker { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.72; }
+      .brand-title { font-size: 24px; font-weight: 700; }
+      .brand-sub { font-size: 13px; color: #c6d3e6; max-width: 560px; }
+      .version-badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        margin-top: 8px;
+        padding: 2px 8px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.14);
+        color: #d7e4f4;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+      }
+
+      .nav, .header-actions, .action-row, .segment, .pill-row, .story-grid { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      .nav button, .header-actions button, .segment button, .action-row button {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        color: inherit;
+        padding: 10px 14px;
+        cursor: pointer;
+        font: inherit;
+      }
+      .nav button.active, .segment button.active, .action-row button.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+      }
+
+      .main { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+      .hero {
+        background: linear-gradient(135deg, rgba(15, 76, 129, 0.96), rgba(24, 40, 72, 0.95));
+        color: #f4f8ff;
+        border-radius: 28px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+      }
+      .hero h1 { margin: 0 0 10px; font-size: clamp(28px, 4.2vw, 44px); }
+      .hero p { margin: 0; max-width: 760px; line-height: 1.6; color: #d7e4f4; }
+      .release { margin-top: 12px; font-size: 13px; color: #b9cae0; }
+
+      .page { display: none; }
+      .page.active { display: block; }
+      .grid { display: grid; gap: 18px; grid-template-columns: 320px minmax(0, 1fr); }
+      .page-grid { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+      }
+      .panel h2, .panel h3, .panel p { margin-top: 0; }
+      .stack { display: flex; flex-direction: column; gap: 12px; }
+      .metric, .record, .message-box, .mini-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+        background: var(--panel-strong);
+      }
+      .metric { display: flex; justify-content: space-between; gap: 12px; }
+      .metric .label { color: var(--muted); }
+      .control label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 8px; }
+      .control select, .control input[type="number"], .control input[type="date"], .control input[type="time"] {
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: var(--panel-strong);
+        color: var(--ink);
+        padding: 12px;
+        font: inherit;
+      }
+      .control input[type="checkbox"] { transform: scale(1.1); }
+      .small { font-size: 13px; color: var(--muted); }
+      .story-card, .job-card, .validation-card, .preview-card, .channel-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+        background: var(--panel-strong);
+      }
+      .story-card strong, .job-card strong, .preview-card strong, .channel-card strong { display: block; margin-bottom: 4px; }
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .status-pill.ok { border-color: rgba(19, 121, 91, 0.4); color: var(--ok); }
+      .status-pill.warn { border-color: rgba(181, 71, 8, 0.4); color: var(--warn); }
+      .status-pill.danger { border-color: rgba(180, 35, 24, 0.4); color: var(--danger); }
+      .timeline { display: flex; flex-direction: column; gap: 10px; }
+      .timeline-item {
+        border-left: 3px solid var(--brand);
+        background: rgba(255,255,255,0.02);
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+      }
+      .timeline-item small { display: block; color: var(--muted); margin-top: 4px; }
+      .help-list { display: grid; gap: 10px; }
+      .help-list a {
+        color: inherit;
+        text-decoration: none;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 12px 14px;
+        background: var(--panel-strong);
+      }
+
+      @media (max-width: 1120px) {
+        .grid, .page-grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body data-theme="day">
+    <div class="shell">
+      <header class="header">
+        <div class="brand-block">
+          <div class="brand-kicker" id="brandKicker">Delivery-style reminder cockpit</div>
+          <div class="brand-title" id="brandTitle">Appointment Agent Reminder Scheduler</div>
+          <div class="brand-sub" id="brandSub">Choose channels, check validation, and read delivery results in one simple operator view.</div>
+          <div class="version-badge" id="headerVersion">v__VERSION__</div>
+        </div>
+        <nav class="nav" id="navTabs"></nav>
+        <div class="header-actions">
+          <div class="segment">
+            <button id="langDeBtn">DE</button>
+            <button id="langEnBtn" class="active">EN</button>
+          </div>
+          <button id="themeToggle">Theme</button>
+        </div>
+      </header>
+
+      <main class="main">
+        <section class="hero">
+          <h1 id="heroTitle">Reminder delivery that a new operator can understand in one minute</h1>
+          <p id="heroText">The cockpit shows delivery channels, validation outcomes, and delivery results before anything is sent.</p>
+          <div class="release" id="releaseText">Release: __VERSION__</div>
+        </section>
+
+        <section class="page active" id="page-dashboard">
+          <div class="grid">
+            <article class="panel">
+              <h2 id="overviewTitle">Delivery Overview</h2>
+              <div class="stack" id="overviewCards"></div>
+            </article>
+            <article class="panel">
+              <h2 id="storiesTitle">Demo Stories</h2>
+              <div class="stack" id="storiesBody"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-setup">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="setupTitle">Delivery Controls</h2>
+              <div class="stack" id="setupForm"></div>
+              <div class="action-row" style="margin-top: 16px;">
+                <button id="resetDefaultsBtn">Reset Defaults</button>
+                <button id="manualExampleBtn">Primary Channel Demo</button>
+                <button id="autoExampleBtn">Fallback Demo</button>
+              </div>
+            </article>
+            <article class="panel">
+              <h2 id="validationTitle">Validation Outcomes</h2>
+              <div class="stack" id="validationBody"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-preview">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="previewTitle">Delivery Preview</h2>
+              <div class="stack" id="previewSummary"></div>
+            </article>
+            <article class="panel">
+              <h2 id="previewTimelineTitle">Current Delivery Path</h2>
+              <div class="timeline" id="previewTimeline"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-jobs">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="jobsTitle">Delivery Results</h2>
+              <div class="stack" id="jobsSummary"></div>
+            </article>
+            <article class="panel">
+              <h2 id="jobsListTitle">Result Timeline</h2>
+              <div class="stack" id="jobsList"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-lifecycle">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="lifecycleTitle">Delivery Channels</h2>
+              <div class="stack" id="lifecycleSummary"></div>
+            </article>
+            <article class="panel">
+              <h2 id="lifecycleTransitionsTitle">Channel Readiness</h2>
+              <div class="stack" id="lifecycleTransitions"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-sync">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="syncTitle">Operator Summary</h2>
+              <div class="stack" id="syncSummary"></div>
+            </article>
+            <article class="panel">
+              <h2 id="syncNotesTitle">Delivery Notes</h2>
+              <div class="stack" id="syncNotes"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-help">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="helpTitle">Help</h2>
+              <p id="helpSub" class="small">Short, simple explanations for operators and new colleagues.</p>
+              <div class="help-list" id="helpLinks"></div>
+            </article>
+            <article class="panel">
+              <h2 id="parameterTitle">Important Parameters</h2>
+              <div class="stack" id="parameterBody"></div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const VERSION = "__VERSION__";
+      const state = {
+        payload: null,
+        page: "dashboard",
+        language: "en",
+        theme: "day",
+        draft: null,
+        validation: [],
+        preview: [],
+        jobs: [],
+      };
+
+      const refs = {
+        navTabs: document.getElementById("navTabs"),
+        langDeBtn: document.getElementById("langDeBtn"),
+        langEnBtn: document.getElementById("langEnBtn"),
+        themeToggle: document.getElementById("themeToggle"),
+        brandKicker: document.getElementById("brandKicker"),
+        brandTitle: document.getElementById("brandTitle"),
+        brandSub: document.getElementById("brandSub"),
+        headerVersion: document.getElementById("headerVersion"),
+        heroTitle: document.getElementById("heroTitle"),
+        heroText: document.getElementById("heroText"),
+        releaseText: document.getElementById("releaseText"),
+        overviewTitle: document.getElementById("overviewTitle"),
+        storiesTitle: document.getElementById("storiesTitle"),
+        setupTitle: document.getElementById("setupTitle"),
+        validationTitle: document.getElementById("validationTitle"),
+        previewTitle: document.getElementById("previewTitle"),
+        previewTimelineTitle: document.getElementById("previewTimelineTitle"),
+        jobsTitle: document.getElementById("jobsTitle"),
+        jobsListTitle: document.getElementById("jobsListTitle"),
+        lifecycleTitle: document.getElementById("lifecycleTitle"),
+        lifecycleTransitionsTitle: document.getElementById("lifecycleTransitionsTitle"),
+        lifecycleSummary: document.getElementById("lifecycleSummary"),
+        lifecycleTransitions: document.getElementById("lifecycleTransitions"),
+        syncTitle: document.getElementById("syncTitle"),
+        syncNotesTitle: document.getElementById("syncNotesTitle"),
+        syncSummary: document.getElementById("syncSummary"),
+        syncNotes: document.getElementById("syncNotes"),
+        helpTitle: document.getElementById("helpTitle"),
+        helpSub: document.getElementById("helpSub"),
+        parameterTitle: document.getElementById("parameterTitle"),
+        overviewCards: document.getElementById("overviewCards"),
+        storiesBody: document.getElementById("storiesBody"),
+        setupForm: document.getElementById("setupForm"),
+        validationBody: document.getElementById("validationBody"),
+        previewSummary: document.getElementById("previewSummary"),
+        previewTimeline: document.getElementById("previewTimeline"),
+        jobsSummary: document.getElementById("jobsSummary"),
+        jobsList: document.getElementById("jobsList"),
+        helpLinks: document.getElementById("helpLinks"),
+        parameterBody: document.getElementById("parameterBody"),
+        resetDefaultsBtn: document.getElementById("resetDefaultsBtn"),
+        manualExampleBtn: document.getElementById("manualExampleBtn"),
+        autoExampleBtn: document.getElementById("autoExampleBtn"),
+      };
+
+      const copy = {
+        en: {
+          dashboard: "Dashboard",
+          delivery: "Delivery",
+          validation: "Validation",
+          results: "Results",
+          channels: "Channels",
+          operator: "Operator",
+          help: "Help",
+          heroTitle: "Reminder delivery that a new operator can understand in one minute",
+          heroText: "The cockpit shows delivery channels, validation outcomes, and delivery results before anything is sent.",
+          overviewTitle: "Delivery Overview",
+          storiesTitle: "Demo Stories",
+          setupTitle: "Delivery Controls",
+          validationTitle: "Validation Outcomes",
+          previewTitle: "Delivery Preview",
+          previewTimelineTitle: "Current Delivery Path",
+          jobsTitle: "Delivery Results",
+          jobsListTitle: "Result Timeline",
+          lifecycleTitle: "Delivery Channels",
+          lifecycleTransitionsTitle: "Channel Readiness",
+          syncTitle: "Operator Summary",
+          syncNotesTitle: "Delivery Notes",
+          helpTitle: "Help",
+          helpSub: "Short, simple explanations for operators and new colleagues.",
+          parameterTitle: "Important Parameters",
+          resetDefaults: "Reset Defaults",
+          manualExample: "Primary Channel Demo",
+          autoExample: "Fallback Demo",
+          enabled: "Enabled",
+          delivery_mode: "Delivery mode",
+          primary_channel: "Primary channel",
+          allow_fallback_channels: "Allow fallback channels",
+          validate_recipient: "Validate recipient",
+          validate_channel: "Validate channel",
+          max_retry_count: "Max retry count",
+          delivery_window_minutes: "Delivery window minutes",
+          message_length_limit: "Message length limit",
+          result_retention_days: "Result retention days",
+          channel_email: "Email channel",
+          channel_voice: "Voice channel",
+          channel_rcs_sms: "RCS/SMS channel",
+          deliveryExample: "Delivery example",
+          deliveryDate: "Delivery date",
+          deliveryTime: "Delivery time",
+          activeChannels: "Active channels",
+          primaryPath: "Primary path",
+          fallbackPath: "Fallback path",
+          validationOk: "Validation looks good.",
+          validationWarning: "Validation needs attention.",
+          validationBlocked: "Validation blocks delivery.",
+          resultReady: "Delivery is ready.",
+          resultBlocked: "Delivery is blocked.",
+          resultFallback: "Fallback channel used.",
+          sequence: "Sequence",
+          scheduledFor: "Scheduled for",
+          status: "Status",
+          channel: "Channel",
+          reason: "Reason",
+          businessValueLabel: "Business value",
+          wowEffectLabel: "Wow effect",
+          operatorFlow: "Operator flow",
+          docs: "Document",
+          validationRules: "Validation rules",
+          deliveryChannelsLabel: "Delivery channels",
+          deliveryResultsLabel: "Delivery results",
+        },
+        de: {
+          dashboard: "Dashboard",
+          delivery: "Delivery",
+          validation: "Validation",
+          results: "Results",
+          channels: "Channels",
+          operator: "Operator",
+          help: "Help",
+          heroTitle: "Reminder delivery, das ein neuer Operator in einer Minute versteht",
+          heroText: "Das Cockpit zeigt Kanaele, Validation und Delivery-Ergebnisse, bevor etwas gesendet wird.",
+          overviewTitle: "Delivery Uebersicht",
+          storiesTitle: "Demo Stories",
+          setupTitle: "Delivery Controls",
+          validationTitle: "Validation Outcomes",
+          previewTitle: "Delivery Preview",
+          previewTimelineTitle: "Aktueller Delivery Path",
+          jobsTitle: "Delivery Results",
+          jobsListTitle: "Result Timeline",
+          lifecycleTitle: "Delivery Channels",
+          lifecycleTransitionsTitle: "Channel Readiness",
+          syncTitle: "Operator Summary",
+          syncNotesTitle: "Delivery Notes",
+          helpTitle: "Help",
+          helpSub: "Short, simple explanations for operators and new colleagues.",
+          parameterTitle: "Important Parameters",
+          resetDefaults: "Reset Defaults",
+          manualExample: "Primary Channel Demo",
+          autoExample: "Fallback Demo",
+          enabled: "Enabled",
+          delivery_mode: "Delivery mode",
+          primary_channel: "Primary channel",
+          allow_fallback_channels: "Allow fallback channels",
+          validate_recipient: "Validate recipient",
+          validate_channel: "Validate channel",
+          max_retry_count: "Max retry count",
+          delivery_window_minutes: "Delivery window minutes",
+          message_length_limit: "Message length limit",
+          result_retention_days: "Result retention days",
+          channel_email: "Email channel",
+          channel_voice: "Voice channel",
+          channel_rcs_sms: "RCS/SMS channel",
+          deliveryExample: "Delivery example",
+          deliveryDate: "Delivery date",
+          deliveryTime: "Delivery time",
+          activeChannels: "Active channels",
+          primaryPath: "Primary path",
+          fallbackPath: "Fallback path",
+          validationOk: "Validation looks good.",
+          validationWarning: "Validation needs attention.",
+          validationBlocked: "Validation blocks delivery.",
+          resultReady: "Delivery is ready.",
+          resultBlocked: "Delivery is blocked.",
+          resultFallback: "Fallback channel used.",
+          sequence: "Sequence",
+          scheduledFor: "Scheduled for",
+          status: "Status",
+          channel: "Channel",
+          reason: "Reason",
+          businessValueLabel: "Business value",
+          wowEffectLabel: "Wow effect",
+          operatorFlow: "Operator flow",
+          docs: "Document",
+          validationRules: "Validation rules",
+          deliveryChannelsLabel: "Delivery channels",
+          deliveryResultsLabel: "Delivery results",
+        },
+      };
+
+      function t(key) {
+        return (copy[state.language] || copy.en)[key] || key;
+      }
+
+      function fetchJson(url) {
+        return fetch(url).then(async (response) => {
+          const body = await response.json();
+          if (!response.ok) {
+            throw new Error(body.detail?.message || JSON.stringify(body));
+          }
+          return body;
+        });
+      }
+
+      function navTabs() {
+        return (state.payload?.pages || []).map((page) => page);
+      }
+
+      function normalizeDraft(source) {
+        const draft = { ...source };
+        draft.enabled = Boolean(draft.enabled);
+        draft.delivery_mode = draft.delivery_mode || "priority_order";
+        draft.primary_channel = draft.primary_channel || "rcs_sms";
+        draft.allow_fallback_channels = Boolean(draft.allow_fallback_channels);
+        draft.validate_recipient = Boolean(draft.validate_recipient);
+        draft.validate_channel = Boolean(draft.validate_channel);
+        draft.max_retry_count = Number(draft.max_retry_count || 0);
+        draft.delivery_window_minutes = Number(draft.delivery_window_minutes || 0);
+        draft.message_length_limit = Number(draft.message_length_limit || 0);
+        draft.result_retention_days = Number(draft.result_retention_days || 0);
+        draft.channel_email_enabled = Boolean(draft.channel_email_enabled);
+        draft.channel_voice_enabled = Boolean(draft.channel_voice_enabled);
+        draft.channel_rcs_sms_enabled = Boolean(draft.channel_rcs_sms_enabled);
+        return draft;
+      }
+
+      function currentExample() {
+        return state.payload?.delivery_example || {};
+      }
+
+      function activeChannels(draft) {
+        return [
+          draft.channel_rcs_sms_enabled ? "rcs_sms" : null,
+          draft.channel_email_enabled ? "email" : null,
+          draft.channel_voice_enabled ? "voice" : null,
+        ].filter(Boolean);
+      }
+
+      function validateDraft(draft) {
+        const issues = [];
+        const channels = activeChannels(draft);
+        const example = currentExample();
+        if (!draft.enabled) {
+          issues.push("Delivery is switched off.");
+        }
+        if (!channels.length) {
+          issues.push("At least one channel must be active.");
+        }
+        if (!channels.includes(draft.primary_channel)) {
+          issues.push("The primary channel is not active.");
+        }
+        if (draft.max_retry_count < 0 || draft.max_retry_count > 3) {
+          issues.push("Retry count must stay between 0 and 3.");
+        }
+        if (draft.delivery_window_minutes <= 0) {
+          issues.push("Delivery window minutes must be greater than zero.");
+        }
+        if (draft.message_length_limit < example.message_length_chars) {
+          issues.push("The message is longer than the allowed limit.");
+        }
+        return issues;
+      }
+
+      function buildPreview(draft) {
+        const channels = activeChannels(draft);
+        const issues = validateDraft(draft);
+        const example = currentExample();
+        let channel = draft.primary_channel;
+        let status = "sent";
+        let reason = "Primary channel is ready.";
+
+        if (issues.length) {
+          status = "blocked";
+          reason = issues[0];
+        } else if (!channels.includes(draft.primary_channel) && draft.allow_fallback_channels && channels.length > 1) {
+          channel = channels.find((item) => item !== draft.primary_channel) || draft.primary_channel;
+          status = "fallback_sent";
+          reason = "Fallback channel used because the primary path was not ready.";
+        } else if (!channels.includes(draft.primary_channel)) {
+          status = "blocked";
+          reason = "Primary channel is not active and fallback is off.";
+        }
+
+        return {
+          channel,
+          status,
+          reason,
+          example,
+          steps: [
+            {
+              label: "Validation",
+              state: issues.length ? "warn" : "ok",
+              body: issues.length ? issues[0] : "Validation passed.",
+            },
+            {
+              label: "Channel choice",
+              state: status === "blocked" ? "danger" : "ok",
+              body: channel === draft.primary_channel ? `Primary channel: ${channel}` : `Fallback channel: ${channel}`,
+            },
+            {
+              label: "Delivery result",
+              state: status === "blocked" ? "danger" : "ok",
+              body: reason,
+            },
+          ],
+        };
+      }
+
+      function buildResults(draft) {
+        const preview = buildPreview(draft);
+        const current = {
+          result_id: "current-case",
+          channel: preview.channel,
+          status: preview.status,
+          timestamp: new Date().toISOString(),
+          reason: preview.reason,
+        };
+        return [current, ...(state.payload?.delivery_results || [])];
+      }
+
+      function setDraft(next) {
+        state.draft = normalizeDraft(next);
+        const preview = buildPreview(state.draft);
+        state.preview = preview.steps;
+        state.jobs = buildResults(state.draft);
+        state.validation = validateDraft(state.draft);
+        render();
+      }
+
+      function setPage(page) {
+        state.page = page;
+        render();
+      }
+
+      function renderNav() {
+        refs.navTabs.innerHTML = "";
+        navTabs().forEach((page) => {
+          const button = document.createElement("button");
+          button.textContent = page.label;
+          if (page.id === state.page) {
+            button.classList.add("active");
+          }
+          button.addEventListener("click", () => setPage(page.id));
+          refs.navTabs.appendChild(button);
+        });
+      }
+
+      function renderPages() {
+        document.querySelectorAll(".page").forEach((page) => {
+          page.classList.toggle("active", page.id === `page-${state.page}`);
+        });
+      }
+
+      function renderStaticCopy() {
+        document.title = `Appointment Agent Reminder Scheduler ${VERSION}`;
+        refs.brandKicker.textContent = state.language === "de" ? "Delivery-style reminder cockpit" : "Delivery-style reminder cockpit";
+        refs.brandTitle.textContent = "Appointment Agent Reminder Scheduler";
+        refs.brandSub.textContent = state.language === "en"
+          ? "Choose channels, check validation, and read delivery results in one simple operator view."
+          : "Choose channels, check validation, and read delivery results in one simple operator view.";
+        refs.headerVersion.textContent = `v${VERSION}`;
+        refs.heroTitle.textContent = t("heroTitle");
+        refs.heroText.textContent = t("heroText");
+        refs.releaseText.textContent = `Release: ${VERSION}`;
+        refs.overviewTitle.textContent = t("overviewTitle");
+        refs.storiesTitle.textContent = t("storiesTitle");
+        refs.setupTitle.textContent = t("setupTitle");
+        refs.validationTitle.textContent = t("validationTitle");
+        refs.previewTitle.textContent = t("previewTitle");
+        refs.previewTimelineTitle.textContent = t("previewTimelineTitle");
+        refs.jobsTitle.textContent = t("jobsTitle");
+        refs.jobsListTitle.textContent = t("jobsListTitle");
+        refs.lifecycleTitle.textContent = t("lifecycleTitle");
+        refs.lifecycleTransitionsTitle.textContent = t("lifecycleTransitionsTitle");
+        refs.syncTitle.textContent = t("syncTitle");
+        refs.syncNotesTitle.textContent = t("syncNotesTitle");
+        refs.helpTitle.textContent = t("helpTitle");
+        refs.helpSub.textContent = t("helpSub");
+        refs.parameterTitle.textContent = t("parameterTitle");
+        refs.langDeBtn.classList.toggle("active", state.language === "de");
+        refs.langEnBtn.classList.toggle("active", state.language === "en");
+      }
+
+      function renderOverview() {
+        refs.overviewCards.innerHTML = "";
+        const draft = state.draft;
+        const example = currentExample();
+        const issues = state.validation;
+        const currentResult = state.jobs[0] || {};
+        const summary = [
+          ["Primary channel", `${draft.primary_channel} | ${draft.delivery_mode}`],
+          ["Active channels", activeChannels(draft).join(", ") || "-"],
+          ["Validation", issues.length ? `${issues.length} issue(s)` : "ready"],
+          ["Current result", `${currentResult.status || "pending"} | ${currentResult.channel || "-"}`],
+        ];
+        summary.forEach(([label, value]) => {
+          const card = document.createElement("div");
+          card.className = "metric";
+          card.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.overviewCards.appendChild(card);
+        });
+
+        const overview = state.payload?.delivery_overview?.cards || [];
+        overview.forEach((item) => {
+          const card = document.createElement("div");
+          card.className = "mini-card";
+          card.innerHTML = `<strong>${item.title}</strong><div class="small">${item.body}</div>`;
+          refs.overviewCards.appendChild(card);
+        });
+
+        const exampleCard = document.createElement("div");
+        exampleCard.className = "mini-card";
+        exampleCard.innerHTML = `
+          <strong>Delivery example</strong>
+          <div class="small">${example.display_date} ${example.display_time}</div>
+          <div class="small">${example.recipient_email}</div>
+          <div class="small">${example.recipient_phone}</div>
+        `;
+        refs.overviewCards.appendChild(exampleCard);
+      }
+
+      function renderStories() {
+        refs.storiesBody.innerHTML = "";
+        (state.payload?.demo_stories || []).forEach((story) => {
+          const card = document.createElement("div");
+          card.className = "story-card";
+          card.innerHTML = `
+            <strong>${story.title}</strong>
+            <p class="small"><strong>${t("businessValueLabel")}:</strong> ${story.business_value}</p>
+            <p class="small"><strong>${t("wowEffectLabel")}:</strong> ${story.wow_effect}</p>
+          `;
+          refs.storiesBody.appendChild(card);
+        });
+      }
+
+      function renderSetupForm() {
+        const draft = state.draft;
+        const labels = state.payload?.delivery_setup?.labels || {};
+        const labelMap = {
+          enabled: labels.enabled,
+          delivery_mode: labels.delivery_mode,
+          primary_channel: labels.primary_channel,
+          allow_fallback_channels: labels.allow_fallback,
+          validate_recipient: labels.validate_recipient,
+          validate_channel: labels.validate_channel,
+          max_retry_count: labels.max_retry_count,
+          delivery_window_minutes: labels.delivery_window_minutes,
+          message_length_limit: labels.message_length_limit,
+          result_retention_days: labels.result_retention_days,
+          channel_email_enabled: labels.channel_email,
+          channel_voice_enabled: labels.channel_voice,
+          channel_rcs_sms_enabled: labels.channel_rcs_sms,
+        };
+        const fields = [
+          ["enabled", "checkbox", draft.enabled],
+          ["delivery_mode", "select", draft.delivery_mode, ["priority_order", "fallback_chain"]],
+          ["primary_channel", "select", draft.primary_channel, ["rcs_sms", "email", "voice"]],
+          ["allow_fallback_channels", "checkbox", draft.allow_fallback_channels],
+          ["validate_recipient", "checkbox", draft.validate_recipient],
+          ["validate_channel", "checkbox", draft.validate_channel],
+          ["max_retry_count", "number", draft.max_retry_count],
+          ["delivery_window_minutes", "number", draft.delivery_window_minutes],
+          ["message_length_limit", "number", draft.message_length_limit],
+          ["result_retention_days", "number", draft.result_retention_days],
+          ["channel_email_enabled", "checkbox", draft.channel_email_enabled],
+          ["channel_voice_enabled", "checkbox", draft.channel_voice_enabled],
+          ["channel_rcs_sms_enabled", "checkbox", draft.channel_rcs_sms_enabled],
+        ];
+        refs.setupForm.innerHTML = "";
+        fields.forEach(([fieldId, type, value, options]) => {
+          const wrapper = document.createElement("div");
+          wrapper.className = "control";
+          const label = document.createElement("label");
+          label.textContent = labelMap[fieldId] || fieldId;
+          wrapper.appendChild(label);
+
+          let input;
+          if (type === "checkbox") {
+            input = document.createElement("input");
+            input.type = "checkbox";
+            input.checked = Boolean(value);
+            input.addEventListener("change", (event) => {
+              state.draft[fieldId] = event.target.checked;
+              setDraft(state.draft);
+            });
+          } else if (type === "select") {
+            input = document.createElement("select");
+            options.forEach((optionValue) => {
+              const option = document.createElement("option");
+              option.value = optionValue;
+              option.textContent = optionValue;
+              option.selected = optionValue === value;
+              input.appendChild(option);
+            });
+            input.addEventListener("change", (event) => {
+              state.draft[fieldId] = event.target.value;
+              setDraft(state.draft);
+            });
+          } else {
+            input = document.createElement("input");
+            input.type = "number";
+            input.min = "0";
+            input.value = value;
+            input.addEventListener("input", (event) => {
+              state.draft[fieldId] = Number(event.target.value || 0);
+              setDraft(state.draft);
+            });
+          }
+
+          wrapper.appendChild(input);
+          refs.setupForm.appendChild(wrapper);
+        });
+
+        const example = currentExample();
+        const exampleBlock = document.createElement("div");
+        exampleBlock.className = "validation-card";
+        exampleBlock.innerHTML = `
+          <strong>${t("deliveryExample")}</strong>
+          <div class="metric"><span class="label">${t("deliveryDate")}</span><strong>${example.display_date}</strong></div>
+          <div class="metric"><span class="label">${t("deliveryTime")}</span><strong>${example.display_time}</strong></div>
+          <div class="small">${example.recipient_email}</div>
+          <div class="small">${example.recipient_phone}</div>
+          <div class="small">${example.message_text}</div>
+        `;
+        refs.setupForm.appendChild(exampleBlock);
+      }
+
+      function renderValidation() {
+        refs.validationBody.innerHTML = "";
+        const banner = document.createElement("div");
+        banner.className = `message-box ${state.validation.length ? "warn" : "ok"}`;
+        banner.textContent = state.validation.length ? t("validationWarning") : t("validationOk");
+        refs.validationBody.appendChild(banner);
+
+        (state.payload?.validation_outcomes || []).forEach((item) => {
+          const card = document.createElement("div");
+          card.className = "validation-card";
+          card.innerHTML = `
+            <strong>${item.title}</strong>
+            <div class="status-pill ${item.state}">${item.state}</div>
+            <div class="small" style="margin-top:8px;">${item.body}</div>
+          `;
+          refs.validationBody.appendChild(card);
+        });
+
+        const rules = document.createElement("div");
+        rules.className = "validation-card";
+        rules.innerHTML = `<strong>${t("validationRules")}</strong>`;
+        const list = document.createElement("div");
+        list.className = "stack";
+        (state.payload?.validation_rules || []).forEach((rule) => {
+          const item = document.createElement("div");
+          item.className = "message-box";
+          item.textContent = rule;
+          list.appendChild(item);
+        });
+        rules.appendChild(list);
+        refs.validationBody.appendChild(rules);
+
+        state.validation.forEach((issue) => {
+          const item = document.createElement("div");
+          item.className = "message-box";
+          item.textContent = issue;
+          refs.validationBody.appendChild(item);
+        });
+      }
+
+      function renderPreview() {
+        refs.previewSummary.innerHTML = "";
+        const preview = buildPreview(state.draft);
+        const rows = [
+          ["Mode", state.draft.delivery_mode],
+          [t("primary_channel"), state.draft.primary_channel],
+          [t("activeChannels"), activeChannels(state.draft).join(", ") || "-"],
+          [t("status"), preview.status],
+        ];
+        rows.forEach(([label, value]) => {
+          const row = document.createElement("div");
+          row.className = "metric";
+          row.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.previewSummary.appendChild(row);
+        });
+
+        refs.previewTimeline.innerHTML = "";
+        preview.steps.forEach((step) => {
+          const node = document.createElement("div");
+          node.className = "timeline-item";
+          node.innerHTML = `
+            <strong>${step.label}</strong>
+            <div>${step.body}</div>
+            <small>${step.state}</small>
+          `;
+          refs.previewTimeline.appendChild(node);
+        });
+      }
+
+      function renderJobs() {
+        refs.jobsSummary.innerHTML = "";
+        const statusOverview = state.payload?.result_overview || {};
+        Object.entries(statusOverview).forEach(([label, value]) => {
+          const row = document.createElement("div");
+          row.className = "metric";
+          row.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.jobsSummary.appendChild(row);
+        });
+
+        refs.jobsList.innerHTML = "";
+        state.jobs.forEach((job) => {
+          const node = document.createElement("div");
+          node.className = "job-card";
+          node.innerHTML = `
+            <strong>${job.result_id}</strong>
+            <div class="small">${t("channel")}: ${job.channel}</div>
+            <div class="small">${t("status")}: ${job.status}</div>
+            <div class="small">${job.timestamp}</div>
+            <div class="small">${t("reason")}: ${job.reason}</div>
+          `;
+          refs.jobsList.appendChild(node);
+        });
+      }
+
+      function renderLifecycle() {
+        refs.lifecycleSummary.innerHTML = "";
+        refs.lifecycleTransitions.innerHTML = "";
+        (state.payload?.delivery_channels || []).forEach((item) => {
+          const node = document.createElement("div");
+          node.className = "channel-card";
+          node.innerHTML = `
+            <strong>${item.label}</strong>
+            <div class="status-pill ${item.status === "ready" ? "ok" : item.status === "fallback" ? "warn" : "danger"}">${item.status}</div>
+            <div class="small" style="margin-top:8px;">${item.note}</div>
+          `;
+          refs.lifecycleSummary.appendChild(node);
+        });
+
+        const matrix = [
+          ["RCS/SMS", "ready"],
+          ["Email", "fallback"],
+          ["Voice", "disabled"],
+        ];
+        matrix.forEach(([label, value]) => {
+          const node = document.createElement("div");
+          node.className = "message-box";
+          node.innerHTML = `<strong>${label}</strong><div class="small">${value}</div>`;
+          refs.lifecycleTransitions.appendChild(node);
+        });
+      }
+
+      function renderSyncAwareness() {
+        refs.syncSummary.innerHTML = "";
+        refs.syncNotes.innerHTML = "";
+        const summary = state.payload?.operator_summary || { bullets: [], flow_steps: [] };
+        const intro = document.createElement("div");
+        intro.className = "validation-card";
+        intro.innerHTML = `<strong>${summary.title || "Operator summary"}</strong><div class="small">${summary.subtitle || ""}</div>`;
+        refs.syncSummary.appendChild(intro);
+        (summary.bullets || []).forEach((bullet) => {
+          const item = document.createElement("div");
+          item.className = "message-box";
+          item.textContent = bullet;
+          refs.syncSummary.appendChild(item);
+        });
+
+        (summary.flow_steps || []).forEach((step, index) => {
+          const item = document.createElement("div");
+          item.className = "timeline-item";
+          item.innerHTML = `<strong>${index + 1}. ${step}</strong><small>${t("operatorFlow")}</small>`;
+          refs.syncNotes.appendChild(item);
+        });
+      }
+
+      function renderHelp() {
+        refs.helpLinks.innerHTML = "";
+        const links = state.payload?.help_links || [];
+        links.forEach((item) => {
+          const link = document.createElement("a");
+          link.href = item.href;
+          link.textContent = `${item.label} - ${item.href}`;
+          refs.helpLinks.appendChild(link);
+        });
+        if (!links.length) {
+          const empty = document.createElement("div");
+          empty.className = "message-box";
+          empty.textContent = "No help links loaded yet.";
+          refs.helpLinks.appendChild(empty);
+        }
+        refs.parameterBody.innerHTML = "";
+        [
+          ["enabled", "Turns delivery on or off."],
+          ["delivery_mode", "priority_order keeps one channel first; fallback_chain allows a backup path."],
+          ["primary_channel", "The first channel the system tries."],
+          ["allow_fallback_channels", "Lets the system use the next channel if the first one is not ready."],
+          ["validate_recipient", "Checks that the target looks valid before delivery starts."],
+          ["validate_channel", "Checks that the selected channel is allowed."],
+          ["max_retry_count", "How many tries are allowed before the delivery gives up."],
+          ["delivery_window_minutes", "How long the delivery window stays open."],
+          ["message_length_limit", "How long the message may be before the cockpit blocks delivery."],
+          ["result_retention_days", "How long results stay visible in the cockpit."],
+          ["channel_email_enabled", "Lets email take part in delivery."],
+          ["channel_voice_enabled", "Lets voice take part in delivery."],
+          ["channel_rcs_sms_enabled", "Lets RCS/SMS take part in delivery."],
+          ["deliveryStates", "The cockpit shows sent, fallback_sent, blocked, retrying, failed, and skipped."],
+        ].forEach(([label, body]) => {
+          const item = document.createElement("div");
+          item.className = "message-box";
+          item.innerHTML = `<strong>${label}</strong><div class="small">${body}</div>`;
+          refs.parameterBody.appendChild(item);
+        });
+      }
+
+      function render() {
+        renderStaticCopy();
+        renderNav();
+        renderPages();
+        renderOverview();
+        renderStories();
+        renderSetupForm();
+        renderValidation();
+        renderPreview();
+        renderJobs();
+        renderLifecycle();
+        renderSyncAwareness();
+        renderHelp();
+      }
+
+      function loadPayload() {
+        return fetchJson(`/api/reminder-ui/${VERSION}/payload?lang=${state.language}`)
+          .then((payload) => {
+            state.payload = payload;
+            state.draft = normalizeDraft(payload.delivery_setup);
+            state.validation = validateDraft(state.draft);
+            state.preview = buildPreview(state.draft).steps;
+            state.jobs = buildResults(state.draft);
+            render();
+          });
+      }
+
+      function applyExample(type) {
+        if (type === "manual") {
+          state.draft.delivery_mode = "priority_order";
+          state.draft.primary_channel = "rcs_sms";
+          state.draft.allow_fallback_channels = false;
+          state.draft.validate_recipient = true;
+          state.draft.validate_channel = true;
+          state.draft.max_retry_count = 1;
+          state.draft.delivery_window_minutes = 15;
+          state.draft.message_length_limit = 160;
+          state.draft.channel_email_enabled = false;
+          state.draft.channel_voice_enabled = false;
+          state.draft.channel_rcs_sms_enabled = true;
+        } else if (type === "auto") {
+          state.draft.delivery_mode = "fallback_chain";
+          state.draft.primary_channel = "rcs_sms";
+          state.draft.allow_fallback_channels = true;
+          state.draft.validate_recipient = true;
+          state.draft.validate_channel = true;
+          state.draft.max_retry_count = 2;
+          state.draft.delivery_window_minutes = 20;
+          state.draft.message_length_limit = 160;
+          state.draft.channel_email_enabled = true;
+          state.draft.channel_voice_enabled = false;
+          state.draft.channel_rcs_sms_enabled = true;
+        } else {
+          state.draft = normalizeDraft(state.payload.delivery_setup);
+        }
+        setDraft(state.draft);
+      }
+
+      refs.langDeBtn.addEventListener("click", () => {
+        state.language = "de";
+        loadPayload();
+      });
+      refs.langEnBtn.addEventListener("click", () => {
+        state.language = "en";
+        loadPayload();
+      });
+      refs.themeToggle.addEventListener("click", () => {
+        state.theme = state.theme === "day" ? "night" : "day";
+        document.body.dataset.theme = state.theme;
+      });
+      refs.resetDefaultsBtn.addEventListener("click", () => applyExample("reset"));
+      refs.manualExampleBtn.addEventListener("click", () => applyExample("manual"));
+      refs.autoExampleBtn.addEventListener("click", () => applyExample("auto"));
+
+      loadPayload();
+    </script>
+  </body>
+</html>

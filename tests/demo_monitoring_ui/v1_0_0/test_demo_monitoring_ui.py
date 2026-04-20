@@ -78,12 +78,12 @@ def test_docs_routes_render_markdown_in_new_pages() -> None:
 
     assert demo_response.status_code == 200
     assert "Demo Guide" in demo_response.text
-    assert "Version: v1.2.1-patch4" in demo_response.text
-    assert "/docs/assets/screenshots/v1_2_1_patch4/cockpit-overview.svg" in demo_response.text
+    assert "v1.3.9" in demo_response.text
+    assert "Story 1: Create a new address" in demo_response.text
     assert user_response.status_code == 200
     assert "Sprache: DE" in user_response.text
-    assert "User Guide Demo Monitoring UI v1.2.1-patch4" in user_response.text
-    assert "Version: v1.2.1-patch4" in user_response.text
+    assert "Benutzerleitfaden v1.3.9" in user_response.text
+    assert "v1.3.9" in user_response.text
     assert admin_response.status_code == 200
     assert "Admin Guide" in admin_response.text
 

@@ -22,16 +22,16 @@ router = APIRouter(tags=["demo-docs-v1.0.2"])
 
 DOC_MAP = {
     "demo": {
-        "en": DOCS_ROOT / "demo" / "demo_guide_demo_monitoring_ui_v1_2_1_patch4_en.md",
-        "de": DOCS_ROOT / "demo" / "demo_guide_demo_monitoring_ui_v1_2_1_patch4_de.md",
+        "en": DOCS_ROOT / "demo" / "demo_guide_demo_monitoring_ui_v1_3_9_en.md",
+        "de": DOCS_ROOT / "demo" / "demo_guide_demo_monitoring_ui_v1_3_9_de.md",
     },
     "user": {
-        "en": DOCS_ROOT / "user" / "user_guide_demo_monitoring_ui_v1_2_1_patch4_en.md",
-        "de": DOCS_ROOT / "user" / "user_guide_demo_monitoring_ui_v1_2_1_patch4_de.md",
+        "en": DOCS_ROOT / "user" / "user_guide_demo_monitoring_ui_v1_3_9_en.md",
+        "de": DOCS_ROOT / "user" / "user_guide_demo_monitoring_ui_v1_3_9_de.md",
     },
     "admin": {
-        "en": DOCS_ROOT / "admin" / "demo_monitoring_ui_v1_2_1_patch4_en.md",
-        "de": DOCS_ROOT / "admin" / "demo_monitoring_ui_v1_2_1_patch4_de.md",
+        "en": DOCS_ROOT / "admin" / "demo_monitoring_ui_v1_3_9_en.md",
+        "de": DOCS_ROOT / "admin" / "demo_monitoring_ui_v1_3_9_de.md",
     },
 }
 

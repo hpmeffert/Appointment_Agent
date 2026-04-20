@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Appointment Agent Reminder Scheduler __VERSION__</title>
+    <style>
+      :root {
+        --bg: #eef2f7;
+        --bg-strong: #ffffff;
+        --panel: #f8fafc;
+        --panel-strong: #ffffff;
+        --line: #d9e2ec;
+        --ink: #122033;
+        --muted: #5a687b;
+        --brand: #0f4c81;
+        --brand-strong: #173b6c;
+        --accent: #c77d00;
+        --ok: #13795b;
+        --warn: #b54708;
+        --danger: #b42318;
+        --shadow: 0 18px 60px rgba(15, 32, 51, 0.12);
+      }
+
+      [data-theme="night"] {
+        --bg: #09111d;
+        --bg-strong: #0f1724;
+        --panel: #111d2d;
+        --panel-strong: #18263a;
+        --line: #23364f;
+        --ink: #edf3fb;
+        --muted: #92a3bd;
+        --brand: #64b5f6;
+        --brand-strong: #90caf9;
+        --accent: #f8b84e;
+        --ok: #5dd39e;
+        --warn: #ffb96b;
+        --danger: #ff8f8f;
+        --shadow: 0 22px 70px rgba(0, 0, 0, 0.45);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(100, 181, 246, 0.16), transparent 26%),
+          linear-gradient(180deg, var(--bg) 0%, var(--bg-strong) 100%);
+        color: var(--ink);
+      }
+
+      .shell { min-height: 100vh; display: flex; flex-direction: column; }
+      .header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 16px 24px;
+        background: rgba(11, 22, 36, 0.88);
+        color: #f5f9ff;
+        backdrop-filter: blur(18px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .brand-block { display: flex; flex-direction: column; gap: 4px; }
+      .brand-kicker { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.72; }
+      .brand-title { font-size: 24px; font-weight: 700; }
+      .brand-sub { font-size: 13px; color: #c6d3e6; max-width: 520px; }
+      .version-badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        margin-top: 8px;
+        padding: 2px 8px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.14);
+        color: #d7e4f4;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+      }
+
+      .nav, .header-actions, .action-row, .segment, .pill-row, .story-grid { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      .nav button, .header-actions button, .segment button, .action-row button {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        color: inherit;
+        padding: 10px 14px;
+        cursor: pointer;
+        font: inherit;
+      }
+      .nav button.active, .segment button.active, .action-row button.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+      }
+
+      .main { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+      .hero {
+        background: linear-gradient(135deg, rgba(15, 76, 129, 0.96), rgba(24, 40, 72, 0.95));
+        color: #f4f8ff;
+        border-radius: 28px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+      }
+      .hero h1 { margin: 0 0 10px; font-size: clamp(28px, 4.2vw, 44px); }
+      .hero p { margin: 0; max-width: 760px; line-height: 1.6; color: #d7e4f4; }
+      .release { margin-top: 12px; font-size: 13px; color: #b9cae0; }
+
+      .page { display: none; }
+      .page.active { display: block; }
+      .grid { display: grid; gap: 18px; grid-template-columns: 320px minmax(0, 1fr); }
+      .page-grid { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+      }
+      .panel h2, .panel h3, .panel p { margin-top: 0; }
+      .stack { display: flex; flex-direction: column; gap: 12px; }
+      .metric, .record, .message-box, .mini-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+        background: var(--panel-strong);
+      }
+      .metric { display: flex; justify-content: space-between; gap: 12px; }
+      .metric .label { color: var(--muted); }
+      .control label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 8px; }
+      .control select, .control input[type="number"], .control input[type="date"], .control input[type="time"] {
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: var(--panel-strong);
+        color: var(--ink);
+        padding: 12px;
+        font: inherit;
+      }
+      .control input[type="checkbox"] { transform: scale(1.1); }
+      .small { font-size: 13px; color: var(--muted); }
+      .story-card, .job-card, .validation-card, .preview-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+        background: var(--panel-strong);
+      }
+      .story-card strong, .job-card strong, .preview-card strong { display: block; margin-bottom: 4px; }
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .status-pill.ok { border-color: rgba(19, 121, 91, 0.4); color: var(--ok); }
+      .status-pill.warn { border-color: rgba(181, 71, 8, 0.4); color: var(--warn); }
+      .status-pill.danger { border-color: rgba(180, 35, 24, 0.4); color: var(--danger); }
+      .timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .timeline-item {
+        border-left: 3px solid var(--brand);
+        background: rgba(255,255,255,0.02);
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+      }
+      .timeline-item small { display: block; color: var(--muted); margin-top: 4px; }
+      .help-list { display: grid; gap: 10px; }
+      .help-list a {
+        color: inherit;
+        text-decoration: none;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 12px 14px;
+        background: var(--panel-strong);
+      }
+
+      @media (max-width: 1120px) {
+        .grid, .page-grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body data-theme="day">
+    <div class="shell">
+      <header class="header">
+        <div class="brand-block">
+        <div class="brand-kicker" id="brandKicker">Incident-style reminder cockpit</div>
+        <div class="brand-title" id="brandTitle">Appointment Agent Reminder Scheduler</div>
+        <div class="brand-sub" id="brandSub">Setup, preview, and job planning in one simple operator view.</div>
+          <div class="version-badge" id="headerVersion">v__VERSION__</div>
+        </div>
+        <nav class="nav" id="navTabs"></nav>
+        <div class="header-actions">
+          <div class="segment">
+            <button id="langDeBtn">DE</button>
+            <button id="langEnBtn" class="active">EN</button>
+          </div>
+          <button id="themeToggle">Theme</button>
+        </div>
+      </header>
+
+      <main class="main">
+        <section class="hero">
+          <h1 id="heroTitle">Reminder setup that a new operator can understand in one minute</h1>
+          <p id="heroText">The system reads appointments, calculates reminder times, validates the policy, and shows the resulting jobs before anything is sent.</p>
+          <div class="release" id="releaseText">Release: __VERSION__</div>
+        </section>
+
+        <section class="page active" id="page-dashboard">
+          <div class="grid">
+            <article class="panel">
+              <h2 id="overviewTitle">Reminder Overview</h2>
+              <div class="stack" id="overviewCards"></div>
+            </article>
+            <article class="panel">
+              <h2 id="storiesTitle">Demo Stories</h2>
+              <div class="stack" id="storiesBody"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-setup">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="setupTitle">Reminder Setup</h2>
+              <div class="stack" id="setupForm"></div>
+              <div class="action-row" style="margin-top: 16px;">
+                <button id="resetDefaultsBtn">Reset Defaults</button>
+                <button id="manualExampleBtn">Manual Example</button>
+                <button id="autoExampleBtn">Auto Distributed Example</button>
+              </div>
+            </article>
+            <article class="panel">
+              <h2 id="validationTitle">Validation</h2>
+              <div class="stack" id="validationBody"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-preview">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="previewTitle">Reminder Preview</h2>
+              <div class="stack" id="previewSummary"></div>
+            </article>
+            <article class="panel">
+              <h2 id="previewTimelineTitle">Calculated Reminder Times</h2>
+              <div class="timeline" id="previewTimeline"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-jobs">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="jobsTitle">Reminder Jobs</h2>
+              <div class="stack" id="jobsSummary"></div>
+            </article>
+            <article class="panel">
+              <h2 id="jobsListTitle">Job List</h2>
+              <div class="stack" id="jobsList"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-lifecycle">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="lifecycleTitle">Lifecycle Visibility</h2>
+              <div class="stack" id="lifecycleSummary"></div>
+            </article>
+            <article class="panel">
+              <h2 id="lifecycleTransitionsTitle">Allowed Transitions</h2>
+              <div class="stack" id="lifecycleTransitions"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-help">
+          <div class="page-grid">
+            <article class="panel">
+              <h2 id="helpTitle">Help</h2>
+              <p id="helpSub" class="small">Short, simple explanations for operators and new colleagues.</p>
+              <div class="help-list" id="helpLinks"></div>
+            </article>
+            <article class="panel">
+              <h2 id="parameterTitle">Important Parameters</h2>
+              <div class="stack" id="parameterBody"></div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const VERSION = "__VERSION__";
+      const state = {
+        payload: null,
+        page: "dashboard",
+        language: "en",
+        theme: "day",
+        draft: null,
+        validation: [],
+        preview: [],
+        jobs: [],
+      };
+
+      const refs = {
+        navTabs: document.getElementById("navTabs"),
+        langDeBtn: document.getElementById("langDeBtn"),
+        langEnBtn: document.getElementById("langEnBtn"),
+        themeToggle: document.getElementById("themeToggle"),
+        brandKicker: document.getElementById("brandKicker"),
+        brandTitle: document.getElementById("brandTitle"),
+        brandSub: document.getElementById("brandSub"),
+        headerVersion: document.getElementById("headerVersion"),
+        heroTitle: document.getElementById("heroTitle"),
+        heroText: document.getElementById("heroText"),
+        releaseText: document.getElementById("releaseText"),
+        overviewTitle: document.getElementById("overviewTitle"),
+        storiesTitle: document.getElementById("storiesTitle"),
+        setupTitle: document.getElementById("setupTitle"),
+        validationTitle: document.getElementById("validationTitle"),
+        previewTitle: document.getElementById("previewTitle"),
+        previewTimelineTitle: document.getElementById("previewTimelineTitle"),
+        jobsTitle: document.getElementById("jobsTitle"),
+        jobsListTitle: document.getElementById("jobsListTitle"),
+        lifecycleTitle: document.getElementById("lifecycleTitle"),
+        lifecycleTransitionsTitle: document.getElementById("lifecycleTransitionsTitle"),
+        lifecycleSummary: document.getElementById("lifecycleSummary"),
+        lifecycleTransitions: document.getElementById("lifecycleTransitions"),
+        helpTitle: document.getElementById("helpTitle"),
+        helpSub: document.getElementById("helpSub"),
+        parameterTitle: document.getElementById("parameterTitle"),
+        overviewCards: document.getElementById("overviewCards"),
+        storiesBody: document.getElementById("storiesBody"),
+        setupForm: document.getElementById("setupForm"),
+        validationBody: document.getElementById("validationBody"),
+        previewSummary: document.getElementById("previewSummary"),
+        previewTimeline: document.getElementById("previewTimeline"),
+        jobsSummary: document.getElementById("jobsSummary"),
+        jobsList: document.getElementById("jobsList"),
+        helpLinks: document.getElementById("helpLinks"),
+        parameterBody: document.getElementById("parameterBody"),
+        resetDefaultsBtn: document.getElementById("resetDefaultsBtn"),
+        manualExampleBtn: document.getElementById("manualExampleBtn"),
+        autoExampleBtn: document.getElementById("autoExampleBtn"),
+      };
+
+      const copy = {
+        en: {
+          dashboard: "Dashboard",
+          setup: "Setup",
+          preview: "Preview",
+          jobs: "Jobs",
+          lifecycle: "Lifecycle",
+          help: "Help",
+          heroTitle: "Reminder setup that a new operator can understand in one minute",
+          heroText: "The system reads appointments, calculates reminder times, validates the policy, and shows the resulting jobs before anything is sent.",
+          overviewTitle: "Reminder Overview",
+          storiesTitle: "Demo Stories",
+          setupTitle: "Reminder Setup",
+          validationTitle: "Validation",
+          previewTitle: "Reminder Preview",
+          previewTimelineTitle: "Calculated Reminder Times",
+          jobsTitle: "Reminder Jobs",
+          jobsListTitle: "Job List",
+          helpTitle: "Help",
+          helpSub: "Short, simple explanations for operators and new colleagues.",
+          parameterTitle: "Important Parameters",
+          resetDefaults: "Reset Defaults",
+          manualExample: "Manual Example",
+          autoExample: "Auto Distributed Example",
+          enabled: "Enabled",
+          mode: "Mode",
+          reminderCount: "Reminder Count",
+          first: "First reminder hours before",
+          second: "Second reminder hours before",
+          third: "Third reminder hours before",
+          maxSpan: "Max span between first and last",
+          lastGap: "Last reminder gap before appointment",
+          enforceSpan: "Enforce max span",
+          preloadWindow: "Preload window hours",
+          channelEmail: "Email channel",
+          channelVoice: "Voice channel",
+          channelRcsSms: "RCS/SMS channel",
+          appointmentExample: "Appointment Example",
+          appointmentDate: "Appointment Date",
+          appointmentTime: "Appointment Time",
+          ready: "ready",
+          notReady: "not ready",
+          validationOk: "The current policy is valid.",
+          validationWarning: "The policy needs one or more fixes.",
+          minutes: "minutes",
+          hours: "hours",
+          scheduledFor: "Scheduled for",
+          sequence: "Sequence",
+          status: "Status",
+          channel: "Channel",
+          businessValueLabel: "Business value",
+          wowEffectLabel: "Wow effect",
+          docs: "Document",
+          validationRules: "Validation rules",
+          overviewPlanner: "Planner",
+          overviewDispatcher: "Dispatcher",
+          overviewPolicy: "Policy",
+          overviewChannels: "Channels",
+          overviewLifecycle: "Lifecycle",
+          overviewJobStates: "Job states",
+          overviewLine: "The setup page controls how many reminders are created and how far before the appointment they are sent.",
+        },
+        de: {
+          dashboard: "Dashboard",
+          setup: "Setup",
+          preview: "Vorschau",
+          jobs: "Jobs",
+          lifecycle: "Lifecycle",
+          help: "Hilfe",
+          heroTitle: "Reminder-Setup, das ein neuer Operator in einer Minute versteht",
+          heroText: "Das System liest Termine, berechnet Reminder-Zeiten, prueft die Regeln und zeigt die Jobs, bevor etwas verschickt wird.",
+          overviewTitle: "Reminder-Uebersicht",
+          storiesTitle: "Demo-Stories",
+          setupTitle: "Reminder-Setup",
+          validationTitle: "Pruefung",
+          previewTitle: "Reminder-Vorschau",
+          previewTimelineTitle: "Berechnete Reminder-Zeiten",
+          jobsTitle: "Reminder-Jobs",
+          jobsListTitle: "Job-Liste",
+          helpTitle: "Hilfe",
+          helpSub: "Kurze, einfache Erklaerungen fuer Operatoren und neue Kollegen.",
+          parameterTitle: "Wichtige Parameter",
+          resetDefaults: "Standardwerte",
+          manualExample: "Manuelles Beispiel",
+          autoExample: "Automatisch verteiltes Beispiel",
+          enabled: "Aktiviert",
+          mode: "Modus",
+          reminderCount: "Anzahl Erinnerungen",
+          first: "Erste Erinnerung Stunden vor Termin",
+          second: "Zweite Erinnerung Stunden vor Termin",
+          third: "Dritte Erinnerung Stunden vor Termin",
+          maxSpan: "Maximale Spanne zwischen erster und letzter",
+          lastGap: "Letzter Abstand vor dem Termin",
+          enforceSpan: "Maximale Spanne erzwingen",
+          preloadWindow: "Vorladefenster Stunden",
+          channelEmail: "E-Mail-Kanal",
+          channelVoice: "Voice-Kanal",
+          channelRcsSms: "RCS/SMS-Kanal",
+          appointmentExample: "Termin-Beispiel",
+          appointmentDate: "Termin-Datum",
+          appointmentTime: "Termin-Uhrzeit",
+          ready: "bereit",
+          notReady: "nicht bereit",
+          validationOk: "Die aktuelle Regel ist gueltig.",
+          validationWarning: "Die Regel braucht eine oder mehrere Korrekturen.",
+          minutes: "Minuten",
+          hours: "Stunden",
+          scheduledFor: "Geplant fuer",
+          sequence: "Reihenfolge",
+          status: "Status",
+          channel: "Kanal",
+          businessValueLabel: "Business Value",
+          wowEffectLabel: "Wow-Effekt",
+          docs: "Dokument",
+          validationRules: "Regeln",
+          overviewPlanner: "Planer",
+          overviewDispatcher: "Dispatcher",
+          overviewPolicy: "Regelwerk",
+          overviewChannels: "Kanaele",
+          overviewLifecycle: "Lifecycle",
+          overviewJobStates: "Job-Zustaende",
+          overviewLine: "Die Setup-Seite steuert, wie viele Erinnerungen erstellt werden und wie weit vor dem Termin sie geschickt werden.",
+        },
+      };
+
+      function t(key) {
+        return (copy[state.language] || copy.en)[key] || key;
+      }
+
+      function fetchJson(url) {
+        return fetch(url).then(async (response) => {
+          const body = await response.json();
+          if (!response.ok) {
+            throw new Error(body.detail?.message || JSON.stringify(body));
+          }
+          return body;
+        });
+      }
+
+      function navTabs() {
+        return (state.payload?.pages || []).map((page) => page.id);
+      }
+
+      function normalizeDraft(source) {
+        const draft = { ...source };
+        draft.enabled = Boolean(draft.enabled);
+        draft.reminder_count = Number(draft.reminder_count || 0);
+        draft.first_reminder_hours_before = Number(draft.first_reminder_hours_before || 0);
+        draft.second_reminder_hours_before = Number(draft.second_reminder_hours_before || 0);
+        draft.third_reminder_hours_before = Number(draft.third_reminder_hours_before || 0);
+        draft.max_span_between_first_and_last_reminder_hours = Number(draft.max_span_between_first_and_last_reminder_hours || 0);
+        draft.last_reminder_gap_before_appointment_hours = Number(draft.last_reminder_gap_before_appointment_hours || 0);
+        draft.enforce_max_span = Boolean(draft.enforce_max_span);
+        draft.preload_window_hours = Number(draft.preload_window_hours || 0);
+        draft.channel_email_enabled = Boolean(draft.channel_email_enabled);
+        draft.channel_voice_enabled = Boolean(draft.channel_voice_enabled);
+        draft.channel_rcs_sms_enabled = Boolean(draft.channel_rcs_sms_enabled);
+        return draft;
+      }
+
+      function currentAppointment() {
+        return state.payload?.appointment_example || {};
+      }
+
+      function appointmentStartDate() {
+        return new Date(currentAppointment().start_at);
+      }
+
+      function computeOffsets(draft) {
+        const count = Number(draft.reminder_count || 0);
+        if (!draft.enabled || count <= 0) {
+          return [];
+        }
+        if (draft.mode === "auto_distributed") {
+          const lastGap = Number(draft.last_reminder_gap_before_appointment_hours || 0);
+          const span = Number(draft.max_span_between_first_and_last_reminder_hours || 0);
+          if (count === 1) {
+            return [lastGap];
+          }
+          if (count === 2) {
+            return [lastGap + span, lastGap];
+          }
+          const step = count > 1 ? span / (count - 1) : 0;
+          return Array.from({ length: count }, (_, index) => Math.round((lastGap + span - (step * index)) * 100) / 100);
+        }
+        const options = [
+          draft.first_reminder_hours_before,
+          draft.second_reminder_hours_before,
+          draft.third_reminder_hours_before,
+        ].filter((value) => Number(value) >= 0);
+        return options.slice(0, count).sort((a, b) => b - a);
+      }
+
+      function computePreview(draft) {
+        const appointment = appointmentStartDate();
+        const offsets = computeOffsets(draft);
+        return offsets.map((offset, index) => {
+          const reminderTime = new Date(appointment.getTime() - (offset * 60 * 60 * 1000));
+          return {
+            sequence: index + 1,
+            hours_before: offset,
+            scheduled_for: reminderTime.toISOString(),
+            channel: draft.channel_rcs_sms_enabled ? "rcs_sms" : (draft.channel_email_enabled ? "email" : "voice"),
+            status: reminderTime.getTime() <= Date.now() ? "due" : "planned",
+          };
+        });
+      }
+
+      function validateDraft(draft) {
+        const issues = [];
+        if (draft.reminder_count < 0 || draft.reminder_count > 3) {
+          issues.push("Reminder count must be between 0 and 3.");
+        }
+        if (draft.mode === "manual") {
+          const values = computeOffsets(draft);
+          if (values.some((value) => value < 0)) {
+            issues.push("Manual reminder hours must be zero or higher.");
+          }
+          const unique = new Set(values);
+          if (unique.size !== values.length) {
+            issues.push("Manual reminder hours must not repeat.");
+          }
+        }
+        if (draft.enforce_max_span && draft.mode === "auto_distributed" && draft.reminder_count > 1) {
+          const offsets = computeOffsets(draft);
+          const span = Math.max(...offsets) - Math.min(...offsets);
+          if (span > draft.max_span_between_first_and_last_reminder_hours) {
+            issues.push("The calculated reminder span is larger than the allowed max span.");
+          }
+        }
+        return issues;
+      }
+
+      function buildJobsFromPreview(preview) {
+        return preview.map((item, index) => ({
+          job_id: `job-reminder-${String(index + 1).padStart(3, "0")}`,
+          sequence: item.sequence,
+          scheduled_for: item.scheduled_for,
+          status: item.status,
+          channel: item.channel,
+        }));
+      }
+
+      function setDraft(next) {
+        state.draft = normalizeDraft(next);
+        state.preview = computePreview(state.draft);
+        state.jobs = buildJobsFromPreview(state.preview);
+        state.validation = validateDraft(state.draft);
+        render();
+      }
+
+      function setPage(page) {
+        state.page = page;
+        render();
+      }
+
+      function renderNav() {
+        refs.navTabs.innerHTML = "";
+        navTabs().forEach((page) => {
+          const button = document.createElement("button");
+          button.textContent = page === "setup" ? t("setup") : page === "preview" ? t("preview") : page === "jobs" ? t("jobs") : page === "lifecycle" ? t("lifecycle") : page === "help" ? t("help") : t("dashboard");
+          if (page === state.page) {
+            button.classList.add("active");
+          }
+          button.addEventListener("click", () => setPage(page));
+          refs.navTabs.appendChild(button);
+        });
+      }
+
+      function renderPages() {
+        document.querySelectorAll(".page").forEach((page) => {
+          page.classList.toggle("active", page.id === `page-${state.page}`);
+        });
+      }
+
+      function renderStaticCopy() {
+        document.title = `Appointment Agent Reminder Scheduler ${VERSION}`;
+        refs.brandKicker.textContent = "Incident-style reminder cockpit";
+        refs.brandTitle.textContent = "Appointment Agent Reminder Scheduler";
+        refs.brandSub.textContent = state.language === "en"
+          ? "Setup, preview, and job planning in one simple operator view."
+          : "Setup, Vorschau und Jobplanung in einer einfachen Operator-Ansicht.";
+        refs.headerVersion.textContent = `v${VERSION}`;
+        refs.heroTitle.textContent = t("heroTitle");
+        refs.heroText.textContent = t("heroText");
+        refs.releaseText.textContent = `Release: ${VERSION}`;
+        refs.overviewTitle.textContent = t("overviewTitle");
+        refs.storiesTitle.textContent = t("storiesTitle");
+        refs.setupTitle.textContent = t("setupTitle");
+        refs.validationTitle.textContent = t("validationTitle");
+        refs.previewTitle.textContent = t("previewTitle");
+        refs.previewTimelineTitle.textContent = t("previewTimelineTitle");
+        refs.jobsTitle.textContent = t("jobsTitle");
+        refs.jobsListTitle.textContent = t("jobsListTitle");
+        if (refs.lifecycleTitle) {
+          refs.lifecycleTitle.textContent = state.language === "de" ? "Lifecycle-Sichtbarkeit" : "Lifecycle Visibility";
+        }
+        if (refs.lifecycleTransitionsTitle) {
+          refs.lifecycleTransitionsTitle.textContent = state.language === "de" ? "Erlaubte Uebergange" : "Allowed Transitions";
+        }
+        refs.helpTitle.textContent = t("helpTitle");
+        refs.helpSub.textContent = t("helpSub");
+        refs.parameterTitle.textContent = t("parameterTitle");
+        refs.langDeBtn.classList.toggle("active", state.language === "de");
+        refs.langEnBtn.classList.toggle("active", state.language === "en");
+      }
+
+      function renderOverview() {
+        refs.overviewCards.innerHTML = "";
+        const draft = state.draft;
+        const lifecycleSummary = (state.payload?.lifecycle_states || []).join(", ");
+        const statusOverview = state.payload?.jobs?.status_overview || {};
+        const summary = [
+          [t("overviewPolicy"), `${draft.enabled ? t("ready") : t("notReady")} | ${draft.mode} | ${draft.reminder_count}`],
+          [t("overviewPlanner"), `${t("appointmentDate")}: ${currentAppointment().display_date}`],
+          [t("overviewDispatcher"), `${state.preview.length} reminders prepared`],
+          [t("overviewChannels"), [
+            draft.channel_email_enabled ? "Email" : null,
+            draft.channel_voice_enabled ? "Voice" : null,
+            draft.channel_rcs_sms_enabled ? "RCS/SMS" : null,
+          ].filter(Boolean).join(", ") || "-"],
+          [t("overviewLifecycle"), lifecycleSummary || "planned, dispatching, sent, failed, skipped, cancelled"],
+          [t("overviewJobStates"), Object.entries(statusOverview).map(([key, value]) => `${key}: ${value}`).join(" | ") || "-"],
+        ];
+        summary.forEach(([label, value]) => {
+          const card = document.createElement("div");
+          card.className = "metric";
+          card.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.overviewCards.appendChild(card);
+        });
+      }
+
+      function renderStories() {
+        refs.storiesBody.innerHTML = "";
+        (state.payload?.demo_stories || []).forEach((story) => {
+          const card = document.createElement("div");
+          card.className = "story-card";
+          card.innerHTML = `
+            <strong>${story.title}</strong>
+            <p class="small"><strong>${t("businessValueLabel")}:</strong> ${story.business_value}</p>
+            <p class="small"><strong>${t("wowEffectLabel")}:</strong> ${story.wow_effect}</p>
+          `;
+          refs.storiesBody.appendChild(card);
+        });
+      }
+
+      function renderSetupForm() {
+        const draft = state.draft;
+        const labels = state.payload?.reminder_setup?.labels || {};
+        const labelMap = {
+          enabled: labels.enabled,
+          mode: labels.mode,
+          reminder_count: labels.reminder_count,
+          first_reminder_hours_before: labels.first,
+          second_reminder_hours_before: labels.second,
+          third_reminder_hours_before: labels.third,
+          max_span_between_first_and_last_reminder_hours: labels.max_span,
+          last_reminder_gap_before_appointment_hours: labels.last_gap,
+          enforce_max_span: labels.enforce_span,
+          preload_window_hours: labels.preload_window,
+          channel_email_enabled: labels.channel_email,
+          channel_voice_enabled: labels.channel_voice,
+          channel_rcs_sms_enabled: labels.channel_rcs_sms,
+        };
+        const fields = [
+          ["enabled", "checkbox", draft.enabled],
+          ["mode", "select", draft.mode, ["manual", "auto_distributed"]],
+          ["reminder_count", "number", draft.reminder_count],
+          ["first_reminder_hours_before", "number", draft.first_reminder_hours_before],
+          ["second_reminder_hours_before", "number", draft.second_reminder_hours_before],
+          ["third_reminder_hours_before", "number", draft.third_reminder_hours_before],
+          ["max_span_between_first_and_last_reminder_hours", "number", draft.max_span_between_first_and_last_reminder_hours],
+          ["last_reminder_gap_before_appointment_hours", "number", draft.last_reminder_gap_before_appointment_hours],
+          ["enforce_max_span", "checkbox", draft.enforce_max_span],
+          ["preload_window_hours", "number", draft.preload_window_hours],
+          ["channel_email_enabled", "checkbox", draft.channel_email_enabled],
+          ["channel_voice_enabled", "checkbox", draft.channel_voice_enabled],
+          ["channel_rcs_sms_enabled", "checkbox", draft.channel_rcs_sms_enabled],
+        ];
+        refs.setupForm.innerHTML = "";
+        fields.forEach(([fieldId, type, value, options]) => {
+          const wrapper = document.createElement("div");
+          wrapper.className = "control";
+          const label = document.createElement("label");
+          label.textContent = labelMap[fieldId] || fieldId;
+          wrapper.appendChild(label);
+
+          let input;
+          if (type === "checkbox") {
+            input = document.createElement("input");
+            input.type = "checkbox";
+            input.checked = Boolean(value);
+            input.addEventListener("change", (event) => {
+              state.draft[fieldId] = event.target.checked;
+              setDraft(state.draft);
+            });
+          } else if (type === "select") {
+            input = document.createElement("select");
+            options.forEach((optionValue) => {
+              const option = document.createElement("option");
+              option.value = optionValue;
+              option.textContent = optionValue;
+              option.selected = optionValue === value;
+              input.appendChild(option);
+            });
+            input.addEventListener("change", (event) => {
+              state.draft[fieldId] = event.target.value;
+              setDraft(state.draft);
+            });
+          } else {
+            input = document.createElement("input");
+            input.type = "number";
+            input.min = "0";
+            input.value = value;
+            input.addEventListener("input", (event) => {
+              state.draft[fieldId] = Number(event.target.value || 0);
+              setDraft(state.draft);
+            });
+          }
+
+          wrapper.appendChild(input);
+          refs.setupForm.appendChild(wrapper);
+        });
+
+        const appointmentBlock = document.createElement("div");
+        appointmentBlock.className = "validation-card";
+        appointmentBlock.innerHTML = `
+          <strong>${t("appointmentExample")}</strong>
+          <div class="metric"><span class="label">${t("appointmentDate")}</span><strong>${currentAppointment().display_date}</strong></div>
+          <div class="metric"><span class="label">${t("appointmentTime")}</span><strong>${currentAppointment().display_time}</strong></div>
+        `;
+        refs.setupForm.appendChild(appointmentBlock);
+      }
+
+      function renderValidation() {
+        refs.validationBody.innerHTML = "";
+        const status = state.validation.length ? "warn" : "ok";
+        const banner = document.createElement("div");
+        banner.className = `message-box ${status}`;
+        banner.textContent = state.validation.length ? t("validationWarning") : t("validationOk");
+        refs.validationBody.appendChild(banner);
+        const statusCard = document.createElement("div");
+        statusCard.className = "validation-card";
+        statusCard.innerHTML = `<strong>${state.validation.length ? t("notReady") : t("ready")}</strong>`;
+        refs.validationBody.appendChild(statusCard);
+        const rulesCard = document.createElement("div");
+        rulesCard.className = "validation-card";
+        rulesCard.innerHTML = `<strong>${t("validationRules")}</strong>`;
+        const list = document.createElement("div");
+        list.className = "stack";
+        const rules = state.payload.preview?.validation_rules || state.payload.validation_rules || [];
+        rules.forEach((rule) => {
+          const item = document.createElement("div");
+          item.className = "message-box";
+          item.textContent = rule;
+          list.appendChild(item);
+        });
+        rulesCard.appendChild(list);
+        refs.validationBody.appendChild(rulesCard);
+        state.validation.forEach((issue) => {
+          const item = document.createElement("div");
+          item.className = "message-box";
+          item.textContent = issue;
+          refs.validationBody.appendChild(item);
+        });
+      }
+
+      function renderPreview() {
+        refs.previewSummary.innerHTML = "";
+        const summaryRows = [
+          ["Mode", state.draft.mode],
+          [t("reminderCount"), String(state.draft.reminder_count)],
+          [t("enabled"), String(Boolean(state.draft.enabled))],
+          [t("overviewLine"), state.validation.length ? "Needs review" : "Ready to save"],
+        ];
+        summaryRows.forEach(([label, value]) => {
+          const row = document.createElement("div");
+          row.className = "metric";
+          row.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.previewSummary.appendChild(row);
+        });
+
+        refs.previewTimeline.innerHTML = "";
+        if (!state.preview.length) {
+          const empty = document.createElement("div");
+          empty.className = "record";
+          empty.textContent = "No reminders calculated yet.";
+          refs.previewTimeline.appendChild(empty);
+          return;
+        }
+        state.preview.forEach((item) => {
+          const node = document.createElement("div");
+          node.className = "timeline-item";
+          node.innerHTML = `
+            <strong>${t("sequence")} ${item.sequence}</strong>
+            <div>${t("scheduledFor")} ${new Date(item.scheduled_for).toLocaleString()}</div>
+            <small>${t("channel")}: ${item.channel} | ${t("status")}: ${item.status} | ${item.hours_before} ${t("hours")} before</small>
+          `;
+          refs.previewTimeline.appendChild(node);
+        });
+      }
+
+      function renderJobs() {
+        refs.jobsSummary.innerHTML = "";
+        const statusOverview = state.payload?.jobs?.status_overview || {};
+        const summary = Object.entries(statusOverview);
+        summary.forEach(([label, value]) => {
+          const row = document.createElement("div");
+          row.className = "metric";
+          row.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.jobsSummary.appendChild(row);
+        });
+
+        refs.jobsList.innerHTML = "";
+        state.jobs.forEach((job) => {
+          const node = document.createElement("div");
+          node.className = "job-card";
+          node.innerHTML = `
+            <strong>${job.job_id}</strong>
+            <div class="small">${t("sequence")}: ${job.sequence}</div>
+            <div class="small">${t("scheduledFor")}: ${new Date(job.scheduled_for).toLocaleString()}</div>
+            <div class="small">${t("status")}: ${job.status}</div>
+            <div class="small">${t("channel")}: ${job.channel}</div>
+          `;
+          refs.jobsList.appendChild(node);
+        });
+      }
+
+      function renderLifecycle() {
+        refs.lifecycleSummary.innerHTML = "";
+        refs.lifecycleTransitions.innerHTML = "";
+        const states = state.payload?.lifecycle_summary?.items || state.payload?.lifecycle_states || [
+          "planned",
+          "dispatching",
+          "sent",
+          "failed",
+          "skipped",
+          "cancelled",
+        ];
+        states.forEach((item) => {
+          const node = document.createElement("div");
+          node.className = "message-box";
+          node.textContent = item;
+          refs.lifecycleSummary.appendChild(node);
+        });
+        const transitions = [
+          "planned -> dispatching",
+          "dispatching -> sent",
+          "dispatching -> failed",
+          "dispatching -> planned",
+          "planned -> skipped",
+          "planned -> cancelled",
+        ];
+        transitions.forEach((item) => {
+          const node = document.createElement("div");
+          node.className = "message-box";
+          node.textContent = item;
+          refs.lifecycleTransitions.appendChild(node);
+        });
+      }
+
+      function renderHelp() {
+        refs.helpLinks.innerHTML = "";
+        const links = state.payload.help_links || state.payload.help?.help_links || [];
+        links.forEach((item) => {
+          const link = document.createElement("a");
+          link.href = "#";
+          link.textContent = `${item.label} - ${item.href}`;
+          refs.helpLinks.appendChild(link);
+        });
+        if (!links.length) {
+          const empty = document.createElement("div");
+          empty.className = "message-box";
+          empty.textContent = "No help links loaded yet.";
+          refs.helpLinks.appendChild(empty);
+        }
+        refs.parameterBody.innerHTML = "";
+        [
+          ["enabled", "Turns the scheduler on or off."],
+          ["mode", "manual means you type the times yourself; auto_distributed calculates them."],
+          ["reminder_count", "How many reminders can be created for one appointment."],
+          ["first_reminder_hours_before", "The biggest reminder offset in manual mode."],
+          ["last_reminder_gap_before_appointment_hours", "How close the last reminder should be to the appointment."],
+          ["preload_window_hours", "How far ahead the scheduler should look for appointments."],
+          ["channel_email_enabled", "Allows email reminders."],
+          ["channel_voice_enabled", "Allows voice reminders."],
+          ["channel_rcs_sms_enabled", "Allows RCS or SMS reminders."],
+          ["lifecycle_states", "Jobs can be planned, dispatching, sent, failed, skipped, or cancelled."],
+        ].forEach(([label, body]) => {
+          const item = document.createElement("div");
+          item.className = "message-box";
+          item.innerHTML = `<strong>${label}</strong><div class="small">${body}</div>`;
+          refs.parameterBody.appendChild(item);
+        });
+      }
+
+      function render() {
+        renderStaticCopy();
+        renderNav();
+        renderPages();
+        renderOverview();
+        renderStories();
+        renderSetupForm();
+        renderValidation();
+        renderPreview();
+        renderJobs();
+        renderLifecycle();
+        renderHelp();
+      }
+
+      function loadPayload() {
+        return fetchJson(`/api/reminder-ui/${VERSION}/config?lang=${state.language}`)
+          .then((config) => {
+            state.payload = {
+              ...state.payload,
+              reminder_setup: config,
+            };
+            state.draft = normalizeDraft(config);
+            return Promise.all([
+              fetchJson(`/api/reminder-ui/${VERSION}/config/preview?lang=${state.language}`),
+              fetchJson(`/api/reminder-ui/${VERSION}/jobs?lang=${state.language}`),
+              fetchJson(`/api/reminder-ui/${VERSION}/help?lang=${state.language}`),
+            ]);
+          })
+          .then(([preview, jobs, help]) => {
+            state.payload = {
+              ...state.payload,
+              preview,
+              jobs,
+              help,
+              help_links: help.help_links || [],
+              validation_rules: preview.validation_rules || [],
+            };
+            state.preview = computePreview(state.draft);
+            state.jobs = buildJobsFromPreview(state.preview);
+            state.validation = validateDraft(state.draft);
+            render();
+          });
+      }
+
+      function applyExample(type) {
+        if (type === "manual") {
+          state.draft.mode = "manual";
+          state.draft.reminder_count = 3;
+          state.draft.first_reminder_hours_before = 72;
+          state.draft.second_reminder_hours_before = 48;
+          state.draft.third_reminder_hours_before = 24;
+          state.draft.max_span_between_first_and_last_reminder_hours = 48;
+          state.draft.last_reminder_gap_before_appointment_hours = 24;
+        } else if (type === "auto") {
+          state.draft.mode = "auto_distributed";
+          state.draft.reminder_count = 3;
+          state.draft.max_span_between_first_and_last_reminder_hours = 24;
+          state.draft.last_reminder_gap_before_appointment_hours = 24;
+        } else {
+          state.draft = normalizeDraft(state.payload.reminder_setup);
+        }
+        setDraft(state.draft);
+      }
+
+      refs.langDeBtn.addEventListener("click", () => {
+        state.language = "de";
+        loadPayload();
+      });
+      refs.langEnBtn.addEventListener("click", () => {
+        state.language = "en";
+        loadPayload();
+      });
+      refs.themeToggle.addEventListener("click", () => {
+        state.theme = state.theme === "day" ? "night" : "day";
+        document.body.dataset.theme = state.theme;
+      });
+      refs.resetDefaultsBtn.addEventListener("click", () => applyExample("reset"));
+      refs.manualExampleBtn.addEventListener("click", () => applyExample("manual"));
+      refs.autoExampleBtn.addEventListener("click", () => applyExample("auto"));
+
+      loadPayload();
+    </script>
+  </body>
+</html>

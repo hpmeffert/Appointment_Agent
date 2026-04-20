@@ -147,6 +147,14 @@ class DemoCalendarPatch6Request(BaseModel):
     include_customer_name: bool = True
     include_description: bool = True
     include_location: bool = True
+    linked_address_id: Optional[str] = None
+    linked_address_name: Optional[str] = None
+    linked_contact_phone: Optional[str] = None
+    linked_contact_email: Optional[str] = None
+    linked_correlation_ref: Optional[str] = None
+    linked_location_text: Optional[str] = None
+    linked_contact_reference_id: Optional[str] = None
+    linked_address_full_details: Optional[str] = None
 
     @model_validator(mode="after")
     def validate_range(self) -> "DemoCalendarPatch6Request":
@@ -281,6 +289,67 @@ class GoogleAdapterServiceV110Patch6(GoogleAdapterServiceV110Patch1):
             return CUSTOMER_BLUEPRINTS[:4]
         return CUSTOMER_BLUEPRINTS
 
+    def _resolved_customer_blueprints(
+        self,
+        request: DemoCalendarPatch6Request,
+    ) -> list[dict[str, str]]:
+        """Prefer the operator-selected address over generic demo blueprints.
+
+        Patch 1 turns the selected Address Database record into the source of
+        truth for demo generation. When address data is present we keep using
+        the appointment-type blueprint for title/purpose, but the generated
+        customer identity comes from the selected address instead of a generic
+        fallback name.
+        """
+
+        if request.linked_address_id:
+            return [
+                {
+                    "name": request.linked_address_name or "Selected Address",
+                    "mobile": request.linked_contact_phone or "",
+                    "email": request.linked_contact_email or "",
+                }
+            ]
+        return self._customer_blueprints_for_type(request.appointment_type)
+
+    def _resolved_event_title(
+        self,
+        *,
+        request: DemoCalendarPatch6Request,
+        blueprint: dict[str, str],
+        customer: dict[str, str],
+    ) -> str:
+        if request.linked_address_id or request.linked_address_name:
+            identity = (request.linked_address_name or customer.get("name") or "Selected Address").strip()
+            base_title = (blueprint.get("type") or blueprint.get("category") or blueprint["title"]).strip()
+            return f"{base_title} - {identity}"
+        return blueprint["title"]
+
+    def _build_patch6_description(
+        self,
+        *,
+        blueprint: dict[str, str],
+        customer: dict[str, str],
+        booking_reference: str,
+        request: DemoCalendarPatch6Request,
+    ) -> str:
+        base_description = self._build_description(
+            blueprint=blueprint,
+            customer=customer,
+            booking_reference=booking_reference,
+            include_description=request.include_description,
+        )
+        linkage_lines = [
+            f"Linked address id: {request.linked_address_id or '-'}",
+            f"Linked address name: {request.linked_address_name or customer.get('name') or '-'}",
+            f"Linked correlation ref: {request.linked_correlation_ref or '-'}",
+            f"Linked contact phone: {request.linked_contact_phone or customer.get('mobile') or '-'}",
+            f"Linked contact email: {request.linked_contact_email or customer.get('email') or '-'}",
+        ]
+        if not request.include_description:
+            return "\n".join([base_description, linkage_lines[0], linkage_lines[2]])
+        return "\n".join([base_description, *linkage_lines])
+
     def _preview_events_patch6(
         self,
         request: DemoCalendarPatch6Request,
@@ -289,7 +358,7 @@ class GoogleAdapterServiceV110Patch6(GoogleAdapterServiceV110Patch1):
     ) -> list[dict[str, Any]]:
         preview_count = min(request.count, 5)
         blueprints = self._title_blueprints_for_type(request.appointment_type)
-        customers = self._customer_blueprints_for_type(request.appointment_type)
+        customers = self._resolved_customer_blueprints(request)
         items: list[dict[str, Any]] = []
         for index in range(preview_count):
             blueprint = blueprints[index % len(blueprints)]
@@ -301,7 +370,7 @@ class GoogleAdapterServiceV110Patch6(GoogleAdapterServiceV110Patch1):
                 {
                     "booking_reference": booking_reference,
                     "provider_reference": "preview-{}".format(booking_reference),
-                    "title": blueprint["title"],
+                    "title": self._resolved_event_title(request=request, blueprint=blueprint, customer=customer),
                     "customer_name": customer["name"] if request.include_customer_name else "Demo Customer",
                     "mobile_number": customer.get("mobile") or None,
                     "email": customer.get("email") or None,
@@ -316,8 +385,14 @@ class GoogleAdapterServiceV110Patch6(GoogleAdapterServiceV110Patch1):
                         "appointment_type": request.appointment_type,
                         "purpose": blueprint["purpose"],
                         "description": blueprint.get("description", ""),
-                        "location": blueprint["location"] if request.include_location else "",
+                        "location": (request.linked_location_text or blueprint["location"]) if request.include_location else "",
                         "preview_only": "true",
+                        "linked_address_id": request.linked_address_id or "",
+                        "linked_address_name": request.linked_address_name or customer["name"],
+                        "linked_contact_phone": request.linked_contact_phone or customer.get("mobile") or "",
+                        "linked_contact_email": request.linked_contact_email or customer.get("email") or "",
+                        "linked_correlation_ref": request.linked_correlation_ref or "",
+                        "title_strategy": "appointment_type_plus_selected_address" if request.linked_address_id or request.linked_address_name else "blueprint_title",
                     },
                 }
             )
@@ -333,7 +408,7 @@ class GoogleAdapterServiceV110Patch6(GoogleAdapterServiceV110Patch1):
         live_writes: bool,
     ) -> list[dict[str, Any]]:
         blueprints = self._title_blueprints_for_type(request.appointment_type)
-        customers = self._customer_blueprints_for_type(request.appointment_type)
+        customers = self._resolved_customer_blueprints(request)
         items: list[dict[str, Any]] = []
         for index in range(request.count):
             blueprint = blueprints[index % len(blueprints)]
@@ -341,30 +416,38 @@ class GoogleAdapterServiceV110Patch6(GoogleAdapterServiceV110Patch1):
             slot_start = self._spread_slot_start(window_start, window_end, index, request.count)
             slot_end = slot_start + timedelta(minutes=45)
             booking_reference = "gdemo6-book-{}".format(uuid4().hex[:8])
-            description = self._build_description(
+            title = self._resolved_event_title(request=request, blueprint=blueprint, customer=customer)
+            description = self._build_patch6_description(
                 blueprint=blueprint,
                 customer=customer,
                 booking_reference=booking_reference,
-                include_description=request.include_description,
+                request=request,
             )
             provider_reference = "simulation-{}".format(booking_reference)
             details = {
                 "appointment_type": request.appointment_type,
                 "purpose": blueprint["purpose"],
                 "description": blueprint.get("description", ""),
-                "location": blueprint["location"] if request.include_location else "",
+                "location": (request.linked_location_text or blueprint["location"]) if request.include_location else "",
                 "category": blueprint.get("category", request.appointment_type),
                 "scenario_label": blueprint.get("scenario_label", request.appointment_type),
+                "title": title,
                 "customer_prompt": blueprint.get("customer_prompt", ""),
                 "reminder_text": blueprint.get("reminder_text", ""),
                 "follow_up_action": blueprint.get("follow_up_action", ""),
                 "monitoring_label": blueprint.get("monitoring_label", ""),
+                "linked_address_id": request.linked_address_id or "",
+                "linked_address_name": request.linked_address_name or customer["name"],
+                "linked_contact_phone": request.linked_contact_phone or customer.get("mobile") or "",
+                "linked_contact_email": request.linked_contact_email or customer.get("email") or "",
+                "linked_correlation_ref": request.linked_correlation_ref or "",
+                "title_strategy": "appointment_type_plus_selected_address" if request.linked_address_id or request.linked_address_name else "blueprint_title",
             }
             if live_writes:
                 event_result = self.gateway.create_demo_event(
-                    title=blueprint["title"],
+                    title=title,
                     description=description,
-                    location=blueprint["location"] if request.include_location else None,
+                    location=(request.linked_location_text or blueprint["location"]) if request.include_location else None,
                     start_time=slot_start,
                     end_time=slot_end,
                     metadata={
@@ -373,6 +456,11 @@ class GoogleAdapterServiceV110Patch6(GoogleAdapterServiceV110Patch1):
                         "appointment_agent_booking_reference": booking_reference,
                         "appointment_agent_customer_name": customer["name"],
                         "appointment_agent_appointment_type": request.appointment_type,
+                        "appointment_agent_address_id": request.linked_address_id or "",
+                        "appointment_agent_address_name": request.linked_address_name or customer["name"],
+                        "appointment_agent_contact_phone": request.linked_contact_phone or customer.get("mobile") or "",
+                        "appointment_agent_contact_email": request.linked_contact_email or customer.get("email") or "",
+                        "appointment_agent_correlation_ref": request.linked_correlation_ref or "",
                     },
                 )
                 provider_reference = event_result.provider_reference
@@ -387,7 +475,7 @@ class GoogleAdapterServiceV110Patch6(GoogleAdapterServiceV110Patch1):
                 calendar_id=self._calendar_id(),
                 event_id=event_id,
                 booking_reference=booking_reference,
-                title=blueprint["title"],
+                title=title,
                 customer_name=customer["name"] if request.include_customer_name else "Demo Customer",
                 mobile_number=customer.get("mobile") or None,
                 start_time_utc=slot_start.astimezone(timezone.utc).replace(tzinfo=None),
@@ -400,7 +488,7 @@ class GoogleAdapterServiceV110Patch6(GoogleAdapterServiceV110Patch1):
                 {
                     "booking_reference": booking_reference,
                     "provider_reference": provider_reference,
-                    "title": blueprint["title"],
+                    "title": title,
                     "customer_name": customer["name"] if request.include_customer_name else "Demo Customer",
                     "mobile_number": customer.get("mobile") or None,
                     "email": customer.get("email") or None,

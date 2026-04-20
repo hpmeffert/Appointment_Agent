@@ -406,10 +406,13 @@ class AppointmentOrchestratorServiceV101:
                 message=reminder_message,
                 to_numbers=command.to_numbers,
                 metadata={
+                    "journey_id": command.journey_id,
                     "appointment_date": appointment_date,
                     "appointment_time": appointment_time,
                     "appointment_type": appointment_type,
                     "booking_reference": booking_reference,
+                    "interactive_actions": ["Confirm", "Reschedule", "Cancel", "Call me"],
+                    "interactive_action_values": ["confirm_appointment", "reschedule_appointment", "cancel_appointment", "call_me"],
                 },
             )
         )

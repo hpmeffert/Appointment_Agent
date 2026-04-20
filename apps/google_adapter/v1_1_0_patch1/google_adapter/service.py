@@ -474,13 +474,15 @@ class GoogleCalendarGateway:
         start_time: datetime,
         end_time: datetime,
         metadata: dict[str, str],
+        timezone_name: Optional[str] = None,
     ) -> CalendarEventResult:
         service = self._build_service()
+        event_timezone = str(timezone_name or settings.google_default_timezone).strip() or settings.google_default_timezone
         event_body = {
             "summary": title,
             "description": description,
-            "start": {"dateTime": start_time.isoformat(), "timeZone": settings.google_default_timezone},
-            "end": {"dateTime": end_time.isoformat(), "timeZone": settings.google_default_timezone},
+            "start": {"dateTime": start_time.isoformat(), "timeZone": event_timezone},
+            "end": {"dateTime": end_time.isoformat(), "timeZone": event_timezone},
             "extendedProperties": {"private": metadata},
         }
         if location:

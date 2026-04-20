@@ -1,0 +1,2660 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Appointment Agent Cockpit __VERSION__</title>
+    <style>
+      :root {
+        --bg: #edf2f7;
+        --bg-strong: #ffffff;
+        --panel: #f8fafc;
+        --panel-strong: #ffffff;
+        --line: #d8e0ec;
+        --ink: #132033;
+        --muted: #5f6d83;
+        --brand: #0f4c81;
+        --brand-strong: #153e75;
+        --accent: #ff9f1c;
+        --ok: #13795b;
+        --warn: #b54708;
+        --danger: #b42318;
+        --action-surface: linear-gradient(180deg, #7a8798 0%, #5d6878 100%);
+        --action-surface-hover: linear-gradient(180deg, #8a97a8 0%, #6b7686 100%);
+        --action-border: #44515f;
+        --action-text: #f8fbff;
+        --shadow: 0 18px 60px rgba(15, 32, 51, 0.12);
+      }
+
+      [data-theme="night"] {
+        --bg: #09111d;
+        --bg-strong: #0f1724;
+        --panel: #111d2d;
+        --panel-strong: #18263a;
+        --line: #24364f;
+        --ink: #edf3fb;
+        --muted: #92a3bd;
+        --brand: #64b5f6;
+        --brand-strong: #90caf9;
+        --accent: #f8b84e;
+        --ok: #5dd39e;
+        --warn: #ffb96b;
+        --danger: #ff8f8f;
+        --action-surface: linear-gradient(180deg, #314156 0%, #24364b 100%);
+        --action-surface-hover: linear-gradient(180deg, #3b4d66 0%, #2b3e56 100%);
+        --action-border: #5a6f8d;
+        --action-text: #f2f7ff;
+        --shadow: 0 22px 70px rgba(0, 0, 0, 0.45);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(100, 181, 246, 0.18), transparent 28%),
+          linear-gradient(180deg, var(--bg) 0%, var(--bg-strong) 100%);
+        color: var(--ink);
+        min-height: 100vh;
+      }
+
+      .shell { min-height: 100vh; display: flex; flex-direction: column; }
+      .header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 18px;
+        padding: 16px 24px;
+        background: rgba(11, 22, 36, 0.88);
+        color: #f5f9ff;
+        backdrop-filter: blur(18px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .brand-block { display: flex; flex-direction: column; gap: 4px; }
+      .brand-kicker { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.72; }
+      .brand-title { font-size: 24px; font-weight: 700; }
+      .brand-sub { font-size: 13px; color: #c6d3e6; max-width: 460px; }
+      .version-badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        margin-top: 8px;
+        padding: 2px 8px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.14);
+        color: #d7e4f4;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+      }
+
+      .nav, .header-actions, .segment, .action-row, .monitor-tabs { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      .nav button, .header-actions button, .segment button, .action-row button, .link-card {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        color: inherit;
+        padding: 10px 14px;
+        cursor: pointer;
+        font: inherit;
+        text-decoration: none;
+      }
+      .nav button.active, .segment button.active, .action-row button.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+      }
+      .page .segment button,
+      .page .action-row button,
+      .page .link-card {
+        border-color: var(--action-border);
+        background: var(--action-surface);
+        color: var(--action-text);
+        box-shadow: 0 8px 18px rgba(15, 32, 51, 0.14);
+      }
+      .page .segment button:hover,
+      .page .action-row button:hover,
+      .page .link-card:hover {
+        background: var(--action-surface-hover);
+      }
+      .page .segment button.active,
+      .page .action-row button.primary {
+        color: #fff;
+      }
+      .lang-switcher {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 2px 4px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.06);
+      }
+      .lang-switcher button {
+        min-width: 42px;
+        border-radius: 999px;
+        padding: 8px 10px;
+        background: transparent;
+      }
+      .lang-switcher .active {
+        background: rgba(255,255,255,0.14);
+      }
+      .icon-button {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0;
+      }
+      .icon-button svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .main { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+      .hero {
+        background: linear-gradient(135deg, rgba(15, 76, 129, 0.96), rgba(24, 40, 72, 0.95));
+        color: #f4f8ff;
+        border-radius: 28px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+      }
+      .hero h1 { margin: 0 0 10px; font-size: clamp(28px, 4.2vw, 46px); }
+      .hero p { margin: 0; max-width: 760px; line-height: 1.6; color: #d7e4f4; }
+      .release { margin-top: 12px; font-size: 13px; color: #b9cae0; }
+
+      .page { display: none; }
+      .page.active { display: block; }
+      .grid { display: grid; gap: 18px; grid-template-columns: 320px minmax(0, 1fr); }
+      .page-grid { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+      }
+      .panel h2, .panel h3, .panel p { margin-top: 0; }
+      .stack { display: flex; flex-direction: column; gap: 12px; }
+      .metric, .record, .message-box, .link-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+        background: var(--panel-strong);
+      }
+      .metric { display: flex; justify-content: space-between; gap: 12px; }
+      .metric .label { color: var(--muted); }
+      .control label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 8px; }
+      .control select,
+      .control input[type="date"] {
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: var(--panel-strong);
+        color: var(--ink);
+        padding: 12px;
+        font: inherit;
+      }
+      .card-strip { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .mini-card {
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 16px;
+        background: var(--panel-strong);
+      }
+      .chat { display: grid; gap: 12px; }
+      .bubble { padding: 14px 16px; border-radius: 18px; max-width: 88%; line-height: 1.55; }
+      .bubble.user { margin-left: auto; background: rgba(15, 76, 129, 0.12); }
+      .bubble.platform { background: rgba(255, 159, 28, 0.16); }
+      .small { font-size: 13px; color: var(--muted); }
+      .interactive-group {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+        background: var(--panel-strong);
+      }
+      .interactive-group h3 {
+        margin-bottom: 12px;
+      }
+      .interactive-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .interactive-buttons button {
+        border: 1px solid var(--action-border);
+        border-radius: 14px;
+        background: var(--action-surface);
+        color: var(--action-text);
+        padding: 10px 14px;
+        font: inherit;
+        cursor: pointer;
+        min-height: 46px;
+        box-shadow: 0 8px 18px rgba(15, 32, 51, 0.14);
+      }
+      .interactive-buttons button:hover {
+        border-color: var(--brand);
+        background: var(--action-surface-hover);
+      }
+      .interactive-buttons button.primary {
+        background: linear-gradient(180deg, #1f6ab2 0%, #0f4c81 100%);
+        border-color: #0f4c81;
+        color: #fff;
+      }
+      .warning {
+        border: 1px solid rgba(181, 71, 8, 0.35);
+        background: rgba(181, 71, 8, 0.12);
+      }
+      .success {
+        border: 1px solid rgba(19, 121, 91, 0.35);
+        background: rgba(19, 121, 91, 0.12);
+      }
+      .danger {
+        border: 1px solid rgba(180, 35, 24, 0.35);
+        background: rgba(180, 35, 24, 0.12);
+      }
+      .header-row { display: flex; justify-content: space-between; align-items: start; gap: 16px; margin-bottom: 14px; }
+      .code { font-family: "IBM Plex Mono", monospace; font-size: 12px; white-space: pre-wrap; }
+      .message-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 18px; }
+      .message-list { display: grid; gap: 10px; }
+      .message-row {
+        border: 1px solid rgba(120, 129, 148, 0.24);
+        border-radius: 16px;
+        padding: 14px;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .message-row.active { border-color: rgba(30, 120, 255, 0.55); box-shadow: 0 0 0 1px rgba(30, 120, 255, 0.25) inset; }
+      .message-row-head, .report-metrics { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+      .pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+      .pill {
+        border: 1px solid rgba(120, 129, 148, 0.28);
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .message-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+      .detail-stack, .report-stack { display: grid; gap: 12px; }
+      .report-card { border: 1px solid rgba(120, 129, 148, 0.24); border-radius: 18px; padding: 16px; }
+      .settings-subnav { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+      .settings-subnav button {
+        border: 1px solid rgba(120, 129, 148, 0.28);
+        border-radius: 999px;
+        padding: 8px 14px;
+        background: rgba(255, 255, 255, 0.03);
+        color: inherit;
+        cursor: pointer;
+      }
+      .settings-subnav button.active { border-color: rgba(30, 120, 255, 0.55); box-shadow: 0 0 0 1px rgba(30, 120, 255, 0.22) inset; }
+      .settings-sections { display: grid; gap: 16px; }
+      .settings-form-card { border: 1px solid rgba(120, 129, 148, 0.24); border-radius: 18px; padding: 16px; background: rgba(255, 255, 255, 0.02); }
+      .settings-form-card h3 { margin-top: 0; }
+      .settings-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+      .settings-status-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+      .settings-banner { margin: 0 0 16px; }
+      .field-state { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+      @media (max-width: 1120px) {
+        .grid, .page-grid, .card-strip, .message-grid, .message-filters, .settings-form-grid, .settings-status-grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body data-theme="day">
+    <div class="shell">
+      <header class="header">
+        <div class="brand-block">
+          <div class="brand-kicker" id="brandKicker">Incident-style appointment cockpit</div>
+          <div class="brand-title" id="brandTitle">Appointment Agent Cockpit</div>
+          <div class="brand-sub" id="brandSub">Shared shell for dashboard, monitoring, settings, Google demo control, and docs.</div>
+          <div class="version-badge" id="headerVersion">v__VERSION__</div>
+        </div>
+        <nav class="nav" id="navTabs"></nav>
+        <div class="header-actions">
+          <div class="lang-switcher">
+            <button id="langDeBtn">DE</button>
+            <button id="langEnBtn" class="active">EN</button>
+          </div>
+          <button id="themeToggle" class="icon-button" aria-label="Theme toggle" title="Theme toggle">
+            <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <button id="helpButton" class="icon-button" aria-label="Help" title="Help">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="main">
+        <section class="hero">
+          <h1 id="heroTitle">A stable Incident-style cockpit shell for every operator page</h1>
+          <p id="heroText">Dashboard explains the story, Monitoring shows the technical trail, Settings shows the parameters, and Google Demo Control keeps calendar actions in one dedicated place.</p>
+          <div class="release" id="releaseText">Release: __VERSION__</div>
+        </section>
+
+        <section class="page active" id="page-dashboard">
+          <div class="header-row">
+            <div>
+              <h2 id="dashboardPageTitle">Dashboard</h2>
+              <p id="dashboardPageSub">Business-first overview with current story, slots, and operator summary.</p>
+            </div>
+          </div>
+          <div class="grid">
+            <aside class="panel">
+              <h2 id="operatorTitle">Operator Panel</h2>
+              <div class="stack">
+                <div class="control">
+                  <label id="scenarioLabel">Scenario</label>
+                  <select id="scenarioSelect"></select>
+                </div>
+                <div class="control">
+                  <label id="dashboardModeLabel">Dashboard Mode</label>
+                  <div class="segment" id="dashboardModeButtons"></div>
+                </div>
+                <div class="action-row">
+                  <button id="restartBtn">Restart Story</button>
+                  <button id="nextBtn" class="primary">Next Step</button>
+                </div>
+                <div class="message-box warning" id="dashboardHint">Google calendar actions now live in the Google Demo Control page in the top header.</div>
+              </div>
+            </aside>
+            <section class="stack">
+              <div class="card-strip">
+                <div class="mini-card"><h3 id="summaryOneTitle">Current Story</h3><div id="summaryOne"></div></div>
+                <div class="mini-card"><h3 id="summaryTwoTitle">Current Mode</h3><div id="summaryTwo"></div></div>
+                <div class="mini-card"><h3 id="summaryThreeTitle">Google Workspace</h3><div id="summaryThree"></div></div>
+              </div>
+              <div class="page-grid">
+                <article class="panel">
+                  <h2 id="demoPaneTitle">Demo</h2>
+                  <div class="chat" id="chatStream"></div>
+                  <div class="stack" id="slotList"></div>
+                  <div class="message-box" id="interactionStatus"></div>
+                  <div class="record small" id="speakerNotes"></div>
+                </article>
+                <article class="panel">
+                  <h2 id="dashboardTechTitle">Operator Summary</h2>
+                  <div class="stack" id="dashboardSummary"></div>
+                </article>
+              </div>
+              <div class="page-grid">
+                <article class="panel">
+                  <h2 id="platformOverviewTitle">How the Platform Works</h2>
+                  <p id="platformOverviewSub" class="small">One platform combines channels, adapters, orchestration, and monitoring.</p>
+                  <div class="page-grid" id="platformOverviewGrid"></div>
+                </article>
+                <article class="panel">
+                  <h2 id="demoStoryboardTitle">Demo Storyboard</h2>
+                  <p id="demoStoryboardSub" class="small">A presenter-friendly map of the main stories and their wow moments.</p>
+                  <div class="stack" id="demoStoryboardGrid"></div>
+                </article>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-message-monitor">
+          <div class="panel">
+            <div class="header-row">
+              <div>
+                <h2 id="messageMonitorTitle">Message Monitor</h2>
+                <p id="messageMonitorSub" class="small">Incoming and outgoing messages are normalized into one shared operator view.</p>
+              </div>
+            </div>
+            <div class="card-strip" id="messageSummaryCards"></div>
+            <div class="message-filters">
+              <div class="control">
+                <label id="messageChannelFilterLabel">Channel</label>
+                <select id="messageChannelFilter"></select>
+              </div>
+              <div class="control">
+                <label id="messageDirectionFilterLabel">Direction</label>
+                <select id="messageDirectionFilter"></select>
+              </div>
+              <div class="control">
+                <label id="messageStatusFilterLabel">Status</label>
+                <select id="messageStatusFilter"></select>
+              </div>
+            </div>
+            <div class="message-grid">
+              <article class="panel">
+                <h3 id="messageTrafficTitle">Message Traffic</h3>
+                <div class="message-list" id="messageMonitorList"></div>
+              </article>
+              <article class="panel">
+                <h3 id="messageDetailTitle">Message Detail</h3>
+                <div class="detail-stack" id="messageMonitorDetail"></div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="page-communications-reports">
+          <div class="panel">
+            <div class="header-row">
+              <div>
+                <h2 id="reportsTitle">Communications Reports</h2>
+                <p id="reportsSub" class="small">Reporting-style cards help explain customer context and admin visibility with confidence.</p>
+              </div>
+            </div>
+            <div class="report-stack" id="reportsBody"></div>
+          </div>
+        </section>
+
+        <section class="page" id="page-monitoring">
+          <div class="panel">
+            <h2 id="monitoringTitle">Monitoring</h2>
+            <p id="monitoringSub" class="small">Technical events, trace IDs, and timing data stay in one shared shell.</p>
+            <div class="monitor-tabs" id="monitorTabs"></div>
+            <div id="monitoringBody"></div>
+          </div>
+        </section>
+
+        <section class="page" id="page-settings-general">
+          <div class="panel">
+            <h2 id="settingsTitle">Settings</h2>
+            <p id="settingsSub" class="small">These are the main runtime parameters that shape scheduling and operator behavior.</p>
+            <div class="settings-subnav" id="settingsSubnav"></div>
+            <div class="panel" style="margin-bottom: 18px;">
+              <h3 id="holdSettingsTitle">Slot Hold Minutes</h3>
+              <p id="holdSettingsSub" class="small">This is the temporary reservation time before final booking.</p>
+              <div class="action-row">
+                <button id="holdDecrementBtn">-</button>
+                <div class="mini-card" style="min-width: 160px;">
+                  <h3 id="holdMinutesTitle">Current Hold</h3>
+                  <div id="holdMinutesValue">2 min</div>
+                </div>
+                <button id="holdIncrementBtn">+</button>
+              </div>
+              <div class="message-box warning" id="holdMinutesHint">When a customer picks a slot, the platform keeps it reserved for a short time so a second user cannot book it in parallel.</div>
+            </div>
+            <div class="page-grid" id="settingsGrid"></div>
+          </div>
+        </section>
+
+        <section class="page" id="page-settings-rcs">
+          <div class="panel">
+            <div class="header-row">
+              <div>
+                <h2 id="rcsSettingsTitle">RCS Settings</h2>
+                <p id="rcsSettingsSub" class="small">Operator-facing LEKAB RCS/SMS configuration with save, reload, and readiness validation.</p>
+              </div>
+            </div>
+            <div class="settings-subnav" id="settingsSubnavRcs"></div>
+            <div class="message-box settings-banner" id="rcsSettingsBanner">No validation has run yet.</div>
+            <div class="settings-status-grid" id="rcsReadinessGrid"></div>
+            <div class="settings-sections" id="rcsSettingsSections"></div>
+            <div class="action-row" style="margin-top: 18px;">
+              <button id="rcsReloadBtn">Reload</button>
+              <button id="rcsValidateBtn">Validate</button>
+              <button id="rcsTestConnectionBtn">Test Connection</button>
+              <button id="rcsSaveBtn" class="primary">Save RCS Settings</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="page-google-demo-control">
+          <div class="header-row">
+            <div>
+              <h2 id="googleControlTitle">Google Demo Control</h2>
+              <p id="googleControlSub">Use this page when you want to prepare, generate, delete, or reset demo appointments.</p>
+            </div>
+          </div>
+          <div class="page-grid">
+            <article class="panel">
+              <h3 id="googleModeTitle">Google Mode</h3>
+              <div class="stack">
+                <div class="segment">
+                  <button id="googleSimulationBtn" class="active">Simulation</button>
+                  <button id="googleTestBtn">Test</button>
+                </div>
+                <div class="message-box warning" id="googleModeHint">Simulation does not write to Google Calendar. Test writes to the real configured Google test calendar.</div>
+                <div class="message-box" id="googleModeStatus">Current mode: Simulation. No real Google calendar entries will be created.</div>
+                <div class="control">
+                  <label id="googleFromDateLabel">From Date</label>
+                  <input id="googleFromDateInput" type="date" />
+                </div>
+                <div class="control">
+                  <label id="googleToDateLabel">To Date</label>
+                  <input id="googleToDateInput" type="date" />
+                </div>
+                <div class="control">
+                  <label id="googleCountLabel">Appointment Count</label>
+                  <select id="googleCountSelect">
+                    <option value="4">4</option>
+                    <option value="6" selected>6</option>
+                    <option value="8">8</option>
+                    <option value="12">12</option>
+                  </select>
+                </div>
+                <div class="control">
+                  <label id="googleAppointmentTypeLabel">Appointment Type</label>
+                  <select id="googleAppointmentTypeSelect"></select>
+                </div>
+                <div class="action-row">
+                  <button id="googlePrepareBtn">Prepare Demo Calendar</button>
+                  <button id="googleGenerateBtn" class="primary">Generate Demo Appointments</button>
+                  <button id="googleDeleteBtn">Delete Demo Appointments</button>
+                  <button id="googleResetBtn">Reset Demo Calendar</button>
+                </div>
+                <div class="message-box" id="googleActionFeedback">No Google demo action has run yet.</div>
+              </div>
+            </article>
+
+            <article class="panel">
+              <h3 id="googleLiveTitle">Current Google Target</h3>
+              <div class="stack" id="googleLiveGrid"></div>
+            </article>
+
+            <article class="panel">
+              <h3 id="googleResultTitle">Last Calendar Result</h3>
+              <div class="stack" id="googleResultGrid"></div>
+            </article>
+
+            <article class="panel">
+              <h3 id="googleConflictTitle">Live Sync and Conflict Preview</h3>
+              <div class="stack" id="googleConflictGrid"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-help">
+          <div class="panel">
+            <h2 id="helpTitle">Help and Documentation</h2>
+            <p id="helpSub" class="small">The Incident-style shell is permanent. Patch 3 adds a clearer explanation of the platform, the stories, and the business value.</p>
+            <div class="page-grid">
+              <article class="panel">
+                <h3 id="helpPlatformTitle">Platform Clarity</h3>
+                <div class="page-grid" id="helpPlatformGrid"></div>
+              </article>
+              <article class="panel">
+                <h3 id="helpStoryboardTitle">Demo Storyboard</h3>
+                <div class="stack" id="helpStoryboardGrid"></div>
+              </article>
+            </div>
+            <div class="page-grid" style="margin-top: 18px;">
+              <article class="panel">
+                <h3 id="helpBusinessTitle">Business Value</h3>
+                <div class="stack" id="helpBusinessGrid"></div>
+              </article>
+              <article class="panel">
+                <h3 id="helpDocsTitle">Documentation Links</h3>
+                <div class="stack" id="helpGrid"></div>
+              </article>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const VERSION = "__VERSION__";
+      const GOOGLE_API_VERSION = "v1.1.0-patch8b";
+      const LEKAB_API_VERSION = "v1.2.1";
+      const state = {
+        payload: null,
+        language: "en",
+        theme: "day",
+        page: "dashboard",
+        scenarioId: null,
+        stepIndex: 0,
+        dashboardMode: "combined",
+        googleMode: "simulation",
+        googleCount: 6,
+        googleFromDate: "",
+        googleToDate: "",
+        selectedAppointmentType: "dentist",
+        monitorTab: "timeline",
+        googleStatus: null,
+        googleActionFeedback: null,
+        googleLastResult: null,
+        googleConflictResult: null,
+        selectedAction: null,
+        selectedSlot: null,
+        interactionStatus: null,
+        interactionEvents: [],
+        slotHoldMinutes: 2,
+        holdExpiresAt: null,
+        holdStatus: "idle",
+        activeHoldId: null,
+        runtimeMessage: null,
+        runtimeTranscript: [],
+        interactiveJourneyId: null,
+        currentBooking: null,
+        pendingSlotPayload: null,
+        pendingBookingAction: "create",
+        messageMonitor: null,
+        selectedMessageId: null,
+        messageChannelFilter: "ALL",
+        messageDirectionFilter: "ALL",
+        messageStatusFilter: "ALL",
+        rcsSettingsPayload: null,
+        rcsSettingsDraft: {},
+        rcsSettingsBanner: null,
+      };
+
+      const copy = {
+        en: {
+          dashboard: "Dashboard",
+          messageMonitor: "Message Monitor",
+          reports: "Reports",
+          monitoring: "Monitoring",
+          settings: "Settings",
+          settingsGeneral: "General",
+          settingsRcs: "RCS",
+          googleDemoControl: "Google Demo Control",
+          help: "Help",
+          heroTitle: "A stable Incident-style cockpit shell for every operator page",
+          heroText: "Dashboard explains the booking story, Message Monitor shows communication traffic, Reports turn that traffic into operator-facing clarity, and Google Demo Control keeps calendar actions in one place.",
+          dashboardPageTitle: "Dashboard",
+          dashboardPageSub: "Business-first overview with current story, slots, and operator summary.",
+          operatorTitle: "Operator Panel",
+          scenario: "Scenario",
+          dashboardMode: "Dashboard Mode",
+          dashboardHint: "Google calendar actions now live in the Google Demo Control page in the top header.",
+          restart: "Restart Story",
+          next: "Next Step",
+          currentStory: "Current Story",
+          currentMode: "Current Mode",
+          googleWorkspace: "Google Workspace",
+          demoPaneTitle: "Demo",
+          dashboardTechTitle: "Operator Summary",
+          messageMonitorTitle: "Message Monitor",
+          messageMonitorSub: "Incoming and outgoing messages are normalized into one shared operator view.",
+          messageTrafficTitle: "Message Traffic",
+          messageDetailTitle: "Message Detail",
+          reportsTitle: "Communications Reports",
+          reportsSub: "Reporting-style cards help explain customer context and admin visibility with confidence.",
+          messageChannelFilterLabel: "Channel",
+          messageDirectionFilterLabel: "Direction",
+          messageStatusFilterLabel: "Status",
+          all: "All",
+          outbound: "Outbound",
+          inbound: "Inbound",
+          noMessagesAvailable: "No messages match the current filters yet.",
+          noMessageDetail: "Select a message to open the detail card.",
+          messageBodyLabel: "Body",
+          messageJourneyLabel: "Journey",
+          messageBookingLabel: "Booking",
+          messagePhoneLabel: "Phone",
+          messageCustomerLabel: "Customer",
+          messageProviderLabel: "Provider",
+          messageActionsLabel: "Actions",
+          reportMetricsLabel: "Report Metrics",
+          monitoringTitle: "Monitoring",
+          monitoringSub: "Technical events, trace IDs, and timing data stay in one shared shell.",
+          settingsTitle: "Settings",
+          settingsSub: "These are the main runtime parameters that shape scheduling and operator behavior.",
+          rcsSettingsTitle: "RCS Settings",
+          rcsSettingsSub: "Operator-facing LEKAB RCS/SMS configuration with save, reload, and readiness validation.",
+          rcsSave: "Save RCS Settings",
+          rcsReload: "Reload",
+          rcsValidate: "Validate",
+          rcsTestConnection: "Test Connection",
+          rcsNoValidationYet: "No validation has run yet.",
+          rcsSavedSuccess: "RCS configuration saved successfully",
+          holdSettingsTitle: "Slot Hold Minutes",
+          holdSettingsSub: "This is the temporary reservation time before final booking.",
+          holdMinutesTitle: "Current Hold",
+          holdMinutesHint: "When a customer picks a slot, the platform keeps it reserved for a short time so a second user cannot book it in parallel.",
+          googleControlTitle: "Google Demo Control",
+          googleControlSub: "Use this page when you want to prepare, generate, delete, or reset demo appointments.",
+          googleModeTitle: "Google Mode",
+          googleModeHint: "Simulation does not write to Google Calendar. Test writes to the real configured Google test calendar.",
+          googleModeStatusSimulation: "Current mode: Simulation. No real Google calendar entries will be created.",
+          googleModeStatusTest: "Current mode: Test. Generate, Delete, and Reset will change the real configured Google test calendar.",
+          fromDate: "From Date",
+          toDate: "To Date",
+          count: "Appointment Count",
+          appointmentType: "Appointment Type",
+          replyActions: "Reply Actions",
+          slotChoices: "Available Time Slots",
+          interactionStatusTitle: "Interaction Status",
+          noActionsAvailable: "No reply buttons are available in this step.",
+          noSlotsAvailable: "No slot buttons are available in this step.",
+          monitoringEmpty: "No monitoring data available for this step yet.",
+          selectedActionLabel: "Selected Action",
+          selectedSlotLabel: "Selected Slot",
+          resultingPathLabel: "Resulting Path",
+          keepAction: "Keep",
+          rescheduleAction: "Reschedule",
+          cancelAction: "Cancel",
+          callMeAction: "Call Me",
+          confirmAction: "Confirm",
+          keepSelected: "The appointment stays confirmed.",
+          rescheduleSelected: "The reschedule flow is open and new slots are shown.",
+          cancelSelected: "The cancellation path is active now.",
+          callMeSelected: "A callback or human handover was requested.",
+          confirmSelected: "The appointment confirmation was selected.",
+          genericSelected: "The selected reply action was recorded.",
+          slotSelected: "The selected slot is now temporarily reserved in the demo flow.",
+          holdCreated: "Temporary reservation created.",
+          holdExpired: "The temporary reservation expired. The slot is free again.",
+          holdReleased: "The temporary reservation was released.",
+          holdConsumed: "The temporary reservation was converted into a booking.",
+          holdConfirmPrompt: "This slot is reserved for you for a short time. Please confirm before the hold expires.",
+          liveSlotsLoaded: "The system loaded the next available appointment slots.",
+          noBookingYet: "There is no active booking yet. Choose a slot first.",
+          cancelDone: "The appointment was cancelled successfully.",
+          callMeDone: "A callback or human handover was requested.",
+          conflictReloaded: "This slot is no longer available. Here are the next available times.",
+          bookingDone: "The appointment was booked successfully.",
+          rescheduleDone: "The appointment was moved to the new slot successfully.",
+          revalidationStarted: "The system is checking Google Calendar live before final booking.",
+          prepare: "Prepare Demo Calendar",
+          generate: "Generate Demo Appointments",
+          deleteAction: "Delete Demo Appointments",
+          reset: "Reset Demo Calendar",
+          noGoogleActionYet: "No Google demo action has run yet.",
+          googleLiveTitle: "Current Google Target",
+          googleResultTitle: "Last Calendar Result",
+          googleConflictTitle: "Live Sync and Conflict Preview",
+          helpTitle: "Help and Documentation",
+          helpSub: "The Incident-style shell is permanent. Patch 3 adds a clearer explanation of the platform, the stories, and the business value.",
+          helpBusinessTitle: "Business Value",
+          helpDocsTitle: "Documentation Links",
+          simulation: "Simulation",
+          test: "Test",
+          themeDay: "Day",
+          themeNight: "Night",
+          loading: "Loading...",
+          mode: "Mode",
+          scenarioSummary: "Scenario",
+          traceId: "Trace ID",
+          correlationId: "Correlation ID",
+          liveWrites: "Live Calendar Writes",
+          targetCalendar: "Target Calendar",
+          targetCalendarId: "Target Calendar ID",
+          requestedMode: "Requested Mode",
+          generatedCount: "Generated Items",
+          deletedCount: "Deleted Items",
+          action: "Action",
+          success: "Success",
+          failure: "Failure",
+          conflict: "Conflict",
+          reason: "Reason",
+          nextActionsLabel: "Next Actions",
+          docsOpen: "Open guide",
+          businessValueLabel: "Business value",
+          wowEffectLabel: "Wow effect",
+          tabsTimeline: "Timeline",
+          tabsTrace: "Trace",
+          tabsPerformance: "Performance",
+          prepareSuccess: "Preview prepared. No real calendar entries were written.",
+          generateSuccess: "Demo appointments were created successfully.",
+          deleteSuccess: "Demo appointments were deleted successfully.",
+          resetSuccess: "Demo calendar was reset successfully.",
+        },
+        de: {
+          dashboard: "Dashboard",
+          messageMonitor: "Message Monitor",
+          reports: "Berichte",
+          monitoring: "Monitoring",
+          settings: "Einstellungen",
+          settingsGeneral: "Allgemein",
+          settingsRcs: "RCS",
+          googleDemoControl: "Google Demo Control",
+          help: "Hilfe",
+          heroTitle: "Eine stabile Incident-artige Cockpit-Shell fuer alle Operator-Seiten",
+          heroText: "Dashboard erklaert die Termin-Story, Message Monitor zeigt den Nachrichtenverkehr, Berichte machen daraus eine klare Operator-Sicht und Google Demo Control buendelt die Kalenderaktionen an einem Ort.",
+          dashboardPageTitle: "Dashboard",
+          dashboardPageSub: "Business-orientierter Ueberblick mit aktueller Story, Slots und Operator-Zusammenfassung.",
+          operatorTitle: "Operator Panel",
+          scenario: "Szenario",
+          dashboardMode: "Dashboard Modus",
+          dashboardHint: "Google Kalenderaktionen liegen jetzt im eigenen Google Demo Control Bereich im Kopfmenue.",
+          restart: "Story neu starten",
+          next: "Naechster Schritt",
+          currentStory: "Aktuelle Story",
+          currentMode: "Aktueller Modus",
+          googleWorkspace: "Google Arbeitsbereich",
+          demoPaneTitle: "Demo",
+          dashboardTechTitle: "Operator Zusammenfassung",
+          messageMonitorTitle: "Message Monitor",
+          messageMonitorSub: "Eingehende und ausgehende Nachrichten werden in eine gemeinsame Operator-Ansicht normalisiert.",
+          messageTrafficTitle: "Nachrichtenverkehr",
+          messageDetailTitle: "Nachrichtendetail",
+          reportsTitle: "Kommunikationsberichte",
+          reportsSub: "Berichtskarten machen Kundenkontext und Admin-Sicht einfach erklaerbar.",
+          messageChannelFilterLabel: "Kanal",
+          messageDirectionFilterLabel: "Richtung",
+          messageStatusFilterLabel: "Status",
+          all: "Alle",
+          outbound: "Ausgehend",
+          inbound: "Eingehend",
+          noMessagesAvailable: "Zu den aktuellen Filtern gibt es noch keine passenden Nachrichten.",
+          noMessageDetail: "Waehle eine Nachricht aus, um die Detailkarte zu oeffnen.",
+          messageBodyLabel: "Inhalt",
+          messageJourneyLabel: "Journey",
+          messageBookingLabel: "Buchung",
+          messagePhoneLabel: "Telefon",
+          messageCustomerLabel: "Kunde",
+          messageProviderLabel: "Provider",
+          messageActionsLabel: "Aktionen",
+          reportMetricsLabel: "Berichtsmetriken",
+          monitoringTitle: "Monitoring",
+          monitoringSub: "Technische Events, Trace IDs und Zeitdaten bleiben in einer gemeinsamen Shell.",
+          settingsTitle: "Einstellungen",
+          settingsSub: "Das sind die wichtigsten Laufzeitparameter fuer Scheduling und Operator-Verhalten.",
+          rcsSettingsTitle: "RCS Einstellungen",
+          rcsSettingsSub: "Operator-orientierte LEKAB RCS/SMS Konfiguration mit Speichern, Neuladen und Readiness-Pruefung.",
+          rcsSave: "RCS Einstellungen speichern",
+          rcsReload: "Neu laden",
+          rcsValidate: "Validieren",
+          rcsTestConnection: "Verbindung testen",
+          rcsNoValidationYet: "Es wurde noch keine Validierung ausgefuehrt.",
+          rcsSavedSuccess: "RCS Konfiguration erfolgreich gespeichert",
+          holdSettingsTitle: "Slot Hold Minuten",
+          holdSettingsSub: "Das ist die Zeit fuer die temporaere Reservierung vor der finalen Buchung.",
+          holdMinutesTitle: "Aktueller Hold",
+          holdMinutesHint: "Wenn ein Kunde einen Slot waehlt, reserviert die Plattform ihn kurzzeitig, damit kein zweiter Nutzer parallel denselben Slot buchen kann.",
+          googleControlTitle: "Google Demo Control",
+          googleControlSub: "Nutze diese Seite, wenn du Demo-Termine vorbereiten, erzeugen, loeschen oder zuruecksetzen willst.",
+          googleModeTitle: "Google Modus",
+          googleModeHint: "Simulation schreibt nicht in den Google Kalender. Test schreibt in den real konfigurierten Google Testkalender.",
+          googleModeStatusSimulation: "Aktueller Modus: Simulation. Es werden keine echten Google Kalendereintraege erzeugt.",
+          googleModeStatusTest: "Aktueller Modus: Test. Generate, Delete und Reset aendern den real konfigurierten Google Testkalender.",
+          fromDate: "Von Datum",
+          toDate: "Bis Datum",
+          count: "Anzahl Termine",
+          appointmentType: "Termin-Typ",
+          replyActions: "Antwortaktionen",
+          slotChoices: "Verfuegbare Zeitfenster",
+          interactionStatusTitle: "Interaktionsstatus",
+          noActionsAvailable: "In diesem Schritt gibt es keine Antwortbuttons.",
+          noSlotsAvailable: "In diesem Schritt gibt es keine Slot-Buttons.",
+          monitoringEmpty: "Fuer diesen Schritt gibt es noch keine Monitoring-Daten.",
+          selectedActionLabel: "Gewaehlte Aktion",
+          selectedSlotLabel: "Gewaehlter Slot",
+          resultingPathLabel: "Ergebnispfad",
+          keepAction: "Behalten",
+          rescheduleAction: "Verschieben",
+          cancelAction: "Absagen",
+          callMeAction: "Zurueckrufen lassen",
+          confirmAction: "Bestaetigen",
+          keepSelected: "Der Termin bleibt bestaetigt.",
+          rescheduleSelected: "Der Verschiebeablauf ist offen und neue Slots werden angezeigt.",
+          cancelSelected: "Der Absagepfad ist jetzt aktiv.",
+          callMeSelected: "Ein Rueckruf oder eine Uebergabe an einen Menschen wurde angefordert.",
+          confirmSelected: "Die Terminbestaetigung wurde ausgewaehlt.",
+          genericSelected: "Die gewaehlte Antwortaktion wurde erfasst.",
+          slotSelected: "Der ausgewaehlte Slot ist jetzt im Demo-Ablauf temporaer reserviert.",
+          holdCreated: "Temporäre Reservierung erstellt.",
+          holdExpired: "Die temporaere Reservierung ist abgelaufen. Der Slot ist wieder frei.",
+          holdReleased: "Die temporaere Reservierung wurde freigegeben.",
+          holdConsumed: "Die temporaere Reservierung wurde in eine Buchung umgewandelt.",
+          holdConfirmPrompt: "Dieser Slot ist kurzzeitig fuer dich reserviert. Bitte bestaetige vor Ablauf des Holds.",
+          liveSlotsLoaded: "Das System hat die naechsten verfuegbaren Termine geladen.",
+          noBookingYet: "Es gibt noch keine aktive Buchung. Bitte waehle zuerst einen Slot.",
+          cancelDone: "Der Termin wurde erfolgreich abgesagt.",
+          callMeDone: "Ein Rueckruf oder eine Uebergabe an einen Menschen wurde angefordert.",
+          conflictReloaded: "Dieser Slot ist nicht mehr verfuegbar. Hier sind die naechsten freien Zeiten.",
+          bookingDone: "Der Termin wurde erfolgreich gebucht.",
+          rescheduleDone: "Der Termin wurde erfolgreich auf den neuen Slot verschoben.",
+          revalidationStarted: "Das System prueft vor der finalen Buchung Google Kalender noch einmal live.",
+          prepare: "Demo Kalender vorbereiten",
+          generate: "Demo Termine erzeugen",
+          deleteAction: "Demo Termine loeschen",
+          reset: "Demo Kalender zuruecksetzen",
+          noGoogleActionYet: "Es wurde noch keine Google Demo Aktion ausgefuehrt.",
+          googleLiveTitle: "Aktuelles Google Ziel",
+          googleResultTitle: "Letztes Kalenderergebnis",
+          googleConflictTitle: "Live Sync und Konfliktvorschau",
+          helpTitle: "Hilfe und Dokumentation",
+          helpSub: "Die Incident-artige Shell ist dauerhaft. Patch 3 erklaert Plattform, Stories und Business Value jetzt deutlich klarer.",
+          helpBusinessTitle: "Business Value",
+          helpDocsTitle: "Dokumentations-Links",
+          simulation: "Simulation",
+          test: "Test",
+          themeDay: "Tag",
+          themeNight: "Nacht",
+          loading: "Laedt...",
+          mode: "Modus",
+          scenarioSummary: "Szenario",
+          traceId: "Trace ID",
+          correlationId: "Correlation ID",
+          liveWrites: "Live Kalender Schreibzugriffe",
+          targetCalendar: "Zielkalender",
+          targetCalendarId: "Zielkalender ID",
+          requestedMode: "Angeforderter Modus",
+          generatedCount: "Erzeugte Elemente",
+          deletedCount: "Geloeschte Elemente",
+          action: "Aktion",
+          success: "Erfolg",
+          failure: "Fehler",
+          conflict: "Konflikt",
+          reason: "Grund",
+          nextActionsLabel: "Naechste Schritte",
+          docsOpen: "Leitfaden oeffnen",
+          businessValueLabel: "Business Value",
+          wowEffectLabel: "Wow-Effekt",
+          tabsTimeline: "Timeline",
+          tabsTrace: "Trace",
+          tabsPerformance: "Performance",
+          prepareSuccess: "Vorschau vorbereitet. Es wurden keine echten Kalendereintraege geschrieben.",
+          generateSuccess: "Demo Termine wurden erfolgreich erzeugt.",
+          deleteSuccess: "Demo Termine wurden erfolgreich geloescht.",
+          resetSuccess: "Demo Kalender wurde erfolgreich zurueckgesetzt.",
+        },
+      };
+
+      const refs = {
+        navTabs: document.getElementById("navTabs"),
+        langDeBtn: document.getElementById("langDeBtn"),
+        langEnBtn: document.getElementById("langEnBtn"),
+        themeToggle: document.getElementById("themeToggle"),
+        helpButton: document.getElementById("helpButton"),
+        heroTitle: document.getElementById("heroTitle"),
+        heroText: document.getElementById("heroText"),
+        releaseText: document.getElementById("releaseText"),
+        dashboardPageTitle: document.getElementById("dashboardPageTitle"),
+        dashboardPageSub: document.getElementById("dashboardPageSub"),
+        operatorTitle: document.getElementById("operatorTitle"),
+        scenarioLabel: document.getElementById("scenarioLabel"),
+        dashboardModeLabel: document.getElementById("dashboardModeLabel"),
+        dashboardHint: document.getElementById("dashboardHint"),
+        restartBtn: document.getElementById("restartBtn"),
+        nextBtn: document.getElementById("nextBtn"),
+        summaryOneTitle: document.getElementById("summaryOneTitle"),
+        summaryTwoTitle: document.getElementById("summaryTwoTitle"),
+        summaryThreeTitle: document.getElementById("summaryThreeTitle"),
+        demoPaneTitle: document.getElementById("demoPaneTitle"),
+        dashboardTechTitle: document.getElementById("dashboardTechTitle"),
+        platformOverviewTitle: document.getElementById("platformOverviewTitle"),
+        platformOverviewSub: document.getElementById("platformOverviewSub"),
+        demoStoryboardTitle: document.getElementById("demoStoryboardTitle"),
+        demoStoryboardSub: document.getElementById("demoStoryboardSub"),
+        settingsSubnav: document.getElementById("settingsSubnav"),
+        settingsSubnavRcs: document.getElementById("settingsSubnavRcs"),
+        rcsSettingsTitle: document.getElementById("rcsSettingsTitle"),
+        rcsSettingsSub: document.getElementById("rcsSettingsSub"),
+        rcsSettingsBanner: document.getElementById("rcsSettingsBanner"),
+        rcsReadinessGrid: document.getElementById("rcsReadinessGrid"),
+        rcsSettingsSections: document.getElementById("rcsSettingsSections"),
+        rcsReloadBtn: document.getElementById("rcsReloadBtn"),
+        rcsValidateBtn: document.getElementById("rcsValidateBtn"),
+        rcsTestConnectionBtn: document.getElementById("rcsTestConnectionBtn"),
+        rcsSaveBtn: document.getElementById("rcsSaveBtn"),
+        messageMonitorTitle: document.getElementById("messageMonitorTitle"),
+        messageMonitorSub: document.getElementById("messageMonitorSub"),
+        messageTrafficTitle: document.getElementById("messageTrafficTitle"),
+        messageDetailTitle: document.getElementById("messageDetailTitle"),
+        reportsTitle: document.getElementById("reportsTitle"),
+        reportsSub: document.getElementById("reportsSub"),
+        messageChannelFilterLabel: document.getElementById("messageChannelFilterLabel"),
+        messageDirectionFilterLabel: document.getElementById("messageDirectionFilterLabel"),
+        messageStatusFilterLabel: document.getElementById("messageStatusFilterLabel"),
+        monitoringTitle: document.getElementById("monitoringTitle"),
+        monitoringSub: document.getElementById("monitoringSub"),
+        settingsTitle: document.getElementById("settingsTitle"),
+        settingsSub: document.getElementById("settingsSub"),
+        holdSettingsTitle: document.getElementById("holdSettingsTitle"),
+        holdSettingsSub: document.getElementById("holdSettingsSub"),
+        holdMinutesTitle: document.getElementById("holdMinutesTitle"),
+        holdMinutesValue: document.getElementById("holdMinutesValue"),
+        holdMinutesHint: document.getElementById("holdMinutesHint"),
+        holdDecrementBtn: document.getElementById("holdDecrementBtn"),
+        holdIncrementBtn: document.getElementById("holdIncrementBtn"),
+        googleControlTitle: document.getElementById("googleControlTitle"),
+        googleControlSub: document.getElementById("googleControlSub"),
+        googleModeTitle: document.getElementById("googleModeTitle"),
+        googleModeHint: document.getElementById("googleModeHint"),
+        googleModeStatus: document.getElementById("googleModeStatus"),
+        googleFromDateLabel: document.getElementById("googleFromDateLabel"),
+        googleToDateLabel: document.getElementById("googleToDateLabel"),
+        googleCountLabel: document.getElementById("googleCountLabel"),
+        googleAppointmentTypeLabel: document.getElementById("googleAppointmentTypeLabel"),
+        googlePrepareBtn: document.getElementById("googlePrepareBtn"),
+        googleGenerateBtn: document.getElementById("googleGenerateBtn"),
+        googleDeleteBtn: document.getElementById("googleDeleteBtn"),
+        googleResetBtn: document.getElementById("googleResetBtn"),
+        googleActionFeedback: document.getElementById("googleActionFeedback"),
+        googleLiveTitle: document.getElementById("googleLiveTitle"),
+        googleResultTitle: document.getElementById("googleResultTitle"),
+        googleConflictTitle: document.getElementById("googleConflictTitle"),
+        helpTitle: document.getElementById("helpTitle"),
+        helpSub: document.getElementById("helpSub"),
+        helpPlatformTitle: document.getElementById("helpPlatformTitle"),
+        helpStoryboardTitle: document.getElementById("helpStoryboardTitle"),
+        helpBusinessTitle: document.getElementById("helpBusinessTitle"),
+        helpDocsTitle: document.getElementById("helpDocsTitle"),
+        scenarioSelect: document.getElementById("scenarioSelect"),
+        dashboardModeButtons: document.getElementById("dashboardModeButtons"),
+        chatStream: document.getElementById("chatStream"),
+        slotList: document.getElementById("slotList"),
+        interactionStatus: document.getElementById("interactionStatus"),
+        speakerNotes: document.getElementById("speakerNotes"),
+        dashboardSummary: document.getElementById("dashboardSummary"),
+        platformOverviewGrid: document.getElementById("platformOverviewGrid"),
+        demoStoryboardGrid: document.getElementById("demoStoryboardGrid"),
+        summaryOne: document.getElementById("summaryOne"),
+        summaryTwo: document.getElementById("summaryTwo"),
+        summaryThree: document.getElementById("summaryThree"),
+        messageSummaryCards: document.getElementById("messageSummaryCards"),
+        messageChannelFilter: document.getElementById("messageChannelFilter"),
+        messageDirectionFilter: document.getElementById("messageDirectionFilter"),
+        messageStatusFilter: document.getElementById("messageStatusFilter"),
+        messageMonitorList: document.getElementById("messageMonitorList"),
+        messageMonitorDetail: document.getElementById("messageMonitorDetail"),
+        reportsBody: document.getElementById("reportsBody"),
+        monitorTabs: document.getElementById("monitorTabs"),
+        monitoringBody: document.getElementById("monitoringBody"),
+        settingsGrid: document.getElementById("settingsGrid"),
+        helpGrid: document.getElementById("helpGrid"),
+        helpPlatformGrid: document.getElementById("helpPlatformGrid"),
+        helpStoryboardGrid: document.getElementById("helpStoryboardGrid"),
+        helpBusinessGrid: document.getElementById("helpBusinessGrid"),
+        googleSimulationBtn: document.getElementById("googleSimulationBtn"),
+        googleTestBtn: document.getElementById("googleTestBtn"),
+        googleFromDateInput: document.getElementById("googleFromDateInput"),
+        googleToDateInput: document.getElementById("googleToDateInput"),
+        googleCountSelect: document.getElementById("googleCountSelect"),
+        googleAppointmentTypeSelect: document.getElementById("googleAppointmentTypeSelect"),
+        googleLiveGrid: document.getElementById("googleLiveGrid"),
+        googleResultGrid: document.getElementById("googleResultGrid"),
+        googleConflictGrid: document.getElementById("googleConflictGrid"),
+      };
+
+      function t(key) {
+        return (copy[state.language] || copy.en)[key] || key;
+      }
+
+      function fetchJson(url, options = undefined) {
+        return fetch(url, options).then(async (response) => {
+          const payload = await response.json();
+          if (!response.ok) {
+            const detail = payload.detail && payload.detail.message ? payload.detail.message : JSON.stringify(payload);
+            throw new Error(detail);
+          }
+          return payload;
+        });
+      }
+
+      function currentScenario() {
+        return state.payload.scenarios.find((scenario) => scenario.id === state.scenarioId) || state.payload.scenarios[0];
+      }
+
+      function currentStep() {
+        const scenario = currentScenario();
+        return scenario.steps[Math.min(state.stepIndex, scenario.steps.length - 1)];
+      }
+
+      function normalizeToken(value) {
+        return String(value || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "_")
+          .replace(/^_+|_+$/g, "");
+      }
+
+      function normalizeActionValue(value) {
+        const normalized = normalizeToken(value);
+        const aliases = {
+          keep_appointment: "keep",
+          keep: "keep",
+          termin_behalten: "keep",
+          behalten: "keep",
+          reschedule: "reschedule",
+          verschieben: "reschedule",
+          verschiebung: "reschedule",
+          cancel: "cancel",
+          absagen: "cancel",
+          absage: "cancel",
+          call_me: "call_me",
+          ruf_mich_an: "call_me",
+          zuruckrufen_lassen: "call_me",
+          zurueckrufen_lassen: "call_me",
+          confirm: "confirm",
+          bestaetigen: "confirm",
+        };
+        return aliases[normalized] || normalized;
+      }
+
+      // We keep transcript building separate from interactive controls so the
+      // current chat can reuse the scenario steps while buttons drive state.
+      function buildTranscriptEntries() {
+        const scenario = currentScenario();
+        const visibleSteps = scenario.steps.slice(0, state.stepIndex + 1);
+        const transcript = [];
+        visibleSteps.forEach((step) => {
+          if (Array.isArray(step.chat) && step.chat.length) {
+            step.chat.forEach((entry) => transcript.push(entry));
+            return;
+          }
+          if (step.customer_message) {
+            transcript.push({ role: "user", text: step.customer_message });
+          }
+          if (step.platform_message) {
+            transcript.push({ role: "platform", text: step.platform_message });
+          }
+        });
+        if (state.runtimeTranscript.length) {
+          transcript.push(...state.runtimeTranscript);
+        }
+        return transcript;
+      }
+
+      // The payload already contains a provider-neutral communication envelope.
+      // This gives us a realistic bridge towards LEKAB-style reply actions later.
+      function currentStructuredMessage() {
+        if (state.runtimeMessage) {
+          return state.runtimeMessage;
+        }
+        const step = currentStep();
+        if (step.communication_message) {
+          return step.communication_message;
+        }
+        return {
+          text: step.platform_message || "",
+          actions: [],
+          slot_options: [],
+          calendar_provider: "simulated",
+        };
+      }
+
+      function localizedActionLabel(actionValue, fallbackLabel) {
+        const labels = {
+          keep: t("keepAction"),
+          reschedule: t("rescheduleAction"),
+          cancel: t("cancelAction"),
+          call_me: t("callMeAction"),
+          confirm: t("confirmAction"),
+        };
+        return labels[actionValue] || fallbackLabel || actionValue;
+      }
+
+      function resetInteractionState() {
+        state.selectedAction = null;
+        state.selectedSlot = null;
+        state.interactionStatus = null;
+        state.interactionEvents = [];
+        state.holdExpiresAt = null;
+        state.holdStatus = "idle";
+        state.activeHoldId = null;
+        state.runtimeMessage = null;
+        state.runtimeTranscript = [];
+        state.currentBooking = null;
+        state.pendingSlotPayload = null;
+        state.pendingBookingAction = "create";
+        state.interactiveJourneyId = `journey-${Date.now()}`;
+      }
+
+      function findNextStepIndex(matcher) {
+        const scenario = currentScenario();
+        for (let index = state.stepIndex + 1; index < scenario.steps.length; index += 1) {
+          if (matcher(scenario.steps[index])) {
+            return index;
+          }
+        }
+        return null;
+      }
+
+      function buildLocalEvent(eventType, payload) {
+        return {
+          event_type: eventType,
+          payload: {
+            ...payload,
+            occurred_at: new Date().toISOString(),
+            step_index: state.stepIndex,
+          },
+        };
+      }
+
+      function recordInteraction(eventType, payload) {
+        state.interactionEvents.unshift(buildLocalEvent(eventType, payload));
+      }
+
+      function addRuntimeMessage(role, text) {
+        state.runtimeTranscript.push({ role, text });
+      }
+
+      function setRuntimeStructuredMessage(message) {
+        state.runtimeMessage = {
+          text: message.text || "",
+          actions: message.actions || [],
+          slot_options: message.slot_options || [],
+          calendar_provider: message.calendar_provider || (state.googleMode === "test" ? "google" : "simulated"),
+        };
+      }
+
+      function clearRuntimeStructuredMessage() {
+        state.runtimeMessage = null;
+      }
+
+      function activeJourneyId() {
+        return state.interactiveJourneyId || currentStep().journey_id || `journey-${Date.now()}`;
+      }
+
+      function appointmentCustomerName() {
+        return currentScenario().customer_name || currentStep().customer_name || "Demo Customer";
+      }
+
+      function actionPath(actionValue) {
+        const mapping = {
+          keep: "appointment.confirmed",
+          reschedule: "appointment.reschedule.flow.opened",
+          cancel: "appointment.cancel.flow.opened",
+          call_me: "human.handover.requested",
+          confirm: "appointment.confirmed",
+        };
+        return mapping[actionValue] || "message.reply.recorded";
+      }
+
+      function actionStatusMessage(actionValue) {
+        const mapping = {
+          keep: t("keepSelected"),
+          reschedule: t("rescheduleSelected"),
+          cancel: t("cancelSelected"),
+          call_me: t("callMeSelected"),
+          confirm: t("confirmSelected"),
+        };
+        return mapping[actionValue] || t("genericSelected");
+      }
+
+      function releaseActiveHold(eventType, messageKey, resultingPath) {
+        if (!state.activeHoldId) {
+          return;
+        }
+        recordInteraction(eventType, {
+          hold_id: state.activeHoldId,
+          slot_label: state.selectedSlot,
+          expires_at_utc: state.holdExpiresAt,
+          hold_duration_minutes: state.slotHoldMinutes,
+        });
+        state.holdStatus = resultingPath;
+        state.activeHoldId = null;
+        state.holdExpiresAt = null;
+        state.interactionStatus = {
+          kind: "success",
+          message: t(messageKey),
+          resultingPath,
+        };
+      }
+
+      function ensureHoldStateCurrent() {
+        if (state.holdStatus !== "active" || !state.holdExpiresAt || !state.activeHoldId) {
+          return;
+        }
+        const expiry = new Date(state.holdExpiresAt);
+        if (Number.isNaN(expiry.getTime()) || Date.now() < expiry.getTime()) {
+          return;
+        }
+        recordInteraction("slot.hold.expired", {
+          hold_id: state.activeHoldId,
+          slot_label: state.selectedSlot,
+          expires_at_utc: state.holdExpiresAt,
+          hold_duration_minutes: state.slotHoldMinutes,
+        });
+        state.holdStatus = "expired";
+        state.activeHoldId = null;
+        state.holdExpiresAt = null;
+        state.interactionStatus = {
+          kind: "warning",
+          message: t("holdExpired"),
+          resultingPath: "slot.hold.expired",
+        };
+      }
+
+      // Clicking a reply button should move the demo forward, update the
+      // operator-facing status, and emit a synthetic monitoring event.
+      function handleReplyAction(action) {
+        ensureHoldStateCurrent();
+        const actionValue = normalizeActionValue(action.value || action.label);
+        state.selectedAction = actionValue;
+        state.interactionStatus = {
+          kind: "success",
+          message: actionStatusMessage(actionValue),
+          resultingPath: actionPath(actionValue),
+        };
+        recordInteraction("message.action.selected", {
+          value: actionValue,
+          trace_id: currentStep().trace_id,
+          correlation_id: currentStep().correlation_id,
+        });
+        recordInteraction(`message.action.${actionValue}.selected`, {
+          label: localizedActionLabel(actionValue, action.label),
+          value: actionValue,
+          resulting_path: actionPath(actionValue),
+          trace_id: currentStep().trace_id,
+          correlation_id: currentStep().correlation_id,
+        });
+
+        if (actionValue === "reschedule") {
+          state.pendingBookingAction = state.currentBooking ? "reschedule" : "create";
+          state.interactionStatus = { kind: "warning", message: t("loading"), resultingPath: "slot.lookup.requested" };
+          recordInteraction("slot.lookup.requested", {
+            mode: state.googleMode,
+            appointment_type: state.selectedAppointmentType,
+          });
+          loadInteractiveSlots()
+            .then((payload) => {
+              addRuntimeMessage("user", localizedActionLabel(actionValue, action.label));
+              addRuntimeMessage("platform", payload.slot_count ? t("liveSlotsLoaded") : t("noSlotsAvailable"));
+              updateRuntimeMessageForSlots(
+                (state.payload.interactive_demo_flow && state.payload.interactive_demo_flow.slot_lookup_message) || t("liveSlotsLoaded"),
+                payload.slots || []
+              );
+              state.interactionStatus = {
+                kind: "success",
+                message: t("liveSlotsLoaded"),
+                resultingPath: "slot.lookup.loaded",
+              };
+              render();
+            })
+            .catch((error) => {
+              state.interactionStatus = { kind: "error", message: error.message, resultingPath: "slot.lookup.failed" };
+              render();
+            });
+          return;
+        }
+
+        if ((actionValue === "confirm" || actionValue === "keep") && state.activeHoldId && state.pendingSlotPayload) {
+          addRuntimeMessage("user", localizedActionLabel(actionValue, action.label));
+          state.interactionStatus = {
+            kind: "warning",
+            message: t("revalidationStarted"),
+            resultingPath: "booking.revalidation.started",
+          };
+          recordInteraction("booking.revalidation.started", {
+            hold_id: state.activeHoldId,
+            slot_label: state.selectedSlot,
+          });
+          const bookingPayload = {
+            mode: state.googleMode,
+            slot_id: state.pendingSlotPayload.slot_id,
+            start_time: state.pendingSlotPayload.start,
+            end_time: state.pendingSlotPayload.end,
+            label: state.pendingSlotPayload.label,
+            appointment_type: state.selectedAppointmentType,
+            customer_name: appointmentCustomerName(),
+          };
+          const url = state.pendingBookingAction === "reschedule" && state.currentBooking
+            ? `${googleApiBase()}/booking/reschedule`
+            : `${googleApiBase()}/booking/create`;
+          const requestBody = state.pendingBookingAction === "reschedule" && state.currentBooking
+            ? {
+                journey_id: activeJourneyId(),
+                hold_id: state.activeHoldId,
+                booking: {
+                  ...bookingPayload,
+                  booking_reference: state.currentBooking.booking_reference,
+                  provider_reference: state.currentBooking.provider_reference,
+                },
+              }
+            : { journey_id: activeJourneyId(), hold_id: state.activeHoldId, booking: bookingPayload };
+          fetchJson(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestBody),
+          })
+            .then((payload) => {
+              state.currentBooking = {
+                booking_reference: payload.booking_reference,
+                provider_reference: payload.provider_reference,
+                appointment_type: state.selectedAppointmentType,
+              };
+              state.pendingSlotPayload = null;
+              recordInteraction("booking.revalidation.succeeded", payload);
+              recordInteraction(payload.action === "reschedule" ? "booking.rescheduled" : "booking.created", payload);
+              state.activeHoldId = null;
+              state.holdExpiresAt = null;
+              state.holdStatus = "consumed";
+              state.interactionStatus = {
+                kind: "success",
+                message: payload.action === "reschedule" ? t("rescheduleDone") : t("bookingDone"),
+                resultingPath: payload.action === "reschedule" ? "booking.rescheduled" : "booking.created",
+              };
+              addRuntimeMessage("platform", payload.message || state.interactionStatus.message);
+              updateRuntimeMessageForConfirmation(payload.message || state.interactionStatus.message);
+              render();
+            })
+            .catch((error) => {
+              const detailText = error.message || t("conflictReloaded");
+              recordInteraction("booking.revalidation.failed", { message: detailText });
+              recordInteraction("booking.blocked.by_conflict", { message: detailText });
+              state.holdStatus = "released";
+              releaseHoldOnServer().finally(() => {
+                state.activeHoldId = null;
+                state.holdExpiresAt = null;
+                loadInteractiveSlots()
+                  .then((payload) => {
+                    addRuntimeMessage("platform", t("conflictReloaded"));
+                    updateRuntimeMessageForSlots(
+                      (state.payload.interactive_demo_flow && state.payload.interactive_demo_flow.conflict_message) || t("conflictReloaded"),
+                      payload.slots || []
+                    );
+                    state.interactionStatus = {
+                      kind: "error",
+                      message: detailText,
+                      resultingPath: "booking.blocked.by_conflict",
+                    };
+                    render();
+                  })
+                  .catch(() => {
+                    state.interactionStatus = {
+                      kind: "error",
+                      message: detailText,
+                      resultingPath: "booking.blocked.by_conflict",
+                    };
+                    render();
+                  });
+              });
+            });
+          render();
+          return;
+        }
+
+        if (actionValue === "cancel") {
+          const finalizeCancelUi = () => {
+            state.pendingSlotPayload = null;
+            state.selectedSlot = null;
+            state.holdStatus = "released";
+            clearRuntimeStructuredMessage();
+            state.interactionStatus = {
+              kind: "success",
+              message: t("cancelDone"),
+              resultingPath: "booking.cancelled",
+            };
+            addRuntimeMessage("user", localizedActionLabel(actionValue, action.label));
+            addRuntimeMessage("platform", t("cancelDone"));
+            render();
+          };
+          if (state.activeHoldId) {
+            releaseHoldOnServer().finally(() => {
+              recordInteraction("slot.hold.released", { hold_id: state.activeHoldId });
+              state.activeHoldId = null;
+              state.holdExpiresAt = null;
+              if (state.currentBooking) {
+                fetchJson(`${googleApiBase()}/booking/cancel`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    mode: state.googleMode,
+                    booking_reference: state.currentBooking.booking_reference,
+                    provider_reference: state.currentBooking.provider_reference,
+                    reason: "customer_request",
+                  }),
+                })
+                  .then((payload) => {
+                    state.currentBooking = null;
+                    recordInteraction("booking.cancelled", payload);
+                    finalizeCancelUi();
+                  })
+                  .catch((error) => {
+                    state.interactionStatus = { kind: "error", message: error.message, resultingPath: "booking.cancel.failed" };
+                    render();
+                  });
+              } else {
+                finalizeCancelUi();
+              }
+            });
+            render();
+            return;
+          }
+          if (state.currentBooking) {
+            fetchJson(`${googleApiBase()}/booking/cancel`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                mode: state.googleMode,
+                booking_reference: state.currentBooking.booking_reference,
+                provider_reference: state.currentBooking.provider_reference,
+                reason: "customer_request",
+              }),
+            })
+              .then((payload) => {
+                state.currentBooking = null;
+                recordInteraction("booking.cancelled", payload);
+                finalizeCancelUi();
+              })
+              .catch((error) => {
+                state.interactionStatus = { kind: "error", message: error.message, resultingPath: "booking.cancel.failed" };
+                render();
+              });
+            render();
+            return;
+          }
+          state.interactionStatus = { kind: "warning", message: t("noBookingYet"), resultingPath: "booking.cancel.skipped" };
+          render();
+          return;
+        }
+
+        if (actionValue === "call_me") {
+          releaseHoldOnServer().finally(() => {
+            if (state.activeHoldId) {
+              recordInteraction("slot.hold.released", { hold_id: state.activeHoldId });
+            }
+            state.activeHoldId = null;
+            state.holdExpiresAt = null;
+            state.holdStatus = "released";
+            addRuntimeMessage("user", localizedActionLabel(actionValue, action.label));
+            addRuntimeMessage("platform", t("callMeDone"));
+            updateRuntimeMessageForConfirmation(t("callMeDone"));
+            state.interactionStatus = { kind: "success", message: t("callMeDone"), resultingPath: "human.handover.requested" };
+            recordInteraction("human.handover.requested", { journey_id: activeJourneyId() });
+            render();
+          });
+          render();
+          return;
+        }
+
+        if ((actionValue === "keep" || actionValue === "confirm") && state.currentBooking) {
+          addRuntimeMessage("user", localizedActionLabel(actionValue, action.label));
+          addRuntimeMessage("platform", t("keepSelected"));
+          updateRuntimeMessageForConfirmation(t("keepSelected"));
+          render();
+          return;
+        }
+
+        render();
+      }
+
+      // Slot button handling is separate because it maps to normalized slot
+      // envelopes and later provider-backed booking / reschedule flows.
+      function handleSlotSelection(slot) {
+        ensureHoldStateCurrent();
+        const proceed = () => {
+          state.selectedSlot = slot.label;
+          state.interactionStatus = {
+            kind: "warning",
+            message: t("loading"),
+            resultingPath: "slot.hold.requested",
+          };
+          recordInteraction("slot.option.selected", {
+            slot_id: slot.slot_id || slot.label,
+            slot_label: slot.label,
+            calendar_provider: slot.calendar_provider || currentStructuredMessage().calendar_provider || "simulated",
+            trace_id: currentStep().trace_id,
+            correlation_id: currentStep().correlation_id,
+          });
+          fetchJson(`${googleApiBase()}/slot-hold/create`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              mode: state.googleMode,
+              journey_id: activeJourneyId(),
+              customer_id: appointmentCustomerName().toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+              slot_id: slot.slot_id || slot.label,
+              start_time: slot.start,
+              end_time: slot.end,
+              slot_label: slot.label,
+              hold_duration_minutes: state.slotHoldMinutes,
+              reason: "slot_selected",
+            }),
+          })
+            .then((payload) => {
+              state.activeHoldId = payload.hold_id;
+              state.holdStatus = "active";
+              state.holdExpiresAt = payload.expires_at_utc;
+              state.pendingSlotPayload = slot;
+              state.interactionStatus = {
+                kind: "success",
+                message: `${payload.message} ${((state.payload.interactive_demo_flow && state.payload.interactive_demo_flow.hold_message_template) || t("holdConfirmPrompt")).replace("{minutes}", payload.hold_duration_minutes)}`,
+                resultingPath: "slot.hold.active",
+              };
+              recordInteraction("slot.hold.created", payload);
+              recordInteraction("slot.hold.active", payload);
+              addRuntimeMessage("user", slot.label);
+              addRuntimeMessage("platform", state.interactionStatus.message);
+              updateRuntimeMessageForConfirmation(
+                ((state.payload.interactive_demo_flow && state.payload.interactive_demo_flow.hold_message_template) || t("holdConfirmPrompt")).replace("{minutes}", payload.hold_duration_minutes)
+              );
+              render();
+            })
+            .catch((error) => {
+              recordInteraction("booking.blocked.by_parallel_request", { message: error.message, slot_label: slot.label });
+              loadInteractiveSlots()
+                .then((payload) => {
+                  updateRuntimeMessageForSlots(
+                    (state.payload.interactive_demo_flow && state.payload.interactive_demo_flow.conflict_message) || t("conflictReloaded"),
+                    payload.slots || []
+                  );
+                  state.interactionStatus = {
+                    kind: "error",
+                    message: error.message,
+                    resultingPath: "booking.blocked.by_parallel_request",
+                  };
+                  render();
+                })
+                .catch(() => {
+                  state.interactionStatus = {
+                    kind: "error",
+                    message: error.message,
+                    resultingPath: "booking.blocked.by_parallel_request",
+                  };
+                  render();
+                });
+            });
+          render();
+        };
+
+        if (state.activeHoldId && state.selectedSlot && state.selectedSlot !== slot.label) {
+          releaseHoldOnServer().finally(() => {
+            recordInteraction("slot.hold.released", { hold_id: state.activeHoldId, slot_label: state.selectedSlot });
+            state.activeHoldId = null;
+            state.holdExpiresAt = null;
+            state.holdStatus = "released";
+            proceed();
+          });
+          return;
+        }
+        proceed();
+      }
+
+      function googleApiBase() {
+        return `/api/google/${GOOGLE_API_VERSION}`;
+      }
+
+      function lekabApiBase() {
+        return `/api/lekab/${LEKAB_API_VERSION}`;
+      }
+
+      function settingsGroupPage(pageId) {
+        return pageId === "settings-rcs" ? "settings-rcs" : "settings-general";
+      }
+
+      function successMessageForAction(action) {
+        if (action === "prepare") return t("prepareSuccess");
+        if (action === "generate") return t("generateSuccess");
+        if (action === "delete") return t("deleteSuccess");
+        return t("resetSuccess");
+      }
+
+      // Patch 8b turns the previously local button clicks into real Google
+      // adapter calls while keeping the message envelope provider-neutral.
+      function loadInteractiveSlots() {
+        return fetchJson(`${googleApiBase()}/availability/slots`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: state.googleMode,
+            from_date: state.googleFromDate,
+            to_date: state.googleToDate,
+            max_slots: 4,
+            appointment_type: state.selectedAppointmentType,
+          }),
+        });
+      }
+
+      function releaseHoldOnServer() {
+        if (!state.activeHoldId) {
+          return Promise.resolve(null);
+        }
+        return fetchJson(`${googleApiBase()}/slot-hold/release`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            journey_id: activeJourneyId(),
+            hold_id: state.activeHoldId,
+            reason: "interactive_flow_release",
+          }),
+        }).catch(() => null);
+      }
+
+      function updateRuntimeMessageForSlots(text, slots) {
+        setRuntimeStructuredMessage({
+          text,
+          actions: [],
+          slot_options: slots,
+          calendar_provider: state.googleMode === "test" ? "google" : "simulated",
+        });
+      }
+
+      function updateRuntimeMessageForConfirmation(text) {
+        const actions = (state.payload.interactive_demo_flow && state.payload.interactive_demo_flow.booking_confirmation_actions) || [
+          { type: "reply", label: t("confirmAction"), value: "confirm" },
+          { type: "reply", label: t("rescheduleAction"), value: "reschedule" },
+          { type: "reply", label: t("cancelAction"), value: "cancel" },
+          { type: "reply", label: t("callMeAction"), value: "call_me" },
+        ];
+        setRuntimeStructuredMessage({
+          text,
+          actions,
+          slot_options: [],
+          calendar_provider: state.googleMode === "test" ? "google" : "simulated",
+        });
+      }
+
+      function renderNav() {
+        refs.navTabs.innerHTML = "";
+        state.payload.pages.forEach((page) => {
+          const button = document.createElement("button");
+          button.textContent = page.label;
+          if (page.id === state.page) {
+            button.classList.add("active");
+          }
+          button.addEventListener("click", () => {
+            state.page = page.id;
+            render();
+          });
+          refs.navTabs.appendChild(button);
+        });
+      }
+
+      function renderPages() {
+        document.querySelectorAll(".page").forEach((page) => {
+          page.classList.toggle("active", page.id === `page-${state.page}`);
+        });
+      }
+
+      function renderStaticCopy() {
+        document.title = `Appointment Agent Cockpit ${VERSION}`;
+        refs.heroTitle.textContent = t("heroTitle");
+        refs.heroText.textContent = t("heroText");
+        refs.releaseText.textContent = `Release: ${VERSION}`;
+        refs.dashboardPageTitle.textContent = t("dashboardPageTitle");
+        refs.dashboardPageSub.textContent = t("dashboardPageSub");
+        refs.operatorTitle.textContent = t("operatorTitle");
+        refs.scenarioLabel.textContent = t("scenario");
+        refs.dashboardModeLabel.textContent = t("dashboardMode");
+        refs.dashboardHint.textContent = t("dashboardHint");
+        refs.restartBtn.textContent = t("restart");
+        refs.nextBtn.textContent = t("next");
+        refs.summaryOneTitle.textContent = t("currentStory");
+        refs.summaryTwoTitle.textContent = t("currentMode");
+        refs.summaryThreeTitle.textContent = t("googleWorkspace");
+        refs.demoPaneTitle.textContent = t("demoPaneTitle");
+        refs.dashboardTechTitle.textContent = t("dashboardTechTitle");
+        refs.platformOverviewTitle.textContent = state.payload.platform_overview.title;
+        refs.platformOverviewSub.textContent = state.payload.platform_overview.subtitle;
+        refs.demoStoryboardTitle.textContent = state.payload.demo_storyboard.title;
+        refs.demoStoryboardSub.textContent = state.payload.demo_storyboard.subtitle;
+        refs.messageMonitorTitle.textContent = t("messageMonitorTitle");
+        refs.messageMonitorSub.textContent = t("messageMonitorSub");
+        refs.messageTrafficTitle.textContent = t("messageTrafficTitle");
+        refs.messageDetailTitle.textContent = t("messageDetailTitle");
+        refs.reportsTitle.textContent = t("reportsTitle");
+        refs.reportsSub.textContent = t("reportsSub");
+        refs.messageChannelFilterLabel.textContent = t("messageChannelFilterLabel");
+        refs.messageDirectionFilterLabel.textContent = t("messageDirectionFilterLabel");
+        refs.messageStatusFilterLabel.textContent = t("messageStatusFilterLabel");
+        refs.monitoringTitle.textContent = t("monitoringTitle");
+        refs.monitoringSub.textContent = t("monitoringSub");
+        refs.settingsTitle.textContent = t("settingsTitle");
+        refs.settingsSub.textContent = t("settingsSub");
+        refs.rcsSettingsTitle.textContent = t("rcsSettingsTitle");
+        refs.rcsSettingsSub.textContent = t("rcsSettingsSub");
+        refs.rcsReloadBtn.textContent = t("rcsReload");
+        refs.rcsValidateBtn.textContent = t("rcsValidate");
+        refs.rcsTestConnectionBtn.textContent = t("rcsTestConnection");
+        refs.rcsSaveBtn.textContent = t("rcsSave");
+        refs.holdSettingsTitle.textContent = t("holdSettingsTitle");
+        refs.holdSettingsSub.textContent = t("holdSettingsSub");
+        refs.holdMinutesTitle.textContent = t("holdMinutesTitle");
+        refs.holdMinutesHint.textContent = t("holdMinutesHint");
+        refs.googleControlTitle.textContent = t("googleControlTitle");
+        refs.googleControlSub.textContent = t("googleControlSub");
+        refs.googleModeTitle.textContent = t("googleModeTitle");
+        refs.googleModeHint.textContent = t("googleModeHint");
+        refs.googleModeStatus.textContent = state.googleMode === "test" ? t("googleModeStatusTest") : t("googleModeStatusSimulation");
+        refs.googleFromDateLabel.textContent = t("fromDate");
+        refs.googleToDateLabel.textContent = t("toDate");
+        refs.googleCountLabel.textContent = t("count");
+        refs.googleAppointmentTypeLabel.textContent = t("appointmentType");
+        refs.googlePrepareBtn.textContent = t("prepare");
+        refs.googleGenerateBtn.textContent = t("generate");
+        refs.googleDeleteBtn.textContent = t("deleteAction");
+        refs.googleResetBtn.textContent = t("reset");
+        refs.googleLiveTitle.textContent = t("googleLiveTitle");
+        refs.googleResultTitle.textContent = t("googleResultTitle");
+        refs.googleConflictTitle.textContent = t("googleConflictTitle");
+        refs.helpTitle.textContent = t("helpTitle");
+        refs.helpSub.textContent = t("helpSub");
+        refs.helpPlatformTitle.textContent = state.payload.platform_overview.title;
+        refs.helpStoryboardTitle.textContent = state.payload.demo_storyboard.title;
+        refs.helpBusinessTitle.textContent = t("helpBusinessTitle");
+        refs.helpDocsTitle.textContent = t("helpDocsTitle");
+        refs.langDeBtn.classList.toggle("active", state.language === "de");
+        refs.langEnBtn.classList.toggle("active", state.language === "en");
+      }
+
+      function renderPlatformOverview(target, items) {
+        target.innerHTML = "";
+        (items || []).forEach((item) => {
+          const card = document.createElement("div");
+          card.className = "mini-card";
+          card.innerHTML = `<h3>${item.title}</h3><p>${item.body}</p>`;
+          target.appendChild(card);
+        });
+      }
+
+      function renderDemoStoryboard(target, stories) {
+        target.innerHTML = "";
+        (stories || []).forEach((story) => {
+          const card = document.createElement("div");
+          card.className = "record";
+          card.innerHTML = `
+            <strong>${story.title}</strong>
+            <p class="small"><strong>${t("businessValueLabel")}:</strong> ${story.business_value}</p>
+            <p class="small"><strong>${t("wowEffectLabel")}:</strong> ${story.wow_effect}</p>
+          `;
+          target.appendChild(card);
+        });
+      }
+
+      function renderBusinessValue(target, points) {
+        target.innerHTML = "";
+        (points || []).forEach((point) => {
+          const node = document.createElement("div");
+          node.className = "message-box";
+          node.textContent = point;
+          target.appendChild(node);
+        });
+      }
+
+      function renderScenarioSelect() {
+        refs.scenarioSelect.innerHTML = "";
+        state.payload.scenarios.forEach((scenario) => {
+          const option = document.createElement("option");
+          option.value = scenario.id;
+          option.textContent = scenario.title;
+          option.selected = scenario.id === state.scenarioId;
+          refs.scenarioSelect.appendChild(option);
+        });
+      }
+
+      function filterMessages(messages) {
+        return (messages || []).filter((message) => {
+          if (state.messageChannelFilter !== "ALL" && message.channel !== state.messageChannelFilter) return false;
+          if (state.messageDirectionFilter !== "ALL" && message.direction !== state.messageDirectionFilter) return false;
+          if (state.messageStatusFilter !== "ALL" && message.status !== state.messageStatusFilter) return false;
+          return true;
+        });
+      }
+
+      function selectedMessage(messages) {
+        const filtered = filterMessages(messages);
+        if (!filtered.length) {
+          return null;
+        }
+        const found = filtered.find((message) => message.message_id === state.selectedMessageId);
+        if (found) {
+          return found;
+        }
+        state.selectedMessageId = filtered[0].message_id;
+        return filtered[0];
+      }
+
+      function renderMessageFilterSelect(selectRef, options, selectedValue, formatter) {
+        selectRef.innerHTML = "";
+        options.forEach((value) => {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = formatter(value);
+          option.selected = value === selectedValue;
+          selectRef.appendChild(option);
+        });
+      }
+
+      function renderMessageMonitor() {
+        const payload = state.messageMonitor;
+        const messages = filterMessages(payload?.messages || []);
+        const detail = selectedMessage(payload?.messages || []);
+
+        refs.messageSummaryCards.innerHTML = "";
+        (payload?.summary_cards || []).forEach((card) => {
+          const node = document.createElement("div");
+          node.className = "mini-card";
+          node.innerHTML = `<h3>${card.label}</h3><div>${card.value}</div>`;
+          refs.messageSummaryCards.appendChild(node);
+        });
+
+        renderMessageFilterSelect(refs.messageChannelFilter, payload?.filters?.channels || ["ALL"], state.messageChannelFilter, (value) => value === "ALL" ? t("all") : value);
+        renderMessageFilterSelect(refs.messageDirectionFilter, payload?.filters?.directions || ["ALL"], state.messageDirectionFilter, (value) => value === "ALL" ? t("all") : t(value));
+        renderMessageFilterSelect(refs.messageStatusFilter, payload?.filters?.statuses || ["ALL"], state.messageStatusFilter, (value) => value === "ALL" ? t("all") : value);
+
+        refs.messageMonitorList.innerHTML = "";
+        if (!messages.length) {
+          const empty = document.createElement("div");
+          empty.className = "record small";
+          empty.textContent = t("noMessagesAvailable");
+          refs.messageMonitorList.appendChild(empty);
+        } else {
+          messages.forEach((message) => {
+            const row = document.createElement("div");
+            row.className = "message-row";
+            if (message.message_id === state.selectedMessageId) {
+              row.classList.add("active");
+            }
+            row.innerHTML = `
+              <div class="message-row-head">
+                <strong>${message.preview_text || message.body}</strong>
+                <span>${new Date(message.created_at).toLocaleString()}</span>
+              </div>
+              <div class="pill-row">
+                <span class="pill">${message.channel}</span>
+                <span class="pill">${t(message.direction) || message.direction}</span>
+                <span class="pill">${message.status}</span>
+                <span class="pill">${message.journey_id || "-"}</span>
+              </div>
+            `;
+            row.addEventListener("click", () => {
+              state.selectedMessageId = message.message_id;
+              renderMessageMonitor();
+              renderReports();
+            });
+            refs.messageMonitorList.appendChild(row);
+          });
+        }
+
+        refs.messageMonitorDetail.innerHTML = "";
+        if (!detail) {
+          const empty = document.createElement("div");
+          empty.className = "record small";
+          empty.textContent = t("noMessageDetail");
+          refs.messageMonitorDetail.appendChild(empty);
+          return;
+        }
+        [
+          [t("messageProviderLabel"), `${detail.provider} / ${detail.provider_message_id || "-"}`],
+          [t("messageCustomerLabel"), detail.contact_reference || detail.customer_id || "-"],
+          [t("messagePhoneLabel"), detail.phone_number || "-"],
+          [t("messageJourneyLabel"), detail.journey_id || "-"],
+          [t("messageBookingLabel"), detail.booking_reference || "-"],
+          [t("messageBodyLabel"), detail.body],
+          [t("messageActionsLabel"), (detail.actions || []).map((action) => action.label).join(", ") || "-"],
+        ].forEach(([label, value]) => {
+          const metric = document.createElement("div");
+          metric.className = "metric";
+          metric.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.messageMonitorDetail.appendChild(metric);
+        });
+        const code = document.createElement("div");
+        code.className = "record";
+        code.innerHTML = `<strong>Provider Payload</strong><div class="code">${JSON.stringify(detail.provider_payload || {}, null, 2)}</div>`;
+        refs.messageMonitorDetail.appendChild(code);
+      }
+
+      function renderReports() {
+        const payload = state.messageMonitor;
+        refs.reportsBody.innerHTML = "";
+        (payload?.report_cards || []).forEach((card) => {
+          const node = document.createElement("div");
+          node.className = "report-card";
+          const metrics = (card.metrics || [])
+            .map((item) => `<div class="metric"><span class="label">${item.label}</span><strong>${item.value}</strong></div>`)
+            .join("");
+          node.innerHTML = `
+            <h3>${card.title}</h3>
+            <p>${card.text}</p>
+            <div class="report-metrics">${metrics}</div>
+          `;
+          refs.reportsBody.appendChild(node);
+        });
+      }
+
+      function renderDashboardModes() {
+        refs.dashboardModeButtons.innerHTML = "";
+        state.payload.dashboard_modes.forEach((mode) => {
+          const button = document.createElement("button");
+          button.textContent = mode.label;
+          if (mode.id === state.dashboardMode) {
+            button.classList.add("active");
+          }
+          button.addEventListener("click", () => {
+            state.dashboardMode = mode.id;
+            render();
+          });
+          refs.dashboardModeButtons.appendChild(button);
+        });
+      }
+
+      // The settings area is intentionally split into stable sub-pages. This
+      // keeps operator navigation predictable when more configuration sections
+      // are added later, for example WhatsApp or Voice channel settings.
+      function renderSettingsSubnav() {
+        [refs.settingsSubnav, refs.settingsSubnavRcs].forEach((target) => {
+          target.innerHTML = "";
+          (state.payload.settings_navigation?.items || []).forEach((item) => {
+            const button = document.createElement("button");
+            button.textContent = item.label;
+            if (settingsGroupPage(state.page) === item.id) {
+              button.classList.add("active");
+            }
+            button.addEventListener("click", () => {
+              state.page = item.id;
+              render();
+            });
+            target.appendChild(button);
+          });
+        });
+      }
+
+      function renderDemo() {
+        ensureHoldStateCurrent();
+        const scenario = currentScenario();
+        const step = currentStep();
+        const conversation = buildTranscriptEntries();
+        const message = currentStructuredMessage();
+        refs.chatStream.innerHTML = "";
+        conversation.forEach((entry) => {
+          const bubble = document.createElement("div");
+          bubble.className = `bubble ${entry.role}`;
+          bubble.textContent = entry.text;
+          refs.chatStream.appendChild(bubble);
+        });
+        if (!conversation.length) {
+          const empty = document.createElement("div");
+          empty.className = "record small";
+          empty.textContent = scenario.simple_explanation || "No demo conversation available yet.";
+          refs.chatStream.appendChild(empty);
+        }
+        refs.slotList.innerHTML = "";
+        if ((message.actions || []).length) {
+          const actionGroup = document.createElement("div");
+          actionGroup.className = "interactive-group";
+          actionGroup.innerHTML = `<h3>${t("replyActions")}</h3>`;
+          const buttonRow = document.createElement("div");
+          buttonRow.className = "interactive-buttons";
+          message.actions.forEach((action) => {
+            const button = document.createElement("button");
+            button.className = "primary";
+            button.textContent = localizedActionLabel(action.value, action.label);
+            button.addEventListener("click", () => handleReplyAction(action));
+            buttonRow.appendChild(button);
+          });
+          actionGroup.appendChild(buttonRow);
+          refs.slotList.appendChild(actionGroup);
+        } else {
+          const emptyActions = document.createElement("div");
+          emptyActions.className = "record small";
+          emptyActions.textContent = t("noActionsAvailable");
+          refs.slotList.appendChild(emptyActions);
+        }
+        if ((message.slot_options || []).length) {
+          const slotGroup = document.createElement("div");
+          slotGroup.className = "interactive-group";
+          slotGroup.innerHTML = `<h3>${t("slotChoices")}</h3>`;
+          const buttonRow = document.createElement("div");
+          buttonRow.className = "interactive-buttons";
+          message.slot_options.forEach((slot) => {
+            const button = document.createElement("button");
+            button.textContent = slot.label;
+            button.addEventListener("click", () => handleSlotSelection(slot));
+            buttonRow.appendChild(button);
+          });
+          slotGroup.appendChild(buttonRow);
+          refs.slotList.appendChild(slotGroup);
+        } else {
+          const emptySlots = document.createElement("div");
+          emptySlots.className = "record small";
+          emptySlots.textContent = t("noSlotsAvailable");
+          refs.slotList.appendChild(emptySlots);
+        }
+        refs.interactionStatus.className = "message-box";
+        const holdHint = state.holdStatus === "active" && state.holdExpiresAt
+          ? `<div class="small">Hold active until ${new Date(state.holdExpiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>`
+          : "";
+        refs.interactionStatus.innerHTML = `<strong>${t("interactionStatusTitle")}</strong><div class="small">${(state.interactionStatus && state.interactionStatus.message) || scenario.simple_explanation}</div>${holdHint}`;
+        if (state.interactionStatus?.kind === "success") refs.interactionStatus.classList.add("success");
+        if (state.interactionStatus?.kind === "warning") refs.interactionStatus.classList.add("warning");
+        if (state.interactionStatus?.kind === "error") refs.interactionStatus.classList.add("danger");
+        refs.speakerNotes.textContent = step.speaker_notes || scenario.simple_explanation;
+        refs.summaryOne.textContent = `${scenario.title} (${state.stepIndex + 1}/${scenario.steps.length})`;
+        refs.summaryTwo.textContent = `${t("mode")}: ${state.dashboardMode} | ${state.googleMode === "test" ? t("test") : t("simulation")}`;
+        refs.summaryThree.textContent = `${message.calendar_provider || "simulated"} | ${state.selectedAppointmentType} | ${state.googleFromDate} -> ${state.googleToDate}`;
+        refs.dashboardSummary.innerHTML = "";
+        [
+          [t("scenarioSummary"), scenario.title],
+          [t("traceId"), step.trace_id || "-"],
+          [t("correlationId"), step.correlation_id || "-"],
+          ["Journey ID", activeJourneyId()],
+          ["Booking Ref", (state.currentBooking && state.currentBooking.booking_reference) || step.booking_reference || "-"],
+          [t("selectedActionLabel"), state.selectedAction ? localizedActionLabel(state.selectedAction, state.selectedAction) : "-"],
+          [t("selectedSlotLabel"), state.selectedSlot || "-"],
+          ["Hold Status", state.holdStatus || "-"],
+          ["Hold Minutes", String(state.slotHoldMinutes)],
+          [t("resultingPathLabel"), state.interactionStatus?.resultingPath || "-"],
+        ].forEach(([label, value]) => {
+          const metric = document.createElement("div");
+          metric.className = "metric";
+          metric.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.dashboardSummary.appendChild(metric);
+        });
+      }
+
+      function renderMonitoring() {
+        ensureHoldStateCurrent();
+        refs.monitorTabs.innerHTML = "";
+        const tabs = [
+          { id: "timeline", label: t("tabsTimeline") },
+          { id: "trace", label: t("tabsTrace") },
+          { id: "performance", label: t("tabsPerformance") },
+        ];
+        tabs.forEach((tab) => {
+          const button = document.createElement("button");
+          button.textContent = tab.label;
+          if (tab.id === state.monitorTab) {
+            button.classList.add("active");
+          }
+          button.addEventListener("click", () => {
+            state.monitorTab = tab.id;
+            renderMonitoring();
+          });
+          refs.monitorTabs.appendChild(button);
+        });
+        const scenario = currentScenario();
+        const visibleSteps = scenario.steps.slice(0, state.stepIndex + 1);
+        const baseTimeline = visibleSteps.flatMap((step) => step.events || []);
+        const step = currentStep();
+        const message = currentStructuredMessage();
+        const records =
+          state.monitorTab === "timeline" ? [...baseTimeline, ...state.interactionEvents] :
+          state.monitorTab === "trace" ? [
+            {
+              event_type: "communication.trace",
+              payload: {
+                trace_id: step.trace_id,
+                correlation_id: step.correlation_id,
+                selected_action: state.selectedAction,
+                selected_slot: state.selectedSlot,
+                communication_message: message,
+              },
+            },
+            ...state.interactionEvents,
+          ] :
+          [
+            {
+              event_type: "performance",
+              payload: {
+                ...(step.performance || { latency_ms: 120, services: 3 }),
+                visible_steps: visibleSteps.length,
+                local_interaction_events: state.interactionEvents.length,
+              },
+            },
+          ];
+        refs.monitoringBody.innerHTML = "";
+        if (!records.length) {
+          const entry = document.createElement("div");
+          entry.className = "record small";
+          entry.textContent = t("monitoringEmpty");
+          refs.monitoringBody.appendChild(entry);
+          return;
+        }
+        records.forEach((record) => {
+          const entry = document.createElement("div");
+          entry.className = "record";
+          entry.innerHTML = `<strong>${record.event_type || "event"}</strong><div class="code">${JSON.stringify(record.payload || record, null, 2)}</div>`;
+          refs.monitoringBody.appendChild(entry);
+        });
+      }
+
+      function renderSettings() {
+        ensureHoldStateCurrent();
+        refs.settingsGrid.innerHTML = "";
+        refs.holdMinutesValue.textContent = `${state.slotHoldMinutes} min`;
+        state.payload.settings_snapshot.forEach((item) => {
+          const card = document.createElement("div");
+          card.className = "mini-card";
+          card.innerHTML = `<h3>${item.label}</h3><p>${item.value}</p>`;
+          refs.settingsGrid.appendChild(card);
+        });
+      }
+
+      function updateRcsDraftField(fieldId, value) {
+        state.rcsSettingsDraft[fieldId] = value;
+      }
+
+      // RCS settings render from the backend schema so the cockpit does not
+      // hardcode one fragile form. That keeps the UI aligned with saved values,
+      // masked secrets, required fields, and readiness hints from the adapter.
+      function renderRcsSettings() {
+        const payload = state.rcsSettingsPayload;
+        const readiness = payload?.readiness || { ready: false, headline: t("rcsNoValidationYet"), missing_fields: [], warnings: [] };
+
+        refs.rcsSettingsBanner.className = "message-box settings-banner";
+        refs.rcsSettingsBanner.textContent = (state.rcsSettingsBanner && state.rcsSettingsBanner.message) || readiness.headline || t("rcsNoValidationYet");
+        if ((state.rcsSettingsBanner && state.rcsSettingsBanner.kind) === "success" || readiness.ready) refs.rcsSettingsBanner.classList.add("success");
+        if ((state.rcsSettingsBanner && state.rcsSettingsBanner.kind) === "warning" || (!readiness.ready && readiness.headline)) refs.rcsSettingsBanner.classList.add("warning");
+        if ((state.rcsSettingsBanner && state.rcsSettingsBanner.kind) === "error") refs.rcsSettingsBanner.classList.add("danger");
+
+        refs.rcsReadinessGrid.innerHTML = "";
+        [
+          ["Ready", readiness.ready ? "yes" : "no"],
+          ["Missing", (readiness.missing_fields || []).join(", ") || "none"],
+          ["Warnings", (readiness.warnings || []).join(", ") || "none"],
+        ].forEach(([label, value]) => {
+          const node = document.createElement("div");
+          node.className = "mini-card";
+          node.innerHTML = `<h3>${label}</h3><div>${value}</div>`;
+          refs.rcsReadinessGrid.appendChild(node);
+        });
+
+        refs.rcsSettingsSections.innerHTML = "";
+        (payload?.settings?.sections || []).forEach((section) => {
+          const card = document.createElement("div");
+          card.className = "settings-form-card";
+          card.innerHTML = `<h3>${section.title}</h3>`;
+          const grid = document.createElement("div");
+          grid.className = "settings-form-grid";
+
+          section.fields.forEach((field) => {
+            const wrapper = document.createElement("div");
+            wrapper.className = "control";
+            wrapper.innerHTML = `<label>${field.label}${field.required ? " *" : ""}</label>`;
+
+            const hasDraft = Object.prototype.hasOwnProperty.call(state.rcsSettingsDraft, field.id);
+            const draftValue = hasDraft ? state.rcsSettingsDraft[field.id] : field.value;
+            let input;
+
+            if (field.type === "toggle") {
+              input = document.createElement("select");
+              [["true", "true"], ["false", "false"]].forEach(([raw, label]) => {
+                const option = document.createElement("option");
+                option.value = raw;
+                option.textContent = label;
+                option.selected = String(Boolean(draftValue)) === raw;
+                input.appendChild(option);
+              });
+              input.addEventListener("change", (event) => updateRcsDraftField(field.id, event.target.value === "true"));
+            } else if (field.type === "select") {
+              input = document.createElement("select");
+              (field.options || []).forEach((value) => {
+                const option = document.createElement("option");
+                option.value = value;
+                option.textContent = value;
+                option.selected = String(draftValue || "") === value;
+                input.appendChild(option);
+              });
+              input.addEventListener("change", (event) => updateRcsDraftField(field.id, event.target.value));
+            } else {
+              input = document.createElement("input");
+              input.type = field.type === "password" ? "password" : "text";
+              input.value = field.type === "password" ? "" : (draftValue || "");
+              if (field.type === "password" && field.has_saved_secret) {
+                input.placeholder = "********";
+              }
+              input.addEventListener("input", (event) => updateRcsDraftField(field.id, event.target.value));
+            }
+
+            input.className = "form-input";
+            wrapper.appendChild(input);
+
+            const helper = document.createElement("div");
+            helper.className = "small";
+            helper.textContent = field.helper_text || "";
+            wrapper.appendChild(helper);
+
+            const stateLine = document.createElement("div");
+            stateLine.className = "field-state";
+            stateLine.textContent = `State: ${field.state}`;
+            wrapper.appendChild(stateLine);
+
+            grid.appendChild(wrapper);
+          });
+
+          card.appendChild(grid);
+          refs.rcsSettingsSections.appendChild(card);
+        });
+      }
+
+      function renderHelp() {
+        renderPlatformOverview(refs.helpPlatformGrid, state.payload.platform_overview?.items || []);
+        renderDemoStoryboard(refs.helpStoryboardGrid, state.payload.demo_storyboard?.stories || []);
+        renderBusinessValue(refs.helpBusinessGrid, state.payload.business_value_points || []);
+        refs.helpGrid.innerHTML = "";
+        state.payload.help_links.forEach((item) => {
+          const card = document.createElement("a");
+          card.className = "link-card";
+          card.href = item.href;
+          card.textContent = `${item.label} - ${t("docsOpen")}`;
+          refs.helpGrid.appendChild(card);
+        });
+      }
+
+      function renderAppointmentTypeSelect() {
+        refs.googleAppointmentTypeSelect.innerHTML = "";
+        state.payload.google_demo_control.appointment_types.forEach((appointmentType) => {
+          const option = document.createElement("option");
+          option.value = appointmentType.id;
+          option.textContent = appointmentType.label;
+          option.selected = appointmentType.id === state.selectedAppointmentType;
+          refs.googleAppointmentTypeSelect.appendChild(option);
+        });
+      }
+
+      function renderGooglePanels() {
+        refs.googleSimulationBtn.classList.toggle("active", state.googleMode === "simulation");
+        refs.googleTestBtn.classList.toggle("active", state.googleMode === "test");
+        refs.googleModeStatus.textContent = state.googleMode === "test" ? t("googleModeStatusTest") : t("googleModeStatusSimulation");
+        refs.googleActionFeedback.className = "message-box";
+        refs.googleActionFeedback.textContent = state.googleActionFeedback ? state.googleActionFeedback.message : t("noGoogleActionYet");
+        if (state.googleActionFeedback?.kind === "success") refs.googleActionFeedback.classList.add("success");
+        if (state.googleActionFeedback?.kind === "error") refs.googleActionFeedback.classList.add("danger");
+        if (state.googleActionFeedback?.kind === "loading") refs.googleActionFeedback.classList.add("warning");
+
+        refs.googleLiveGrid.innerHTML = "";
+        const status = state.googleStatus || {};
+        [
+          [t("requestedMode"), status.mode || state.googleMode],
+          [t("liveWrites"), String(Boolean(status.live_calendar_writes))],
+          [t("targetCalendar"), status.calendar_summary || "-"],
+          [t("targetCalendarId"), status.calendar_id || "-"],
+          [t("appointmentType"), state.selectedAppointmentType],
+          [t("holdSettingsTitle"), `${state.slotHoldMinutes} min`],
+          [`${t("fromDate")} / ${t("toDate")}`, `${state.googleFromDate} -> ${state.googleToDate}`],
+        ].forEach(([label, value]) => {
+          const metric = document.createElement("div");
+          metric.className = "metric";
+          metric.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.googleLiveGrid.appendChild(metric);
+        });
+
+        refs.googleResultGrid.innerHTML = "";
+        const result = state.googleLastResult || {};
+        [
+          [t("action"), result.action || "-"],
+          [t("success"), String(Boolean(result.success))],
+          [t("generatedCount"), String(result.generated_count || 0)],
+          [t("deletedCount"), String(result.deleted_count || 0)],
+          [t("appointmentType"), result.appointment_type || state.selectedAppointmentType],
+          [`${t("fromDate")} / ${t("toDate")}`, `${result.from_date || state.googleFromDate} -> ${result.to_date || state.googleToDate}`],
+        ].forEach(([label, value]) => {
+          const metric = document.createElement("div");
+          metric.className = "metric";
+          metric.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.googleResultGrid.appendChild(metric);
+        });
+
+        refs.googleConflictGrid.innerHTML = "";
+        const conflict = state.googleConflictResult || {};
+        [
+          [t("conflict"), String(Boolean(conflict.has_conflict))],
+          [t("reason"), conflict.reason || "-"],
+          [t("nextActionsLabel"), (conflict.next_actions || []).join(", ") || "-"],
+        ].forEach(([label, value]) => {
+          const metric = document.createElement("div");
+          metric.className = "metric";
+          metric.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+          refs.googleConflictGrid.appendChild(metric);
+        });
+      }
+
+      function render() {
+        renderNav();
+        renderPages();
+        renderStaticCopy();
+        renderScenarioSelect();
+        renderDashboardModes();
+        renderSettingsSubnav();
+        renderDemo();
+        renderMessageMonitor();
+        renderReports();
+        renderMonitoring();
+        renderSettings();
+        renderPlatformOverview(refs.platformOverviewGrid, state.payload.platform_overview?.items || []);
+        renderDemoStoryboard(refs.demoStoryboardGrid, state.payload.demo_storyboard?.stories || []);
+        renderRcsSettings();
+        renderHelp();
+        renderAppointmentTypeSelect();
+        renderGooglePanels();
+      }
+
+      // Payload loading hydrates the static cockpit copy first and then refreshes
+      // live panels that depend on runtime state such as Google status, message
+      // traffic, and persisted LEKAB settings.
+      function loadPayload() {
+        return fetchJson(`/api/demo-monitoring/${VERSION}/payload?lang=${state.language}`).then((payload) => {
+          state.payload = payload;
+          state.googleFromDate = payload.google_demo_control.default_from_date;
+          state.googleToDate = payload.google_demo_control.default_to_date;
+          state.slotHoldMinutes = payload.hold_settings ? payload.hold_settings.slot_hold_minutes : state.slotHoldMinutes;
+          if (!state.selectedAppointmentType) {
+            state.selectedAppointmentType = payload.google_demo_control.appointment_types[0].id;
+          }
+          if (!state.scenarioId) {
+            state.scenarioId = payload.scenarios[0].id;
+          }
+          resetInteractionState();
+          refs.googleFromDateInput.value = state.googleFromDate;
+          refs.googleToDateInput.value = state.googleToDate;
+          render();
+          return Promise.all([refreshGoogleStatus(), refreshMessageMonitor(), refreshRcsSettings()]);
+        });
+      }
+
+      function refreshMessageMonitor() {
+        return fetchJson(`${lekabApiBase()}/monitor`)
+          .then((payload) => {
+            state.messageMonitor = payload;
+            if (!state.selectedMessageId && payload.selected_message) {
+              state.selectedMessageId = payload.selected_message.message_id;
+            }
+            renderMessageMonitor();
+            renderReports();
+          })
+          .catch((error) => {
+            state.messageMonitor = { messages: [], summary_cards: [], report_cards: [], filters: { channels: ["ALL"], directions: ["ALL"], statuses: ["ALL"] } };
+            refs.messageMonitorList.innerHTML = `<div class="record small">${error.message}</div>`;
+            refs.reportsBody.innerHTML = "";
+          });
+      }
+
+      // Refresh gives operators the saved source of truth from SQLite-backed
+      // config storage so the page reflects what the runtime would actually use.
+      function refreshRcsSettings() {
+        return fetchJson(`${lekabApiBase()}/settings/rcs`)
+          .then((payload) => {
+            state.rcsSettingsPayload = payload;
+            state.rcsSettingsDraft = {};
+            renderRcsSettings();
+          })
+          .catch((error) => {
+            state.rcsSettingsBanner = { kind: "error", message: error.message };
+            renderRcsSettings();
+          });
+      }
+
+      // Save only sends the draft delta. The backend merges it with existing
+      // stored values and keeps secrets when the operator leaves a password blank.
+      function saveRcsSettings() {
+        state.rcsSettingsBanner = { kind: "warning", message: t("loading") };
+        renderRcsSettings();
+        return fetchJson(`${lekabApiBase()}/settings/rcs`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ values: state.rcsSettingsDraft }),
+        }).then((payload) => {
+          state.rcsSettingsPayload = payload;
+          state.rcsSettingsDraft = {};
+          state.rcsSettingsBanner = { kind: "success", message: payload.save_result?.message || t("rcsSavedSuccess") };
+          renderRcsSettings();
+        }).catch((error) => {
+          state.rcsSettingsBanner = { kind: "error", message: error.message };
+          renderRcsSettings();
+        });
+      }
+
+      function validateRcsSettings() {
+        state.rcsSettingsBanner = { kind: "warning", message: t("loading") };
+        renderRcsSettings();
+        return fetchJson(`${lekabApiBase()}/settings/rcs/validate`, { method: "POST" })
+          .then((payload) => {
+            if (state.rcsSettingsPayload) {
+              state.rcsSettingsPayload.readiness = payload.readiness;
+            }
+            state.rcsSettingsBanner = { kind: payload.success ? "success" : "warning", message: payload.message };
+            renderRcsSettings();
+          })
+          .catch((error) => {
+            state.rcsSettingsBanner = { kind: "error", message: error.message };
+            renderRcsSettings();
+          });
+      }
+
+      function testRcsConnection() {
+        state.rcsSettingsBanner = { kind: "warning", message: t("loading") };
+        renderRcsSettings();
+        return fetchJson(`${lekabApiBase()}/settings/rcs/test-connection`, { method: "POST" })
+          .then((payload) => {
+            if (state.rcsSettingsPayload) {
+              state.rcsSettingsPayload.readiness = payload.readiness;
+            }
+            state.rcsSettingsBanner = { kind: payload.success ? "success" : "warning", message: payload.message };
+            renderRcsSettings();
+          })
+          .catch((error) => {
+            state.rcsSettingsBanner = { kind: "error", message: error.message };
+            renderRcsSettings();
+          });
+      }
+
+      function refreshGoogleStatus() {
+        return fetchJson(`${googleApiBase()}/mode?requested_mode=${state.googleMode}`)
+          .then((payload) => {
+            state.googleStatus = payload;
+            return fetchJson(`${googleApiBase()}/live-sync/status`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ mode: state.googleMode, timeframe: "week" }),
+            });
+          })
+          .then((payload) => {
+            state.googleConflictResult = {
+              has_conflict: Boolean(payload.conflicts_detected),
+              reason: payload.summary || "-",
+              next_actions: payload.next_actions || [],
+            };
+            renderGooglePanels();
+          })
+          .catch((error) => {
+            state.googleActionFeedback = { kind: "error", message: error.message };
+            renderGooglePanels();
+          });
+      }
+
+      function runGoogleDemoAction(action) {
+        state.googleActionFeedback = { kind: "loading", message: t("loading") };
+        renderGooglePanels();
+        return fetchJson(`${googleApiBase()}/demo-calendar/${action === "prepare" ? "prepare-preview" : action}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: state.googleMode,
+            action,
+            from_date: state.googleFromDate,
+            to_date: state.googleToDate,
+            count: state.googleCount,
+            appointment_type: state.selectedAppointmentType,
+            include_customer_name: true,
+            include_description: true,
+            include_location: true,
+          }),
+        })
+          .then((payload) => {
+            state.googleLastResult = payload;
+            state.googleActionFeedback = { kind: "success", message: payload.message || successMessageForAction(action) };
+            return refreshGoogleStatus();
+          })
+          .catch((error) => {
+            state.googleActionFeedback = { kind: "error", message: error.message };
+            renderGooglePanels();
+          });
+      }
+
+      refs.langDeBtn.addEventListener("click", () => {
+        state.language = "de";
+        loadPayload();
+      });
+      refs.langEnBtn.addEventListener("click", () => {
+        state.language = "en";
+        loadPayload();
+      });
+      refs.themeToggle.addEventListener("click", () => {
+        state.theme = state.theme === "day" ? "night" : "day";
+        document.body.dataset.theme = state.theme;
+      });
+      refs.helpButton.addEventListener("click", () => {
+        state.page = "help";
+        render();
+      });
+      refs.scenarioSelect.addEventListener("change", (event) => {
+        state.scenarioId = event.target.value;
+        state.stepIndex = 0;
+        resetInteractionState();
+        render();
+      });
+      refs.restartBtn.addEventListener("click", () => {
+        state.stepIndex = 0;
+        resetInteractionState();
+        state.holdStatus = "idle";
+        state.activeHoldId = null;
+        state.holdExpiresAt = null;
+        render();
+      });
+      refs.nextBtn.addEventListener("click", () => {
+        const scenario = currentScenario();
+        state.stepIndex = Math.min(state.stepIndex + 1, scenario.steps.length - 1);
+        render();
+      });
+      refs.googleSimulationBtn.addEventListener("click", () => {
+        state.googleMode = "simulation";
+        refreshGoogleStatus();
+      });
+      refs.googleTestBtn.addEventListener("click", () => {
+        state.googleMode = "test";
+        refreshGoogleStatus();
+      });
+      refs.googleFromDateInput.addEventListener("change", (event) => {
+        state.googleFromDate = event.target.value;
+        renderGooglePanels();
+      });
+      refs.googleToDateInput.addEventListener("change", (event) => {
+        state.googleToDate = event.target.value;
+        renderGooglePanels();
+      });
+      refs.googleCountSelect.addEventListener("change", (event) => {
+        state.googleCount = Number(event.target.value);
+      });
+      refs.messageChannelFilter.addEventListener("change", (event) => {
+        state.messageChannelFilter = event.target.value;
+        renderMessageMonitor();
+      });
+      refs.messageDirectionFilter.addEventListener("change", (event) => {
+        state.messageDirectionFilter = event.target.value;
+        renderMessageMonitor();
+      });
+      refs.messageStatusFilter.addEventListener("change", (event) => {
+        state.messageStatusFilter = event.target.value;
+        renderMessageMonitor();
+      });
+      refs.googleAppointmentTypeSelect.addEventListener("change", (event) => {
+        state.selectedAppointmentType = event.target.value;
+        renderGooglePanels();
+      });
+      refs.holdDecrementBtn.addEventListener("click", () => {
+        state.slotHoldMinutes = Math.max(1, state.slotHoldMinutes - 1);
+        renderSettings();
+        renderDemo();
+        renderGooglePanels();
+      });
+      refs.holdIncrementBtn.addEventListener("click", () => {
+        state.slotHoldMinutes = Math.min(30, state.slotHoldMinutes + 1);
+        renderSettings();
+        renderDemo();
+        renderGooglePanels();
+      });
+      refs.googlePrepareBtn.addEventListener("click", () => runGoogleDemoAction("prepare"));
+      refs.googleGenerateBtn.addEventListener("click", () => runGoogleDemoAction("generate"));
+      refs.googleDeleteBtn.addEventListener("click", () => runGoogleDemoAction("delete"));
+      refs.googleResetBtn.addEventListener("click", () => runGoogleDemoAction("reset"));
+      refs.rcsReloadBtn.addEventListener("click", () => refreshRcsSettings());
+      refs.rcsValidateBtn.addEventListener("click", () => validateRcsSettings());
+      refs.rcsTestConnectionBtn.addEventListener("click", () => testRcsConnection());
+      refs.rcsSaveBtn.addEventListener("click", () => saveRcsSettings());
+
+      loadPayload();
+    </script>
+  </body>
+</html>

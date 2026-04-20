@@ -23,8 +23,19 @@ from demo_monitoring_ui.v1_2_1_patch1.demo_monitoring_ui.app import router as de
 from demo_monitoring_ui.v1_2_1_patch2.demo_monitoring_ui.app import router as demo_monitoring_router_v121_patch2
 from demo_monitoring_ui.v1_2_1_patch3.demo_monitoring_ui.app import router as demo_monitoring_router_v121_patch3
 from demo_monitoring_ui.v1_2_1_patch4.demo_monitoring_ui.app import router as demo_monitoring_router_v121_patch4
+from demo_monitoring_ui.v1_3_0.demo_monitoring_ui.app import router as reminder_scheduler_ui_router_v130
+from demo_monitoring_ui.v1_3_1.demo_monitoring_ui.app import router as reminder_scheduler_ui_router_v131
+from demo_monitoring_ui.v1_3_2.demo_monitoring_ui.app import router as reminder_scheduler_ui_router_v132
+from demo_monitoring_ui.v1_3_3.demo_monitoring_ui.app import router as reminder_scheduler_ui_router_v133
+from demo_monitoring_ui.v1_3_4.demo_monitoring_ui.app import router as reminder_scheduler_ui_router_v134
+from demo_monitoring_ui.v1_3_5.demo_monitoring_ui.app import router as reminder_scheduler_ui_router_v135
+from demo_monitoring_ui.v1_3_6.demo_monitoring_ui.app import router as reminder_scheduler_ui_router_v136
+from demo_monitoring_ui.v1_3_6_patch1.demo_monitoring_ui.app import router as demo_monitoring_router_v136_patch1
+from demo_monitoring_ui.v1_3_8.demo_monitoring_ui.app import router as demo_monitoring_router_v138
+from demo_monitoring_ui.v1_3_9.demo_monitoring_ui.app import router as demo_monitoring_router_v139
 from appointment_orchestrator.v1_0_0.appointment_orchestrator.app import router as orchestrator_router
 from appointment_orchestrator.v1_0_1.appointment_orchestrator.app import router as orchestrator_router_v101
+from address_database.v1_3_9.address_database.app import router as address_database_router_v139
 from google_adapter.v1_0_0.google_adapter.app import router as google_router
 from google_adapter.v1_0_1.google_adapter.app import router as google_router_v101
 from google_adapter.v1_1_0_patch1.google_adapter.app import router as google_router_v110_patch1
@@ -35,18 +46,28 @@ from google_adapter.v1_1_0_patch8.google_adapter.app import router as google_rou
 from google_adapter.v1_1_0_patch8a.google_adapter.app import router as google_router_v110_patch8a
 from google_adapter.v1_1_0_patch8b.google_adapter.app import router as google_router_v110_patch8b
 from google_adapter.v1_2_0.google_adapter.app import router as google_router_v120
+from google_adapter.v1_3_6.google_adapter.app import router as google_router_v136
 from lekab_adapter.v1_0_0.lekab_adapter.app import router as lekab_router
 from lekab_adapter.v1_2_1.lekab_adapter.app import router as lekab_router_v121
 from lekab_adapter.v1_2_1_patch1.lekab_adapter.app import router as lekab_router_v121_patch1
 from lekab_adapter.v1_2_1_patch2.lekab_adapter.app import router as lekab_router_v121_patch2
 from lekab_adapter.v1_2_1_patch3.lekab_adapter.app import router as lekab_router_v121_patch3
 from lekab_adapter.v1_2_1_patch4.lekab_adapter.app import router as lekab_router_v121_patch4
+from lekab_adapter.v1_3_8.lekab_adapter.app import router as lekab_router_v138
 from microsoft_adapter.v1_0_0.microsoft_adapter.app import router as microsoft_router
+from reminder_scheduler.v1_3_0.reminder_scheduler.app import router as reminder_scheduler_router_v130
+from reminder_scheduler.v1_3_1.reminder_scheduler.app import router as reminder_scheduler_router_v131
+from reminder_scheduler.v1_3_2.reminder_scheduler.app import router as reminder_scheduler_router_v132
+from reminder_scheduler.v1_3_3.reminder_scheduler.app import router as reminder_scheduler_router_v133
+from reminder_scheduler.v1_3_4.reminder_scheduler.app import router as reminder_scheduler_router_v134
+from reminder_scheduler.v1_3_5.reminder_scheduler.app import router as reminder_scheduler_router_v135
+from reminder_scheduler.v1_3_6.reminder_scheduler.app import router as reminder_scheduler_router_v136
 
 from .config import settings
-from .db import Base, engine
+from .db import Base, engine, ensure_sqlite_schema_compatibility
 
 Base.metadata.create_all(bind=engine)
+ensure_sqlite_schema_compatibility()
 
 app = FastAPI(title=f"{settings.app_name} {settings.app_version}")
 
@@ -89,6 +110,7 @@ def help_view() -> dict[str, object]:
             "lekab_adapter/v1_2_1_patch2",
             "lekab_adapter/v1_2_1_patch3",
             "lekab_adapter/v1_2_1_patch4",
+            "lekab_adapter/v1_3_8",
             "demo_monitoring_ui/v1_0_0",
             "demo_monitoring_ui/v1_0_2",
             "demo_monitoring_ui/v1_0_4_patch1",
@@ -111,6 +133,24 @@ def help_view() -> dict[str, object]:
             "demo_monitoring_ui/v1_2_1_patch2",
             "demo_monitoring_ui/v1_2_1_patch3",
             "demo_monitoring_ui/v1_2_1_patch4",
+            "demo_monitoring_ui/v1_3_0",
+            "demo_monitoring_ui/v1_3_1",
+            "demo_monitoring_ui/v1_3_2",
+            "demo_monitoring_ui/v1_3_3",
+            "demo_monitoring_ui/v1_3_4",
+            "demo_monitoring_ui/v1_3_5",
+            "demo_monitoring_ui/v1_3_6",
+            "demo_monitoring_ui/v1_3_6_patch1",
+            "demo_monitoring_ui/v1_3_8",
+            "demo_monitoring_ui/v1_3_9",
+            "address_database/v1_3_9",
+            "reminder_scheduler/v1_3_0",
+            "reminder_scheduler/v1_3_1",
+            "reminder_scheduler/v1_3_2",
+            "reminder_scheduler/v1_3_3",
+            "reminder_scheduler/v1_3_4",
+            "reminder_scheduler/v1_3_5",
+            "reminder_scheduler/v1_3_6",
             "appointment_orchestrator/v1_0_0",
             "appointment_orchestrator/v1_0_1",
             "google_adapter/v1_0_0",
@@ -123,6 +163,7 @@ def help_view() -> dict[str, object]:
             "google_adapter/v1_1_0_patch8a",
             "google_adapter/v1_1_0_patch8b",
             "google_adapter/v1_2_0",
+            "google_adapter/v1_3_6",
             "microsoft_adapter/v1_0_0",
         ],
     }
@@ -134,6 +175,7 @@ app.include_router(lekab_router_v121_patch1)
 app.include_router(lekab_router_v121_patch2)
 app.include_router(lekab_router_v121_patch3)
 app.include_router(lekab_router_v121_patch4)
+app.include_router(lekab_router_v138)
 app.include_router(demo_monitoring_router)
 app.include_router(demo_monitoring_router_v102)
 app.include_router(demo_monitoring_router_v104_patch1)
@@ -156,6 +198,17 @@ app.include_router(demo_monitoring_router_v121_patch1)
 app.include_router(demo_monitoring_router_v121_patch2)
 app.include_router(demo_monitoring_router_v121_patch3)
 app.include_router(demo_monitoring_router_v121_patch4)
+app.include_router(reminder_scheduler_ui_router_v130)
+app.include_router(reminder_scheduler_ui_router_v131)
+app.include_router(reminder_scheduler_ui_router_v132)
+app.include_router(reminder_scheduler_ui_router_v133)
+app.include_router(reminder_scheduler_ui_router_v134)
+app.include_router(reminder_scheduler_ui_router_v135)
+app.include_router(reminder_scheduler_ui_router_v136)
+app.include_router(demo_monitoring_router_v136_patch1)
+app.include_router(demo_monitoring_router_v138)
+app.include_router(demo_monitoring_router_v139)
+app.include_router(address_database_router_v139)
 app.include_router(orchestrator_router)
 app.include_router(orchestrator_router_v101)
 app.include_router(google_router)
@@ -168,4 +221,12 @@ app.include_router(google_router_v110_patch8)
 app.include_router(google_router_v110_patch8a)
 app.include_router(google_router_v110_patch8b)
 app.include_router(google_router_v120)
+app.include_router(google_router_v136)
 app.include_router(microsoft_router)
+app.include_router(reminder_scheduler_router_v130)
+app.include_router(reminder_scheduler_router_v131)
+app.include_router(reminder_scheduler_router_v132)
+app.include_router(reminder_scheduler_router_v133)
+app.include_router(reminder_scheduler_router_v134)
+app.include_router(reminder_scheduler_router_v135)
+app.include_router(reminder_scheduler_router_v136)

@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "Appointment Agent"
-    app_version: str = "v1.2.1-patch4"
+    app_version: str = "v1.4.0"
     app_host: str = "0.0.0.0"
     app_port: int = 8080
     log_level: str = "info"
@@ -25,7 +25,13 @@ class Settings(BaseSettings):
     idempotency_enabled: bool = True
     google_mock_mode: bool = True
     lekab_mock_mode: bool = True
-    demo_base_path: str = "/ui/demo-monitoring/v1.2.1-patch4"
+    demo_base_path: str = "/ui/demo-monitoring/v1.3.9"
+    reminder_scheduler_enabled: bool = True
+    reminder_planning_interval_seconds: int = 300
+    reminder_dispatch_interval_seconds: int = 45
+    reminder_default_preload_window_hours: int = 168
+    reminder_dispatch_batch_size: int = 100
+    reminder_max_attempts_default: int = 3
     google_real_integration_enabled: bool = Field(default=False, validation_alias="GOOGLE_REAL_INTEGRATION_ENABLED")
     google_client_id: str = Field(default="", validation_alias="GOOGLE_CLIENT_ID")
     google_client_secret: str = Field(default="", validation_alias="GOOGLE_CLIENT_SECRET")

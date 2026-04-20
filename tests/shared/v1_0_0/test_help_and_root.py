@@ -10,10 +10,10 @@ def test_root_exposes_version_and_silence_threshold() -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["version"] == "v1.2.1-patch4"
+    assert body["version"] == "v1.4.0"
     assert body["silence_threshold_ms"] == 1300
     assert body["health_path"] == "/health"
-    assert body["demo_path"] == "/ui/demo-monitoring/v1.2.1-patch4"
+    assert body["demo_path"] == "/ui/demo-monitoring/v1.3.9"
 
 
 def test_help_lists_modules() -> None:
@@ -28,6 +28,7 @@ def test_help_lists_modules() -> None:
     assert "lekab_adapter/v1_2_1_patch2" in response.json()["modules"]
     assert "lekab_adapter/v1_2_1_patch3" in response.json()["modules"]
     assert "lekab_adapter/v1_2_1_patch4" in response.json()["modules"]
+    assert "lekab_adapter/v1_3_8" in response.json()["modules"]
     assert "demo_monitoring_ui/v1_0_6_patch1" in response.json()["modules"]
     assert "demo_monitoring_ui/v1_1_0_patch2" in response.json()["modules"]
     assert "demo_monitoring_ui/v1_1_0_patch4" in response.json()["modules"]
@@ -43,6 +44,24 @@ def test_help_lists_modules() -> None:
     assert "demo_monitoring_ui/v1_2_1_patch2" in response.json()["modules"]
     assert "demo_monitoring_ui/v1_2_1_patch3" in response.json()["modules"]
     assert "demo_monitoring_ui/v1_2_1_patch4" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_3_0" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_3_1" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_3_2" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_3_3" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_3_4" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_3_5" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_3_6" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_3_6_patch1" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_3_8" in response.json()["modules"]
+    assert "demo_monitoring_ui/v1_3_9" in response.json()["modules"]
+    assert "address_database/v1_3_9" in response.json()["modules"]
+    assert "reminder_scheduler/v1_3_0" in response.json()["modules"]
+    assert "reminder_scheduler/v1_3_1" in response.json()["modules"]
+    assert "reminder_scheduler/v1_3_2" in response.json()["modules"]
+    assert "reminder_scheduler/v1_3_3" in response.json()["modules"]
+    assert "reminder_scheduler/v1_3_4" in response.json()["modules"]
+    assert "reminder_scheduler/v1_3_5" in response.json()["modules"]
+    assert "reminder_scheduler/v1_3_6" in response.json()["modules"]
     assert "google_adapter/v1_1_0_patch2" in response.json()["modules"]
     assert "google_adapter/v1_1_0_patch3" in response.json()["modules"]
     assert "google_adapter/v1_1_0_patch6" in response.json()["modules"]
@@ -50,6 +69,7 @@ def test_help_lists_modules() -> None:
     assert "google_adapter/v1_1_0_patch8a" in response.json()["modules"]
     assert "google_adapter/v1_1_0_patch8b" in response.json()["modules"]
     assert "google_adapter/v1_2_0" in response.json()["modules"]
+    assert "google_adapter/v1_3_6" in response.json()["modules"]
     assert response.json()["docker_start"] == "docker compose up --build"
 
 
@@ -61,4 +81,4 @@ def test_health_reports_ok() -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ok"
-    assert body["version"] == "v1.2.1-patch4"
+    assert body["version"] == "v1.4.0"

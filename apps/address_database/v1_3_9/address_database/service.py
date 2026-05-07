@@ -36,6 +36,7 @@ class AddressInput(BaseModel):
     country: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+    preferred_language: Optional[str] = None
     timezone: Optional[str] = "Europe/Berlin"
     preferred_channel: Optional[str] = None
     notes: Optional[str] = None
@@ -83,6 +84,7 @@ class AddressDatabaseService:
             country=record.country,
             email=record.email,
             phone=record.phone,
+            preferred_language=record.preferred_language,
             timezone=record.timezone,
             preferred_channel=record.preferred_channel,
             notes=record.notes,
@@ -192,6 +194,7 @@ class AddressDatabaseService:
             country=request.country,
             email=request.email,
             phone=request.phone,
+            preferred_language=request.preferred_language,
             timezone=request.timezone,
             preferred_channel=request.preferred_channel,
             notes=request.notes,

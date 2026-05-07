@@ -53,6 +53,90 @@ APPOINTMENT_TYPE_BLUEPRINTS = {
             "monitoring_label": "dentist.cleaning.search.requested",
         },
     ],
+    "doctor": [
+        {
+            "title": "Doctor Appointment - Consultation",
+            "type": "Doctor Appointment",
+            "location": "Medical Practice",
+            "purpose": "General doctor consultation",
+            "description": "General practitioner consultation appointment.",
+            "category": "Doctor Appointment",
+            "scenario_label": "doctor",
+            "customer_prompt": "I want to book a doctor appointment.",
+            "reminder_text": "Reminder: Your doctor appointment is scheduled soon.",
+            "follow_up_action": "Would you like to keep, reschedule, or cancel?",
+            "monitoring_label": "doctor.consultation.search.requested",
+        },
+        {
+            "title": "Doctor Appointment - Follow-up",
+            "type": "Doctor Appointment",
+            "location": "Medical Practice",
+            "purpose": "Medical follow-up visit",
+            "description": "Follow-up visit with a doctor.",
+            "category": "Doctor Appointment",
+            "scenario_label": "doctor",
+            "customer_prompt": "I need a follow-up doctor appointment.",
+            "reminder_text": "Reminder: Your doctor follow-up appointment is scheduled soon.",
+            "follow_up_action": "Would you like to keep, reschedule, or cancel?",
+            "monitoring_label": "doctor.followup.search.requested",
+        },
+    ],
+    "technician": [
+        {
+            "title": "Technician Visit - Inspection",
+            "type": "Technician Visit",
+            "location": "Customer Site",
+            "purpose": "Technician inspection visit",
+            "description": "On-site technician inspection appointment.",
+            "category": "Technician Visit",
+            "scenario_label": "technician",
+            "customer_prompt": "I need a technician visit.",
+            "reminder_text": "Reminder: Your technician visit is scheduled soon.",
+            "follow_up_action": "Would you like to keep, reschedule, cancel, or request a call?",
+            "monitoring_label": "technician.inspection.search.requested",
+        },
+        {
+            "title": "Technician Visit - Service Window",
+            "type": "Technician Visit",
+            "location": "Customer Site",
+            "purpose": "Technician service window",
+            "description": "Technician service appointment window.",
+            "category": "Technician Visit",
+            "scenario_label": "technician",
+            "customer_prompt": "Please schedule a technician service window.",
+            "reminder_text": "Reminder: Your technician service window is scheduled soon.",
+            "follow_up_action": "Would you like to keep, reschedule, cancel, or request a call?",
+            "monitoring_label": "technician.service.search.requested",
+        },
+    ],
+    "tee_time": [
+        {
+            "title": "Tee Time - Morning Round",
+            "type": "Tee Time",
+            "location": "Golf Course",
+            "purpose": "Morning tee time booking",
+            "description": "Morning golf tee time reservation.",
+            "category": "Tee Time",
+            "scenario_label": "tee_time",
+            "customer_prompt": "I want to book a tee time.",
+            "reminder_text": "Reminder: Your tee time is scheduled soon.",
+            "follow_up_action": "Would you like to keep, reschedule, or cancel?",
+            "monitoring_label": "tee_time.morning.search.requested",
+        },
+        {
+            "title": "Tee Time - Afternoon Round",
+            "type": "Tee Time",
+            "location": "Golf Course",
+            "purpose": "Afternoon tee time booking",
+            "description": "Afternoon golf tee time reservation.",
+            "category": "Tee Time",
+            "scenario_label": "tee_time",
+            "customer_prompt": "I need an afternoon tee time.",
+            "reminder_text": "Reminder: Your afternoon tee time is scheduled soon.",
+            "follow_up_action": "Would you like to keep, reschedule, or cancel?",
+            "monitoring_label": "tee_time.afternoon.search.requested",
+        },
+    ],
     "wallbox": [
         {
             "title": "Wallbox Technical Inspection",
@@ -144,7 +228,7 @@ class DemoCalendarPatch6Request(BaseModel):
     mode: Literal["simulation", "test"] = "simulation"
     action: Literal["prepare", "generate", "delete", "reset"] = "generate"
     count: int = Field(default=6, ge=1, le=30)
-    appointment_type: Literal["dentist", "wallbox", "gas_meter", "water_meter"] = "dentist"
+    appointment_type: Literal["dentist", "doctor", "technician", "tee_time", "wallbox", "gas_meter", "water_meter"] = "dentist"
     from_date: date
     to_date: date
     include_customer_name: bool = True
@@ -476,7 +560,7 @@ class GoogleAvailabilitySlotsRequest(BaseModel):
     to_date: date
     max_slots: int = Field(default=5, ge=1, le=20)
     duration_minutes: int = Field(default=45, ge=15, le=240)
-    appointment_type: Literal["dentist", "wallbox", "gas_meter", "water_meter"] = "dentist"
+    appointment_type: Literal["dentist", "doctor", "technician", "tee_time", "wallbox", "gas_meter", "water_meter"] = "dentist"
     timezone: Optional[str] = None
 
     @model_validator(mode="after")
@@ -508,7 +592,7 @@ class GoogleBookingCreateRequest(BaseModel):
     start_time: datetime
     end_time: datetime
     label: str
-    appointment_type: Literal["dentist", "wallbox", "gas_meter", "water_meter"] = "dentist"
+    appointment_type: Literal["dentist", "doctor", "technician", "tee_time", "wallbox", "gas_meter", "water_meter"] = "dentist"
     customer_name: str = "Demo Customer"
     customer_email: Optional[str] = None
     customer_mobile: Optional[str] = None
@@ -537,7 +621,7 @@ class GoogleBookingRescheduleRequest(BaseModel):
     start_time: datetime
     end_time: datetime
     label: str
-    appointment_type: Literal["dentist", "wallbox", "gas_meter", "water_meter"] = "dentist"
+    appointment_type: Literal["dentist", "doctor", "technician", "tee_time", "wallbox", "gas_meter", "water_meter"] = "dentist"
     correlation_id: Optional[str] = None
     appointment_id: Optional[str] = None
     address_id: Optional[str] = None
@@ -581,6 +665,9 @@ class GoogleBookingActionResult(BaseModel):
     google_source: Literal["simulation", "live"]
     booking_reference: Optional[str] = None
     provider_reference: Optional[str] = None
+    html_link: Optional[str] = None
+    target_calendar_id: Optional[str] = None
+    target_calendar_summary: Optional[str] = None
     message: str
     status: str
     conflict_detected: bool = False
@@ -774,7 +861,7 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
                 from_date_value=request.from_date,
                 to_date_value=request.to_date,
                 duration_minutes=request.duration_minutes,
-                timezone_name=request.timezone,
+                timezone_name=getattr(request, "timezone", None),
             ),
             start=1,
         ):
@@ -794,7 +881,7 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
                     end_time,
                     slot_id="patch8-slot-{}".format(index),
                     provider="google" if status.live_calendar_writes else "simulated",
-                    timezone_name=request.timezone,
+                    timezone_name=getattr(request, "timezone", None),
                 )
             )
             if len(slots) >= request.max_slots:
@@ -900,6 +987,7 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
         timezone_name: Optional[str] = None,
     ) -> list[tuple[datetime, datetime]]:
         tz = self._resolve_zoneinfo(timezone_name)
+        cutoff = datetime.now(tz) + timedelta(minutes=settings.minimum_lead_time_minutes)
         windows: list[tuple[datetime, datetime]] = []
         slot_hours = [9, 11, 14, 16]
         day_count = (to_date_value - from_date_value).days + 1
@@ -908,6 +996,8 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
             for hour in slot_hours:
                 start_time = datetime.combine(slot_date, time(hour=hour, minute=0), tzinfo=tz)
                 end_time = start_time + timedelta(minutes=duration_minutes)
+                if start_time < cutoff:
+                    continue
                 windows.append((start_time, end_time))
         return windows
 
@@ -974,6 +1064,7 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
                 from_date_value=request.from_date,
                 to_date_value=request.to_date,
                 duration_minutes=request.duration_minutes,
+                timezone_name=getattr(request, "timezone", None),
             ),
             start=1,
         ):
@@ -994,6 +1085,7 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
                     end_time,
                     slot_id=slot_id,
                     provider="google" if status.live_calendar_writes else "simulated",
+                    timezone_name=getattr(request, "timezone", None),
                 )
             )
             if len(slots) >= request.max_slots:
@@ -1031,6 +1123,32 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
             provider="google" if status.live_calendar_writes else "simulated",
             timezone_name=request_timezone,
         )
+        cutoff = datetime.now(self._resolve_zoneinfo(request_timezone)) + timedelta(minutes=settings.minimum_lead_time_minutes)
+        requested_start = self._as_timezone(request.start_time, request_timezone)
+        if requested_start < cutoff:
+            from_date_value, to_date_value = self._slot_range_from_start(request.start_time, timezone_name=request_timezone)
+            alternatives = self.get_available_slots_patch8(
+                GoogleAvailabilitySlotsRequest(
+                    mode=request.mode,
+                    from_date=from_date_value,
+                    to_date=to_date_value,
+                    max_slots=request.alternative_count,
+                    duration_minutes=int((request.end_time - request.start_time).total_seconds() // 60) or settings.default_duration_minutes,
+                    timezone=request_timezone,
+                )
+            ).slots
+            return GoogleAvailabilityResult(
+                checked_at_utc=datetime.now(timezone.utc).isoformat(),
+                mode=status.mode,
+                google_source="live" if status.live_calendar_writes else "simulation",
+                slot_available=False,
+                conflict_detected=True,
+                message="Selected slot is no longer a valid future slot.",
+                selected_slot=selected_slot,
+                alternative_slots=alternatives,
+                monitoring_labels=["slot.checked", "slot.past_rejected"],
+                technical_reason="slot_in_past",
+            )
         if conflicts:
             from_date_value, to_date_value = self._slot_range_from_start(request.start_time, timezone_name=request_timezone)
             alternatives = self.get_available_slots_patch8(
@@ -1242,10 +1360,11 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
                 monitoring_labels=["slot.checked", "slot.conflict_detected", "booking.failed"],
                 technical_reason=availability.technical_reason,
             )
-        if status.live_calendar_writes and current_provider_reference and self.gateway.get_event(current_provider_reference):
-            self.gateway.delete_event(current_provider_reference)
         provider_reference = "simulation-{}".format(request.booking_reference)
         event_id = provider_reference
+        old_event_exists = bool(
+            status.live_calendar_writes and current_provider_reference and self.gateway.get_event(current_provider_reference)
+        )
         if status.live_calendar_writes:
             event_result = self.gateway.create_demo_event(
                 title=self._booking_title(request.appointment_type),
@@ -1293,9 +1412,20 @@ class GoogleAdapterServiceV110Patch8A(GoogleAdapterServiceV110Patch8):
             end_time_utc=request.end_time.astimezone(timezone.utc).replace(tzinfo=None),
             timezone=request_timezone,
             provider_reference=provider_reference,
-            details={"label": request.label, "appointment_type": request.appointment_type},
+            details={
+                "label": request.label,
+                "appointment_type": request.appointment_type,
+                "replaced_provider_reference": current_provider_reference or "",
+            },
             is_demo_generated=True,
         )
+        if (
+            status.live_calendar_writes
+            and old_event_exists
+            and current_provider_reference
+            and current_provider_reference != provider_reference
+        ):
+            self.gateway.delete_event(current_provider_reference)
         return GoogleBookingActionResult(
             success=True,
             action="reschedule",

@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     booking_window_days: int = 30
     max_slots_per_offer: int = 3
     default_duration_minutes: int = 30
+    minimum_lead_time_minutes: int = 30
     slot_hold_minutes: int = 2
     reschedule_cutoff_hours: int = 24
     quiet_hours: str = "21:00-08:00"

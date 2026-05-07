@@ -1,5 +1,6 @@
 import json
 import time
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -30,6 +31,25 @@ def _save_ready_settings(client: TestClient) -> None:
                 "webhook_api_key": "real-webhook-key",
                 "test_recipient_address": "491705707716",
             }
+        },
+    )
+    assert response.status_code == 200
+    _save_demo_address_language(client, "en")
+
+
+def _save_demo_address_language(client: TestClient, language: str) -> None:
+    response = client.post(
+        "/api/addresses/v1.3.9",
+        json={
+            "address_id": "addr-demo-001",
+            "display_name": "Anna Berger",
+            "city": "Berlin",
+            "phone": "491705707716",
+            "email": "anna.berger@example.com",
+            "correlation_ref": "corr-addr-demo-001",
+            "preferred_language": language,
+            "timezone": "Europe/Berlin",
+            "preferred_channel": "rcs_sms",
         },
     )
     assert response.status_code == 200
@@ -661,7 +681,7 @@ def test_lekab_v138_real_callback_route_updates_journey_context_and_deduplicates
     assert context["current_step"] == "confirmation_complete"
     assert context["status"] == "confirmed"
     assert context["metadata"]["real_callback"]["selected_action"] == "keep"
-    assert context["metadata"]["customer_journey_message"]["text"] == "Your appointment is confirmed."
+    assert context["metadata"]["customer_journey_message"]["text"] == "We confirm your dentist appointment on Wednesday 06 May at 11:30. Thank you for your reservation."
 
     payload = client.get("/api/demo-monitoring/v1.3.9/payload?lang=en").json()
     assert payload["messages_customer_journey"]["mode"] == "real"
@@ -723,6 +743,264 @@ def test_lekab_v138_real_callback_route_accepts_get_query_payload() -> None:
     assert context["metadata"]["real_callback"]["selected_action"] == "reschedule"
     assert context["metadata"]["customer_journey_message"]["text"] == "Choose the preferred scheduling window."
     assert context["metadata"]["customer_journey_message"]["real_channel_payload"]["suggestions"]
+
+
+def test_lekab_v138_confirmation_templates_follow_appointment_type_in_german() -> None:
+    session = SessionLocal()
+    try:
+        service = LekabReplyActionService(session, mock_mode=False)
+        pending_slot = {
+            "slot_id": "slot-demo-001",
+            "date_token": "date_2026-05-05",
+            "time_token": "time_2026-05-05T14:00:00+02:00",
+            "date_label": "05 May",
+            "time_label": "14:00",
+            "label": "05 May, 14:00",
+            "start": "2026-05-05T14:00:00+02:00",
+            "end": "2026-05-05T14:30:00+02:00",
+        }
+
+        assert service._appointment_confirmation_text(
+            appointment_type="tee_time",
+            pending_slot=pending_slot,
+            language="de",
+        ) == "Wir bestaetigen Ihren Termin (T-Time) am Dienstag 05. Mai um 14:00. Vielen Dank fuer Ihre Reservierung."
+        assert service._appointment_confirmation_text(
+            appointment_type="dentist",
+            pending_slot=pending_slot,
+            language="de",
+        ) == "Wir bestaetigen Ihren Zahnarzt Termin am Dienstag 05. Mai um 14:00. Vielen Dank fuer Ihre Reservierung."
+        assert service._appointment_confirmation_text(
+            appointment_type="doctor",
+            pending_slot=pending_slot,
+            language="de",
+        ) == "Wir bestaetigen Ihren Termin (Arzt) am Dienstag 05. Mai um 14:00. Vielen Dank fuer Ihre Reservierung."
+        assert service._appointment_confirmation_text(
+            appointment_type="technician",
+            pending_slot=pending_slot,
+            language="de",
+        ) == "Wir bestaetigen Ihren Termin (Techniker) am Dienstag 05. Mai um 14:00. Vielen Dank fuer Ihre Reservierung."
+    finally:
+        session.close()
+
+
+def test_lekab_v138_reschedule_follow_up_is_localized_to_german(monkeypatch) -> None:
+    client = TestClient(app)
+    _save_ready_settings(client)
+    _save_demo_address_language(client, "de")
+    _journey_id, correlation_id, _slot_id = _create_booked_journey(client)
+
+    client.put(
+        "/api/demo-monitoring/v1.3.9/scenario-context",
+        json={
+            "scenario_id": "confirm-appointment",
+            "mode": "real",
+            "address_id": "addr-demo-001",
+            "appointment_type": "dentist",
+            "appointment_id": "appt-real-reschedule-de",
+            "booking_reference": "book-real-reschedule-de",
+            "correlation_ref": correlation_id,
+            "current_step": "awaiting_customer_reply",
+            "status": "reminder_pending",
+        },
+    )
+
+    class DummyResponse:
+        status_code = 200
+        text = '{"resultText":"At least one message sent OK","sent":[{"id":"provider-follow-up-de","result":"OK"}]}'
+
+        def json(self):
+            return {"resultText": "At least one message sent OK", "sent": [{"id": "provider-follow-up-de", "result": "OK"}]}
+
+    class DummyClient:
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def post(self, url, headers=None, json=None):
+            return DummyResponse()
+
+    monkeypatch.setattr("lekab_adapter.v1_2_1_patch4.lekab_adapter.service.httpx.Client", DummyClient)
+
+    session = SessionLocal()
+    try:
+        service = LekabReplyActionService(session, mock_mode=False)
+        result = service.process_provider_callback(
+            {
+                "event_id": f"reschedule-de-{uuid4().hex[:8]}",
+                "event": "INCOMING",
+                "incoming_type": "POST",
+                "incoming_data": "reschedule_appointment",
+                "correlation_id": correlation_id,
+                "correlation_ref": correlation_id,
+                "phone_number": "491705707716",
+                "from": "491705707716",
+                "reply_label": "Verschieben",
+                "callback_transport": "post",
+                "received_at": "2026-04-21T10:00:00Z",
+                "source": "test",
+                "address_id": "addr-demo-001",
+            }
+        )
+    finally:
+        session.close()
+
+    follow_up = result["follow_up_message"]
+    assert follow_up["text"] == "Waehlen Sie bitte das bevorzugte Terminfenster."
+    assert "Diese Woche" in [item["label"] for item in follow_up["actions"]]
+    assert "Naechste Woche" in [item["label"] for item in follow_up["real_channel_payload"]["suggestions"]]
+
+
+def test_lekab_v138_no_dates_found_returns_german_fallback_buttons(monkeypatch) -> None:
+    client = TestClient(app)
+    _save_ready_settings(client)
+    _save_demo_address_language(client, "de")
+    _journey_id, correlation_id, _slot_id = _create_booked_journey(client)
+
+    client.put(
+        "/api/demo-monitoring/v1.3.9/scenario-context",
+        json={
+            "scenario_id": "confirm-appointment",
+            "mode": "real",
+            "address_id": "addr-demo-001",
+            "appointment_type": "dentist",
+            "appointment_id": "appt-real-no-dates-de",
+            "booking_reference": "book-real-no-dates-de",
+            "correlation_ref": correlation_id,
+            "current_step": "reschedule_requested",
+            "status": "action_requested",
+        },
+    )
+
+    class DummyResponse:
+        status_code = 200
+        text = '{"resultText":"At least one message sent OK","sent":[{"id":"provider-follow-up-no-dates","result":"OK"}]}'
+
+        def json(self):
+            return {"resultText": "At least one message sent OK", "sent": [{"id": "provider-follow-up-no-dates", "result": "OK"}]}
+
+    class DummyClient:
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def post(self, url, headers=None, json=None):
+            return DummyResponse()
+
+    monkeypatch.setattr("lekab_adapter.v1_2_1_patch4.lekab_adapter.service.httpx.Client", DummyClient)
+    monkeypatch.setattr(
+        "lekab_adapter.v1_3_8.lekab_adapter.service.LekabReplyActionService._load_dynamic_slots",
+        lambda self, relative_action, appointment_type: [],
+    )
+
+    session = SessionLocal()
+    try:
+        service = LekabReplyActionService(session, mock_mode=False)
+        result = service.process_provider_callback(
+            {
+                "event_id": f"next-week-no-dates-{uuid4().hex[:8]}",
+                "event": "INCOMING",
+                "incoming_type": "POST",
+                "incoming_data": "next_week",
+                "correlation_id": correlation_id,
+                "correlation_ref": correlation_id,
+                "phone_number": "491705707716",
+                "from": "491705707716",
+                "reply_label": "Naechste Woche",
+                "callback_transport": "post",
+                "received_at": "2026-04-21T10:10:00Z",
+                "source": "test",
+                "address_id": "addr-demo-001",
+            }
+        )
+    finally:
+        session.close()
+
+    follow_up = result["follow_up_message"]
+    assert follow_up["text"] == "Im gewaehlten Zeitraum wurden keine freien Daten gefunden. Waehlen Sie ein anderes Fenster und wir suchen weiter."
+    assert "Diese Woche" in [item["label"] for item in follow_up["actions"]]
+    assert follow_up["next_step_map"]["next_week"] == "date_choice"
+
+
+def test_lekab_v138_unmapped_real_reply_returns_german_clarification(monkeypatch) -> None:
+    client = TestClient(app)
+    _save_ready_settings(client)
+    _save_demo_address_language(client, "de")
+    _journey_id, correlation_id, _slot_id = _create_booked_journey(client)
+
+    client.put(
+        "/api/demo-monitoring/v1.3.9/scenario-context",
+        json={
+            "scenario_id": "confirm-appointment",
+            "mode": "real",
+            "address_id": "addr-demo-001",
+            "appointment_type": "dentist",
+            "appointment_id": "appt-real-clarify-de",
+            "booking_reference": "book-real-clarify-de",
+            "correlation_ref": correlation_id,
+            "current_step": "awaiting_customer_reply",
+            "status": "reminder_pending",
+        },
+    )
+
+    class DummyResponse:
+        status_code = 200
+        text = '{"resultText":"At least one message sent OK","sent":[{"id":"provider-follow-up-clarify","result":"OK"}]}'
+
+        def json(self):
+            return {"resultText": "At least one message sent OK", "sent": [{"id": "provider-follow-up-clarify", "result": "OK"}]}
+
+    class DummyClient:
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def post(self, url, headers=None, json=None):
+            return DummyResponse()
+
+    monkeypatch.setattr("lekab_adapter.v1_2_1_patch4.lekab_adapter.service.httpx.Client", DummyClient)
+
+    session = SessionLocal()
+    try:
+        service = LekabReplyActionService(session, mock_mode=False)
+        result = service.process_provider_callback(
+            {
+                "event_id": f"clarify-de-{uuid4().hex[:8]}",
+                "event": "INCOMING",
+                "incoming_type": "POST",
+                "incoming_data": "spaeter vielleicht",
+                "correlation_id": correlation_id,
+                "correlation_ref": correlation_id,
+                "phone_number": "491705707716",
+                "from": "491705707716",
+                "reply_label": "spaeter vielleicht",
+                "callback_transport": "post",
+                "received_at": "2026-04-21T10:20:00Z",
+                "source": "test",
+                "address_id": "addr-demo-001",
+            }
+        )
+    finally:
+        session.close()
+
+    follow_up = result["follow_up_message"]
+    assert follow_up["text"] == "Diese Antwort konnte noch nicht eindeutig zugeordnet werden. Bitte bestaetigen, verschieben oder absagen Sie ueber die Buttons unten."
+    assert [item["label"] for item in follow_up["actions"]] == ["Bestaetigen", "Verschieben", "Absagen"]
 
 
 def test_lekab_v138_fetch_latest_callback_bridges_webhook_reply_into_demo_context(monkeypatch) -> None:
@@ -1176,6 +1454,10 @@ def test_lekab_v138_dynamic_date_callback_returns_dynamic_time_buttons(monkeypat
     client = TestClient(app)
     _save_ready_settings(client)
     _journey_id, correlation_id, _slot_id = _create_booked_journey(client)
+    future_day = (datetime.now(timezone.utc) + timedelta(days=14)).date()
+    future_date_key = future_day.isoformat()
+    future_start_1 = datetime.combine(future_day, datetime.min.time(), tzinfo=timezone.utc).replace(hour=9, minute=0)
+    future_start_2 = future_start_1.replace(hour=11, minute=30)
 
     context_updated = client.put(
         "/api/demo-monitoring/v1.3.9/scenario-context",
@@ -1188,26 +1470,26 @@ def test_lekab_v138_dynamic_date_callback_returns_dynamic_time_buttons(monkeypat
             "booking_reference": "book-real-dynamic-date",
             "correlation_ref": correlation_id,
             "current_step": "relative_choice_complete",
-            "status": "awaiting_date_choice",
-            "metadata": {
-                "dynamic_grouped_slots": {
-                    "2026-04-27": [
-                        {
-                            "slot_id": "google-slot-1",
-                            "start": "2026-04-27T09:00:00+00:00",
-                            "end": "2026-04-27T09:30:00+00:00",
-                            "label": "Mon, 27 Apr, 09:00",
-                            "available": True,
-                            "calendar_provider": "google",
-                        },
-                        {
-                            "slot_id": "google-slot-2",
-                            "start": "2026-04-27T11:30:00+00:00",
-                            "end": "2026-04-27T12:00:00+00:00",
-                            "label": "Mon, 27 Apr, 11:30",
-                            "available": True,
-                            "calendar_provider": "google",
-                        },
+                "status": "awaiting_date_choice",
+                "metadata": {
+                    "dynamic_grouped_slots": {
+                        future_date_key: [
+                            {
+                                "slot_id": "google-slot-1",
+                                "start": future_start_1.isoformat(),
+                                "end": (future_start_1 + timedelta(minutes=30)).isoformat(),
+                                "label": future_start_1.strftime("%a, %d %b, %H:%M"),
+                                "available": True,
+                                "calendar_provider": "google",
+                            },
+                            {
+                                "slot_id": "google-slot-2",
+                                "start": future_start_2.isoformat(),
+                                "end": (future_start_2 + timedelta(minutes=30)).isoformat(),
+                                "label": future_start_2.strftime("%a, %d %b, %H:%M"),
+                                "available": True,
+                                "calendar_provider": "google",
+                            },
                     ]
                 }
             },
@@ -1245,7 +1527,7 @@ def test_lekab_v138_dynamic_date_callback_returns_dynamic_time_buttons(monkeypat
                 "event_id": f"date-dynamic-{uuid4().hex[:8]}",
                 "event": "INCOMING",
                 "incoming_type": "POST",
-                "incoming_data": "date_2026-04-27",
+                "incoming_data": f"date_{future_date_key}",
                 "correlation_id": correlation_id,
                 "correlation_ref": correlation_id,
                 "phone_number": "491705707716",
@@ -1261,7 +1543,7 @@ def test_lekab_v138_dynamic_date_callback_returns_dynamic_time_buttons(monkeypat
 
     follow_up = result["follow_up_message"]
     values = [item["value"] for item in follow_up["actions"]]
-    assert all(value.startswith("time_2026-04-27") for value in values)
+    assert all(value.startswith(f"time_{future_date_key}") for value in values)
     assert len(values) >= 2
     assert "time_0900" not in values
 
@@ -1446,7 +1728,7 @@ def test_lekab_v138_confirm_after_time_selection_commits_google_booking(monkeypa
         )
         assert result["google_booking_result"]["success"] is True
         assert result["google_booking_result"]["google_source"] == "live"
-        assert result["follow_up_message"]["text"] == "Your appointment is confirmed and synced to Google Calendar."
+        assert result["follow_up_message"]["text"] == "We confirm your dentist appointment on Wednesday 06 May at 11:30. Thank you for your reservation."
     finally:
         session.close()
 
@@ -1465,7 +1747,7 @@ def test_lekab_v138_confirm_after_time_selection_commits_google_booking(monkeypa
     assert context["status"] == "confirmed"
     assert context["metadata"]["real_callback"]["selected_action"] == "keep"
     assert context["metadata"]["real_callback"]["google_booking_result"]["success"] is True
-    assert context["metadata"]["customer_journey_message"]["text"] == "Your appointment is confirmed and synced to Google Calendar."
+    assert context["metadata"]["customer_journey_message"]["text"] == "We confirm your dentist appointment on Wednesday 06 May at 11:30. Thank you for your reservation."
 
     session = SessionLocal()
     try:
@@ -1473,10 +1755,163 @@ def test_lekab_v138_confirm_after_time_selection_commits_google_booking(monkeypa
             session.query(MessageRecord)
             .filter(
                 MessageRecord.correlation_ref == correlation_id,
-                MessageRecord.body == "Your appointment is confirmed and synced to Google Calendar.",
+                MessageRecord.body == "We confirm your dentist appointment on Wednesday 06 May at 11:30. Thank you for your reservation.",
             )
             .all()
         )
         assert outbound_rows
     finally:
         session.close()
+
+
+def test_lekab_v138_forward_latest_callback_bridges_to_chat_agent(monkeypatch) -> None:
+    client = TestClient(app)
+    captured: dict[str, object] = {}
+
+    def fake_fetch_latest_callback(self, *, trace_id=None):
+        return {
+            "version": "v1.3.8",
+            "processed_callbacks": [
+                {
+                    "event_id": "evt-bridge-1",
+                    "raw_callback_payload": {
+                        "content": json.dumps({
+                            "channel": "SMS",
+                            "from": "+491705707716",
+                            "text": "Inbound hello",
+                        })
+                    },
+                    "callback_payload": {
+                        "phone_number": "+491705707716",
+                        "incoming_data": "Inbound hello",
+                        "from": "+491705707716",
+                    },
+                    "bridge_result": {
+                        "resolved_action": None,
+                        "normalized_callback": {
+                            "phone_number": "+491705707716",
+                        },
+                    },
+                }
+            ],
+        }
+
+    class DummyResponse:
+        status_code = 202
+        text = '{"accepted":true}'
+
+    class DummyClient:
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def post(self, url, headers=None, json=None):
+            captured["url"] = url
+            captured["headers"] = headers or {}
+            captured["json"] = json or {}
+            return DummyResponse()
+
+    monkeypatch.setattr(LekabReplyActionService, "fetch_latest_callback", fake_fetch_latest_callback)
+    monkeypatch.setattr("lekab_adapter.v1_3_8.lekab_adapter.service.httpx.Client", DummyClient)
+
+    response = client.post(
+        "/api/lekab/v1.3.8/settings/rcs/forward-latest-callback",
+        json={"forward_url": "http://127.0.0.1:8090/api/lekab/inbound"},
+        headers={"x-trace-id": "trace-forward-bridge"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["temporary_bridge"] is True
+    assert payload["bridge_architecture"] == "LEKAB -> webhook.site -> Appointment-Agent -> Chat-Agent"
+    assert payload["processed_callbacks"] == 1
+    assert payload["forwarded_callbacks"] == 1
+    assert captured["url"] == "http://127.0.0.1:8090/api/lekab/inbound"
+    assert captured["json"]["phoneNumber"] == "+491705707716"
+    assert captured["json"]["message"] == "Inbound hello"
+    assert captured["json"]["channel"] == "sms"
+    assert captured["json"]["eventId"] == "evt-bridge-1"
+    assert captured["json"]["event_id"] == "evt-bridge-1"
+    assert captured["json"]["phone_number"] == "+491705707716"
+    assert captured["json"]["text"] == "Inbound hello"
+
+
+def test_lekab_v138_forward_latest_callback_falls_back_to_latest_reply(monkeypatch) -> None:
+    client = TestClient(app)
+    captured: dict[str, object] = {}
+
+    def fake_fetch_latest_callback(self, *, trace_id=None):
+        return {
+            "version": "v1.3.8",
+            "processed_callbacks": [],
+            "raw_fetch_response_json": {
+                "data": [
+                    {
+                        "uuid": "evt-status-1",
+                        "sorting": 200,
+                        "created_at": "2026-05-03 01:41:08",
+                        "content": json.dumps({
+                            "channel": "RCS",
+                            "from": "agent",
+                            "to": "491701234567",
+                            "status": "SENDFAIL",
+                            "statusText": "Phone not RCS enabled",
+                        }),
+                    },
+                    {
+                        "uuid": "evt-reply-1",
+                        "sorting": 150,
+                        "created_at": "2026-05-03 01:36:22",
+                        "content": json.dumps({
+                            "channel": "RCS",
+                            "from": "491701234567",
+                            "to": "agent",
+                            "type": "TEXT",
+                            "text": "Nochmal Re-Test",
+                        }),
+                    },
+                ]
+            },
+        }
+
+    class DummyResponse:
+        status_code = 202
+        text = '{"accepted":true}'
+
+    class DummyClient:
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def post(self, url, headers=None, json=None):
+            captured["url"] = url
+            captured["headers"] = headers or {}
+            captured["json"] = json or {}
+            return DummyResponse()
+
+    monkeypatch.setattr(LekabReplyActionService, "fetch_latest_callback", fake_fetch_latest_callback)
+    monkeypatch.setattr("lekab_adapter.v1_3_8.lekab_adapter.service.httpx.Client", DummyClient)
+
+    response = client.post(
+        "/api/lekab/v1.3.8/settings/rcs/forward-latest-callback",
+        json={"forward_url": "http://127.0.0.1:8090/api/lekab/inbound"},
+        headers={"x-trace-id": "trace-forward-fallback"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["processed_callbacks"] == 0
+    assert payload["forwarded_callbacks"] == 1
+    assert payload["forward_source"] == "latest_reply_fallback"
+    assert captured["json"]["eventId"] == "evt-reply-1"
+    assert captured["json"]["channel"] == "rcs"
+    assert captured["json"]["phoneNumber"] == "491701234567"
+    assert captured["json"]["message"] == "Nochmal Re-Test"

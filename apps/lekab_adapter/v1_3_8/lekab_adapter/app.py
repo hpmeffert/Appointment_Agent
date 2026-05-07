@@ -22,6 +22,10 @@ class SaveRcsSettingsRequest(BaseModel):
     values: dict[str, Any] = Field(default_factory=dict)
 
 
+class ForwardLatestCallbackRequest(BaseModel):
+    forward_url: str = Field(min_length=1)
+
+
 def get_service(session: Session = Depends(get_session)) -> LekabReplyActionService:
     return LekabReplyActionService(session, mock_mode=settings.lekab_mock_mode)
 
@@ -96,6 +100,15 @@ def fetch_latest_callback(
     service: LekabReplyActionService = Depends(get_service),
 ) -> dict[str, Any]:
     return service.fetch_latest_callback(trace_id=_resolve_trace_id(request))
+
+
+@versioned_router.post("/settings/rcs/forward-latest-callback")
+def forward_latest_callback(
+    request: Request,
+    payload: ForwardLatestCallbackRequest,
+    service: LekabReplyActionService = Depends(get_service),
+) -> dict[str, Any]:
+    return service.forward_latest_callback(payload.forward_url, trace_id=_resolve_trace_id(request))
 
 
 @versioned_router.get("/monitor")

@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -216,7 +217,58 @@ def test_v101_explicit_help_escalation() -> None:
     assert escalation.json()["journey_state"] == "ESCALATED"
 
 
-def test_v101_cancellation_missing_provider_reference_escalates() -> None:
+def test_v101_select_rejects_stale_past_slot() -> None:
+    client = TestClient(app)
+    journey_id, correlation_id = _new_journey()
+
+    client.post(
+        "/api/orchestrator/v1.0.1/journeys/start",
+        json={
+            "journey_id": journey_id,
+            "tenant_id": "demo",
+            "correlation_id": correlation_id,
+            "customer_id": "C-204b",
+            "service_type": "consultation",
+            "timezone": "Europe/Berlin",
+        },
+    )
+
+    with SessionLocal() as session:
+        journeys = JourneyRepository(session)
+        journey = journeys.get(journey_id)
+        assert journey is not None
+        stale_start = (datetime.utcnow() - timedelta(hours=2)).replace(microsecond=0).isoformat() + "+00:00"
+        stale_end = (datetime.utcnow() - timedelta(hours=1, minutes=30)).replace(microsecond=0).isoformat() + "+00:00"
+        journeys.store_candidate_slots(
+            journey_id,
+            [
+                {
+                    "slot_id": "stale-slot",
+                    "start": stale_start,
+                    "end": stale_end,
+                    "label": "Stale slot",
+                    "available": True,
+                    "calendar_provider": "google",
+                }
+            ],
+        )
+
+    response = client.post(
+        "/api/orchestrator/v1.0.1/journeys/select",
+        json={
+            "journey_id": journey_id,
+            "tenant_id": "demo",
+            "correlation_id": correlation_id,
+            "slot_id": "stale-slot",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["journey_state"] == "ESCALATED"
+    assert response.json()["escalation_reason"] == "stale_slot"
+
+
+def test_v101_cancellation_missing_provider_reference_is_recovered_via_resolution() -> None:
     client = TestClient(app)
     journey_id, correlation_id = _new_journey()
 
@@ -281,7 +333,8 @@ def test_v101_cancellation_missing_provider_reference_escalates() -> None:
     )
 
     assert cancelled.status_code == 200
-    assert cancelled.json()["journey_state"] == "ESCALATED"
+    assert cancelled.json()["journey_state"] == "CLOSED"
+    assert cancelled.json()["status"] == "cancelled"
 
 
 def _create_booked_journey(client: TestClient) -> tuple[str, str, str]:

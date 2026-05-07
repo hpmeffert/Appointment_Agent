@@ -238,7 +238,7 @@ class GoogleAdapterServiceV136(GoogleAdapterServiceV120):
         customer_name = self._resolved_booking_customer_name(request)
         return {
             "appointment_agent_demo": "true",
-            "appointment_agent_release": "v1.3.9-patch9",
+            "appointment_agent_release": "v1.3.10",
             "appointment_agent_booking_reference": booking_reference,
             "appointment_agent_customer_name": customer_name,
             "appointment_agent_appointment_type": request.appointment_type,
@@ -453,6 +453,7 @@ class GoogleAdapterServiceV136(GoogleAdapterServiceV120):
         booking_reference = request.booking_reference or "gpatch9-book-{}".format(uuid4().hex[:8])
         provider_reference = "simulation-{}".format(booking_reference)
         event_id = provider_reference
+        html_link = None
         customer_name = self._resolved_booking_customer_name(request)
         description = self._booking_description(
             request=request,
@@ -475,6 +476,7 @@ class GoogleAdapterServiceV136(GoogleAdapterServiceV120):
             )
             provider_reference = event_result.provider_reference
             event_id = event_result.event_id
+            html_link = event_result.html_link
         self.bookings.save(
             booking_reference=booking_reference,
             journey_id="patch8-google-journey",
@@ -529,6 +531,9 @@ class GoogleAdapterServiceV136(GoogleAdapterServiceV120):
             google_source="live" if status.live_calendar_writes else "simulation",
             booking_reference=booking_reference,
             provider_reference=provider_reference,
+            html_link=html_link,
+            target_calendar_id=getattr(status, "calendar_id", None) or self._calendar_id(),
+            target_calendar_summary=getattr(status, "calendar_summary", None) or self._calendar_summary(),
             message="Booking created successfully.",
             status="confirmed",
             selected_slot=self._normalize_slot(
@@ -573,10 +578,9 @@ class GoogleAdapterServiceV136(GoogleAdapterServiceV120):
                 monitoring_labels=["slot.checked", "slot.conflict_detected", "booking.failed"],
                 technical_reason=availability.technical_reason,
             )
-        if status.live_calendar_writes and current_provider_reference and self.gateway.get_event(current_provider_reference):
-            self.gateway.delete_event(current_provider_reference)
         provider_reference = "simulation-{}".format(request.booking_reference)
         event_id = provider_reference
+        html_link = None
         customer_name = self._resolved_booking_customer_name(request)
         description = self._booking_description(
             request=request,
@@ -586,6 +590,9 @@ class GoogleAdapterServiceV136(GoogleAdapterServiceV120):
         title = self._booking_event_title(
             appointment_type=request.appointment_type,
             customer_name=customer_name,
+        )
+        old_event_exists = bool(
+            status.live_calendar_writes and current_provider_reference and self.gateway.get_event(current_provider_reference)
         )
         if status.live_calendar_writes:
             event_result = self.gateway.create_demo_event(
@@ -599,6 +606,7 @@ class GoogleAdapterServiceV136(GoogleAdapterServiceV120):
             )
             provider_reference = event_result.provider_reference
             event_id = event_result.event_id
+            html_link = event_result.html_link
         self.bookings.save(
             booking_reference=request.booking_reference,
             journey_id=record.journey_id,
@@ -644,9 +652,17 @@ class GoogleAdapterServiceV136(GoogleAdapterServiceV120):
                 "linked_contact_reference_id": getattr(request, "linked_contact_reference_id", "") or getattr(request, "address_id", "") or "",
                 "linked_address_full_details": getattr(request, "linked_address_full_details", "") or "",
                 "description": description,
+                "replaced_provider_reference": current_provider_reference or "",
             },
             is_demo_generated=True,
         )
+        if (
+            status.live_calendar_writes
+            and old_event_exists
+            and current_provider_reference
+            and current_provider_reference != provider_reference
+        ):
+            self.gateway.delete_event(current_provider_reference)
         return self._booking_result_model(
             success=True,
             action="reschedule",
@@ -654,6 +670,9 @@ class GoogleAdapterServiceV136(GoogleAdapterServiceV120):
             google_source="live" if status.live_calendar_writes else "simulation",
             booking_reference=request.booking_reference,
             provider_reference=provider_reference,
+            html_link=html_link,
+            target_calendar_id=getattr(status, "calendar_id", None) or self._calendar_id(),
+            target_calendar_summary=getattr(status, "calendar_summary", None) or self._calendar_summary(),
             message="Booking rescheduled successfully.",
             status="rescheduled",
             selected_slot=self._normalize_slot(

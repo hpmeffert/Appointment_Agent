@@ -141,7 +141,7 @@ class DemoCalendarPatch6Request(BaseModel):
     mode: Literal["simulation", "test"] = "simulation"
     action: Literal["prepare", "generate", "delete", "reset"] = "generate"
     count: int = Field(default=6, ge=1, le=30)
-    appointment_type: Literal["dentist", "wallbox", "gas_meter", "water_meter"] = "dentist"
+    appointment_type: Literal["dentist", "doctor", "technician", "tee_time", "wallbox", "gas_meter", "water_meter"] = "dentist"
     from_date: date
     to_date: date
     include_customer_name: bool = True

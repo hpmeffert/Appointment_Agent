@@ -18,7 +18,7 @@ router = APIRouter(tags=["demo-monitoring-ui-v1.3.9"])
 
 HTML_PATH = Path(__file__).resolve().parent / "static" / "cockpit.html"
 BASE_VERSION = "v1.3.9"
-PATCH_VERSION = "v1.3.9-patch9"
+PATCH_VERSION = "v1.3.10"
 PATCH_ALIASES = (
     "v1.3.9-patch1",
     "v1.3.9-patch2",
@@ -124,6 +124,8 @@ class ScenarioContextRequest(BaseModel):
     appointment_type: Optional[str] = None
     from_date: Optional[str] = None
     to_date: Optional[str] = None
+    dashboard_mode: Optional[str] = None
+    guided_mode: Optional[str] = None
     current_step: Optional[str] = None
     status: Optional[str] = None
 
@@ -173,6 +175,7 @@ def build_live_cockpit_payload(*, session: Session, lang: str) -> dict:
     if selected_address is None:
         selected_address = context.get("selected_address")
     context_metadata = context.get("metadata") or {}
+    ui_modes = dict(context_metadata.get("ui_modes") or {})
     real_callback = (context_metadata.get("real_callback") or {})
     selected_action = real_callback.get("selected_action")
     selected_value = real_callback.get("incoming_data")
@@ -216,9 +219,13 @@ def build_live_cockpit_payload(*, session: Session, lang: str) -> dict:
     payload["operator_panel"] = {
         "scenario_options": scenario_options,
         "address_options": address_options,
+        "appointment_type_options": payload.get("operator_appointment_types") or (payload.get("google_demo_control") or {}).get("appointment_types", []),
         "selected_scenario_id": context.get("scenario_id"),
         "selected_address_id": context.get("address_id"),
+        "selected_appointment_type": context.get("appointment_type"),
         "scenario_mode": context.get("mode"),
+        "dashboard_mode": ui_modes.get("dashboard_mode") or "combined",
+        "guided_mode": ui_modes.get("guided_mode") or "guided",
         "dashboard_modes": payload.get("dashboard_modes", []),
         "guided_modes": (payload.get("guided_demo") or {}).get("modes", []),
     }
@@ -231,6 +238,8 @@ def build_live_cockpit_payload(*, session: Session, lang: str) -> dict:
     }
     payload["current_mode"] = {
         "scenario_mode": context.get("mode"),
+        "dashboard_mode": ui_modes.get("dashboard_mode") or "combined",
+        "guided_mode": ui_modes.get("guided_mode") or "guided",
         "output_channel": context.get("output_channel"),
         "appointment_type": context.get("appointment_type"),
         "status": context.get("status"),
@@ -467,7 +476,18 @@ def update_scenario_context(
             to_date=payload.to_date,
             current_step=payload.current_step,
             status=payload.status,
-            metadata={"updated_from": "operator_panel"},
+            metadata={
+                "updated_from": "operator_panel",
+                "ui_modes": {
+                    **(
+                        service.get_context().metadata.get("ui_modes", {})
+                        if service.get_context().metadata
+                        else {}
+                    ),
+                    **({"dashboard_mode": payload.dashboard_mode} if payload.dashboard_mode else {}),
+                    **({"guided_mode": payload.guided_mode} if payload.guided_mode else {}),
+                },
+            },
         )
     ).model_dump(mode="json")
 

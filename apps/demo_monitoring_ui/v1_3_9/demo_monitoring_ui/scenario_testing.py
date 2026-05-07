@@ -66,7 +66,7 @@ class DemoScenarioTestingService:
     def scenario_help(self, lang: str = "en") -> dict[str, Any]:
         return {
             "module": "demo_scenario_testing",
-            "version": "v1.3.9-patch9",
+            "version": "v1.3.10",
             "artifact_directory": str(ARTIFACT_ROOT),
             "modes": ["simulation", "real"],
             "catalog": [
@@ -484,13 +484,13 @@ class DemoScenarioTestingService:
         latest = self._latest_artifacts()
         if latest is None:
             return {
-                "version": "v1.3.9-patch9",
+                "version": "v1.3.10",
                 "artifact_directory": str(ARTIFACT_ROOT),
                 "available": False,
             }
         protocol_json = json.loads(latest.protocol_json.read_text(encoding="utf-8"))
         return {
-            "version": "v1.3.9-patch9",
+            "version": "v1.3.10",
             "artifact_directory": str(ARTIFACT_ROOT),
             "available": True,
             "scenario_id": protocol_json["scenario_id"],

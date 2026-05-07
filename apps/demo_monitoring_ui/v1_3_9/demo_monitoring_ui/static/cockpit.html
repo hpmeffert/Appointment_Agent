@@ -125,6 +125,65 @@
       .page .action-row button.primary {
         color: #fff;
       }
+      .radio-segment {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .radio-chip {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+      .radio-chip input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .radio-chip label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--action-border);
+        border-radius: 12px;
+        background: var(--action-surface);
+        color: #fff;
+        padding: 10px 14px;
+        cursor: pointer;
+        font: inherit;
+        box-shadow: 0 8px 18px rgba(15, 32, 51, 0.14);
+        text-shadow: 0 1px 0 rgba(15, 32, 51, 0.24);
+      }
+      .radio-chip label,
+      .radio-chip label span {
+        color: #fff !important;
+        opacity: 1;
+      }
+      .radio-chip label span:last-child {
+        padding-left: 4px;
+      }
+      .radio-chip label:hover {
+        background: var(--action-surface-hover);
+      }
+      .radio-chip input[type="radio"]:checked + label {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+        font-weight: 700;
+        text-shadow: 0 1px 0 rgba(15, 32, 51, 0.28);
+      }
+      .radio-chip .radio-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        border: 2px solid currentColor;
+        display: inline-block;
+        box-sizing: border-box;
+      }
+      .radio-chip input[type="radio"]:checked + label .radio-dot {
+        background: currentColor;
+      }
       .lang-switcher {
         display: flex;
         align-items: center;
@@ -256,10 +315,76 @@
         padding: 16px;
         background: var(--panel-strong);
       }
-      .chat { display: grid; gap: 12px; }
-      .bubble { padding: 14px 16px; border-radius: 18px; max-width: 88%; line-height: 1.55; }
-      .bubble.user { margin-left: auto; background: rgba(15, 76, 129, 0.12); }
-      .bubble.platform { background: rgba(255, 159, 28, 0.16); }
+      .chat {
+        display: grid;
+        gap: 12px;
+        max-height: 720px;
+        overflow: auto;
+        padding-right: 8px;
+        align-content: start;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(15, 76, 129, 0.52) rgba(15, 32, 51, 0.12);
+      }
+      .chat::-webkit-scrollbar {
+        width: 12px;
+      }
+      .chat::-webkit-scrollbar-track {
+        background: rgba(15, 32, 51, 0.08);
+        border-radius: 999px;
+      }
+      .chat::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, rgba(31, 106, 178, 0.9), rgba(15, 76, 129, 0.9));
+        border-radius: 999px;
+        border: 2px solid rgba(255, 255, 255, 0.08);
+      }
+      .bubble {
+        padding: 14px 16px;
+        border-radius: 18px;
+        max-width: 88%;
+        line-height: 1.55;
+        border: 1px solid rgba(120, 129, 148, 0.24);
+        box-shadow: 0 10px 22px rgba(15, 32, 51, 0.16);
+      }
+      .bubble.user {
+        margin-left: auto;
+        background: linear-gradient(180deg, rgba(15, 76, 129, 0.2), rgba(15, 76, 129, 0.14));
+        border-color: rgba(15, 76, 129, 0.34);
+      }
+      .bubble.platform {
+        background: linear-gradient(180deg, rgba(255, 159, 28, 0.18), rgba(255, 159, 28, 0.12));
+        border-color: rgba(181, 117, 14, 0.3);
+      }
+      .bubble .meta {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 12px;
+        color: rgba(54, 72, 96, 0.9);
+      }
+      .bubble .title {
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #10253d;
+      }
+      .twin-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+      .twin-pill {
+        border: 1px solid var(--action-border);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.82);
+        color: #17304b;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .twin-pill.selected {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+      }
       .small { font-size: 13px; color: var(--muted); }
       .interactive-group {
         border: 1px solid var(--line);
@@ -451,7 +576,7 @@
                 </div>
                 <div class="control">
                   <label id="scenarioModeLabel">Scenario Mode</label>
-                  <div class="segment" id="scenarioModeButtons"></div>
+                  <div class="segment radio-segment" id="scenarioModeButtons"></div>
                 </div>
                 <div class="control">
                   <label id="scenarioAddressLabel">Selected Address</label>
@@ -459,12 +584,16 @@
                   <div class="field-state" id="addressSelectorState">loaded</div>
                 </div>
                 <div class="control">
+                  <label id="scenarioAppointmentTypeLabel">Appointment Type</label>
+                  <select id="scenarioAppointmentTypeSelect"></select>
+                </div>
+                <div class="control">
                   <label id="dashboardModeLabel">Dashboard Mode</label>
-                  <div class="segment" id="dashboardModeButtons"></div>
+                  <div class="segment radio-segment" id="dashboardModeButtons"></div>
                 </div>
                 <div class="control">
                   <label id="guidedModeLabel">Demo Mode</label>
-                  <div class="segment" id="guidedModeButtons"></div>
+                  <div class="segment radio-segment" id="guidedModeButtons"></div>
                 </div>
                 <div class="action-row">
                   <button id="restartBtn">Restart Story</button>
@@ -965,7 +1094,9 @@
         selectedJourneyButtonValue: null,
         selectedJourneySource: null,
         selectedDateProposal: null,
+        selectedDateValue: null,
         selectedTimeProposal: null,
+        selectedTimeValue: null,
         selectedSlot: null,
         interactionStatus: null,
         interactionEvents: [],
@@ -1789,6 +1920,8 @@
         scenarioSelect: document.getElementById("scenarioSelect"),
         scenarioModeButtons: document.getElementById("scenarioModeButtons"),
         scenarioAddressSelect: document.getElementById("scenarioAddressSelect"),
+        scenarioAppointmentTypeLabel: document.getElementById("scenarioAppointmentTypeLabel"),
+        scenarioAppointmentTypeSelect: document.getElementById("scenarioAppointmentTypeSelect"),
         dashboardModeButtons: document.getElementById("dashboardModeButtons"),
         chatStream: document.getElementById("chatStream"),
         slotList: document.getElementById("slotList"),
@@ -2063,10 +2196,18 @@
         if (payload.to_date) {
           state.googleToDate = payload.to_date;
         }
+        const uiModes = (payload.metadata && payload.metadata.ui_modes) || {};
+        if (uiModes.dashboard_mode) {
+          state.dashboardMode = uiModes.dashboard_mode;
+        }
+        if (uiModes.guided_mode) {
+          state.guidedMode = uiModes.guided_mode;
+        }
       }
 
       function persistScenarioContext(patch = {}) {
         const current = currentScenarioContext();
+        const currentUiModes = (current.metadata && current.metadata.ui_modes) || {};
         const payload = {
           scenario_id: patch.scenario_id || state.scenarioId || current.scenario_id,
           mode: patch.mode || state.scenarioExecutionMode || current.mode,
@@ -2075,6 +2216,8 @@
           appointment_type: patch.appointment_type || state.selectedAppointmentType || current.appointment_type,
           from_date: patch.from_date || state.googleFromDate || current.from_date,
           to_date: patch.to_date || state.googleToDate || current.to_date,
+          dashboard_mode: patch.dashboard_mode || currentUiModes.dashboard_mode || state.dashboardMode,
+          guided_mode: patch.guided_mode || currentUiModes.guided_mode || state.guidedMode,
           current_step: patch.current_step || current.current_step || "operator_panel_ready",
           status: patch.status || current.status || "idle",
         };
@@ -2212,10 +2355,10 @@
         }
         if (step.communication_message) {
           if ((step.communication_message.actions || []).length || (step.communication_message.slot_options || []).length) {
-            return {
-              ...step.communication_message,
-              address_id: context.address_id,
-              appointment_id: context.appointment_id,
+        return {
+          ...step.communication_message,
+          address_id: context.address_id,
+          appointment_id: context.appointment_id,
               correlation_ref: context.correlation_ref,
               customer_name: address?.display_name || step.communication_message.customer_name,
               phone_number: address?.phone || step.communication_message.phone_number,
@@ -2259,6 +2402,93 @@
         };
       }
 
+      function messageActionButtons(message) {
+        if (Array.isArray(message.actions) && message.actions.length) {
+          return message.actions;
+        }
+        const providerPayload = message.provider_payload || {};
+        const richSuggestions = ((providerPayload.richMessage || {}).suggestions) || [];
+        if (!Array.isArray(richSuggestions) || !richSuggestions.length) {
+          return [];
+        }
+        return richSuggestions.map((item, index) => {
+          const reply = item.reply || {};
+          return {
+            action_id: reply.postbackData || `suggestion-${index}`,
+            value: reply.postbackData || reply.text || `suggestion-${index}`,
+            label: reply.text || reply.postbackData || `Suggestion ${index + 1}`,
+            selected: Boolean(item.selected || item.state === "selected"),
+            state: item.state,
+          };
+        });
+      }
+
+      function buildDigitalTwinEntries() {
+        const payload = state.messageMonitor || {};
+        const currentMode = String((currentScenarioContext().mode || state.scenarioExecutionMode || "simulation")).toLowerCase();
+        if (currentMode !== "real") {
+          return [];
+        }
+        const parseMessageTimestamp = (message) => {
+          const candidates = [
+            message.created_at,
+            message.received_at,
+            message.sent_at,
+            message.occurred_at,
+            message.metadata?.provider_timestamp,
+            message.provider_payload?.received_at,
+            message.provider_payload?.created_at,
+          ];
+          for (const value of candidates) {
+            const parsed = new Date(value || "").getTime();
+            if (!Number.isNaN(parsed) && parsed > 0) {
+              return parsed;
+            }
+          }
+          return 0;
+        };
+        const messages = [...(payload.messages || [])]
+          .filter((message) => String(message.channel || "").toUpperCase() === "RCS")
+          .sort((left, right) => {
+            const timestampDiff = parseMessageTimestamp(right) - parseMessageTimestamp(left);
+            if (timestampDiff !== 0) {
+              return timestampDiff;
+            }
+            return String(right.message_id || "").localeCompare(String(left.message_id || ""));
+          });
+        return messages.map((message) => ({
+          id: message.message_id,
+          role: message.direction === "inbound" ? "user" : "platform",
+          title: message.direction === "inbound" ? "Customer Device" : "Appointment Agent",
+          meta: `${message.direction === "inbound" ? t("inbound") : t("outbound")} | ${message.channel} | ${message.status}`,
+          text: message.body || message.preview_text || "",
+          actions: messageActionButtons(message),
+        }));
+      }
+
+      function renderChatBubble(entry) {
+        const bubble = document.createElement("div");
+        bubble.className = `bubble ${entry.role}`;
+        const meta = entry.meta ? `<span class="meta">${entry.meta}</span>` : "";
+        const title = entry.title ? `<div class="title">${entry.title}</div>` : "";
+        bubble.innerHTML = `${meta}${title}<div>${entry.text || ""}</div>`;
+        if (Array.isArray(entry.actions) && entry.actions.length) {
+          const actionRow = document.createElement("div");
+          actionRow.className = "twin-actions";
+          entry.actions.forEach((action) => {
+            const pill = document.createElement("span");
+            pill.className = "twin-pill";
+            if (action.selected || action.state === "selected") {
+              pill.classList.add("selected");
+            }
+            pill.textContent = action.label || action.value || "-";
+            actionRow.appendChild(pill);
+          });
+          bubble.appendChild(actionRow);
+        }
+        return bubble;
+      }
+
       function localizedActionLabel(actionValue, fallbackLabel) {
         const labels = {
           keep: t("keepAction"),
@@ -2278,7 +2508,9 @@
         state.selectedJourneyButtonValue = null;
         state.selectedJourneySource = null;
         state.selectedDateProposal = null;
+        state.selectedDateValue = null;
         state.selectedTimeProposal = null;
+        state.selectedTimeValue = null;
         state.selectedSlot = null;
         state.interactionStatus = null;
         state.interactionEvents = [];
@@ -2520,9 +2752,70 @@
         persistScenarioContext({ current_step: "time_choice", status: "guided_interaction" }).catch(() => null);
       }
 
-      function finalizeGuidedSlotSelection(selectedTimeLabel) {
+      function simulationStaticDateTokenToIsoDate(token) {
+        const mapping = {
+          date_05_may: "2026-05-05",
+          date_06_may: "2026-05-06",
+          date_08_may: "2026-05-08",
+          date_12_may: "2026-05-12",
+        };
+        return mapping[token] || "";
+      }
+
+      function parseSimulationSlotDate(dateValue, dateLabel) {
+        if ((dateValue || "").startsWith("date_20")) {
+          const rawDate = String(dateValue).replace(/^date_/, "");
+          const parsed = new Date(`${rawDate}T00:00:00`);
+          return Number.isNaN(parsed.getTime()) ? null : parsed;
+        }
+        const staticIso = simulationStaticDateTokenToIsoDate(dateValue);
+        if (staticIso) {
+          const parsed = new Date(`${staticIso}T00:00:00`);
+          return Number.isNaN(parsed.getTime()) ? null : parsed;
+        }
+        const fallback = new Date(`${dateLabel || ""} 2026`);
+        return Number.isNaN(fallback.getTime()) ? null : fallback;
+      }
+
+      function formatSimulationAppointmentDate(dateValue, dateLabel, language) {
+        const parsed = parseSimulationSlotDate(dateValue, dateLabel);
+        if (!parsed) {
+          return { weekday: "", dateLabel: dateLabel || "" };
+        }
+        const weekday = parsed.toLocaleDateString(language === "de" ? "de-DE" : "en-US", { weekday: "long" });
+        const dateText = parsed.toLocaleDateString(language === "de" ? "de-DE" : "en-US", { day: "2-digit", month: "short" });
+        return { weekday, dateLabel: dateText };
+      }
+
+      function appointmentTypeConfirmationText({ appointmentType, dateValue, dateLabel, timeLabel, language }) {
+        const normalizedType = appointmentType || "dentist";
+        const { weekday, dateLabel: localizedDate } = formatSimulationAppointmentDate(dateValue, dateLabel, language);
+        const safeDate = [weekday, localizedDate].filter(Boolean).join(" ").trim();
+        const safeTime = timeLabel || "";
+        const templates = {
+          de: {
+            dentist: `Wir bestaetigen Ihren Zahnarzt Termin am ${safeDate} um ${safeTime}. Vielen Dank fuer Ihre Reservierung.`,
+            doctor: `Wir bestaetigen Ihren Termin (Arzt) am ${safeDate} um ${safeTime}. Vielen Dank fuer Ihre Reservierung.`,
+            technician: `Wir bestaetigen Ihren Termin (Techniker) am ${safeDate} um ${safeTime}. Vielen Dank fuer Ihre Reservierung.`,
+            tee_time: `Wir bestaetigen Ihren Termin (T-Time) am ${safeDate} um ${safeTime}. Vielen Dank fuer Ihre Reservierung.`,
+            default: `Wir bestaetigen Ihren Termin am ${safeDate} um ${safeTime}. Vielen Dank fuer Ihre Reservierung.`,
+          },
+          en: {
+            dentist: `We confirm your dentist appointment on ${safeDate} at ${safeTime}. Thank you for your reservation.`,
+            doctor: `We confirm your doctor appointment on ${safeDate} at ${safeTime}. Thank you for your reservation.`,
+            technician: `We confirm your technician appointment on ${safeDate} at ${safeTime}. Thank you for your reservation.`,
+            tee_time: `We confirm your tee time on ${safeDate} at ${safeTime}. Thank you for your reservation.`,
+            default: `We confirm your appointment on ${safeDate} at ${safeTime}. Thank you for your reservation.`,
+          },
+        };
+        const languageKey = language === "de" ? "de" : "en";
+        return templates[languageKey][normalizedType] || templates[languageKey].default;
+      }
+
+      function finalizeGuidedSlotSelection(selectedTimeLabel, selectedTimeValue) {
         const selectedSlotLabel = [state.selectedDateProposal, selectedTimeLabel].filter(Boolean).join(", ");
         state.selectedTimeProposal = selectedTimeLabel;
+        state.selectedTimeValue = selectedTimeValue || null;
         state.selectedSlot = selectedSlotLabel;
         const confirmationText = `${selectedSlotLabel} ready. Confirm, reschedule, or cancel the appointment flow.`;
         const actions = ((state.payload && state.payload.interactive_demo_flow && state.payload.interactive_demo_flow.booking_confirmation_actions) || []).map((item) => ({ ...item }));
@@ -2636,22 +2929,32 @@
           }
           if ((action.selection_kind || "").toLowerCase() === "date" || actionValue.startsWith("date_")) {
             state.selectedDateProposal = actionLabel;
+            state.selectedDateValue = action.value || actionValue;
             addRuntimeMessage("user", actionLabel);
             presentTimeChoiceStep(actionLabel);
             render();
             return;
           }
           if ((action.selection_kind || "").toLowerCase() === "time" || actionValue.startsWith("time_")) {
-            finalizeGuidedSlotSelection(actionLabel);
+            finalizeGuidedSlotSelection(actionLabel, action.value || actionValue);
             render();
             return;
           }
           if ((actionValue === "confirm" || actionValue === "keep") && !state.currentBooking && !state.pendingSlotPayload) {
+            const confirmationMessage = state.selectedSlot
+              ? appointmentTypeConfirmationText({
+                appointmentType: state.selectedAppointmentType,
+                dateValue: state.selectedDateValue,
+                dateLabel: state.selectedDateProposal,
+                timeLabel: state.selectedTimeProposal,
+                language: state.language,
+              })
+              : t("keepSelected");
             addRuntimeMessage("user", localizedActionLabel(actionValue, action.label));
-            addRuntimeMessage("platform", state.selectedSlot ? `Selected slot confirmed: ${state.selectedSlot}` : t("keepSelected"));
+            addRuntimeMessage("platform", confirmationMessage);
             state.interactionStatus = {
               kind: "success",
-              message: state.selectedSlot ? `Selected slot confirmed: ${state.selectedSlot}` : t("keepSelected"),
+              message: confirmationMessage,
               resultingPath: state.selectedSlot ? "appointment.slot_selected.confirmed" : "appointment.confirm_requested",
             };
             persistScenarioContext({ current_step: state.selectedSlot ? "slot_confirmed" : "confirmation_complete", status: "guided_interaction" }).catch(() => null);
@@ -3402,6 +3705,7 @@
         refs.reminderBridgeEmbedSub.textContent = state.language === "de"
           ? "Hier sieht man das vollstaendige v1.3.6 Reminder-Cockpit in der kombinierten Shell."
           : "This area shows the full v1.3.6 reminder cockpit inside the combined shell.";
+        refs.scenarioAppointmentTypeLabel.textContent = t("appointmentType");
         refs.addressPageTitle.textContent = t("addressPageTitle");
         refs.addressPageSub.textContent = t("addressPageSub");
         refs.addressSearchLabel.textContent = t("addressSearchLabel");
@@ -3514,12 +3818,16 @@
           { id: "simulation", label: t("simulation") },
           { id: "real", label: t("real") },
         ].forEach((mode) => {
-          const button = document.createElement("button");
-          button.textContent = mode.label;
-          if (mode.id === state.scenarioExecutionMode) {
-            button.classList.add("active");
-          }
-          button.addEventListener("click", () => {
+          const wrapper = document.createElement("div");
+          wrapper.className = "radio-chip";
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = "scenarioExecutionMode";
+          input.id = `scenario-mode-${mode.id}`;
+          input.value = mode.id;
+          input.checked = mode.id === state.scenarioExecutionMode;
+          input.addEventListener("change", () => {
+            if (!input.checked) return;
             state.scenarioExecutionMode = mode.id;
             persistScenarioContext({ mode: mode.id, status: "configured" })
               .then(() => {
@@ -3531,12 +3839,29 @@
                 render();
               });
           });
-          refs.scenarioModeButtons.appendChild(button);
+          const label = document.createElement("label");
+          label.setAttribute("for", input.id);
+          label.innerHTML = `<span class="radio-dot" aria-hidden="true"></span><span>${mode.label}</span>`;
+          wrapper.appendChild(input);
+          wrapper.appendChild(label);
+          refs.scenarioModeButtons.appendChild(wrapper);
         });
       }
 
       function renderScenarioAddressSelect() {
         renderAddressOptions(refs.scenarioAddressSelect, state.selectedAddressId);
+      }
+
+      function renderScenarioAppointmentTypeSelect() {
+        refs.scenarioAppointmentTypeSelect.innerHTML = "";
+        const appointmentTypes = (state.payload && ((state.payload.operator_panel && state.payload.operator_panel.appointment_type_options) || state.payload.operator_appointment_types || ((state.payload.google_demo_control || {}).appointment_types) || [])) || [];
+        appointmentTypes.forEach((appointmentType) => {
+          const option = document.createElement("option");
+          option.value = appointmentType.id;
+          option.textContent = appointmentType.label;
+          option.selected = appointmentType.id === state.selectedAppointmentType;
+          refs.scenarioAppointmentTypeSelect.appendChild(option);
+        });
       }
 
       function filterMessages(messages) {
@@ -3702,35 +4027,53 @@
       function renderDashboardModes() {
         refs.dashboardModeButtons.innerHTML = "";
         (state.payload.dashboard_modes || []).forEach((mode) => {
-          const button = document.createElement("button");
-          button.textContent = mode.label;
-          if (mode.id === state.dashboardMode) {
-            button.classList.add("active");
-          }
-          button.addEventListener("click", () => {
+          const wrapper = document.createElement("div");
+          wrapper.className = "radio-chip";
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = "dashboardMode";
+          input.id = `dashboard-mode-${mode.id}`;
+          input.value = mode.id;
+          input.checked = mode.id === state.dashboardMode;
+          input.addEventListener("change", () => {
+            if (!input.checked) return;
             state.dashboardMode = mode.id;
-            render();
+            persistScenarioContext({ dashboard_mode: mode.id, status: "configured" }).then(() => render()).catch(() => render());
           });
-          refs.dashboardModeButtons.appendChild(button);
+          const label = document.createElement("label");
+          label.setAttribute("for", input.id);
+          label.innerHTML = `<span class="radio-dot" aria-hidden="true"></span><span>${mode.label}</span>`;
+          wrapper.appendChild(input);
+          wrapper.appendChild(label);
+          refs.dashboardModeButtons.appendChild(wrapper);
         });
       }
 
       function renderGuidedModes() {
         refs.guidedModeButtons.innerHTML = "";
         ((state.payload.guided_demo && state.payload.guided_demo.modes) || []).forEach((mode) => {
-          const button = document.createElement("button");
-          button.textContent = mode.label;
-          if (mode.id === state.guidedMode) {
-            button.classList.add("active");
-          }
-          button.addEventListener("click", () => {
+          const wrapper = document.createElement("div");
+          wrapper.className = "radio-chip";
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = "guidedMode";
+          input.id = `guided-mode-${mode.id}`;
+          input.value = mode.id;
+          input.checked = mode.id === state.guidedMode;
+          input.addEventListener("change", () => {
+            if (!input.checked) return;
             state.guidedMode = mode.id;
             if (mode.id !== "guided") {
               stopAutoDemo();
             }
-            render();
+            persistScenarioContext({ guided_mode: mode.id, status: "configured" }).then(() => render()).catch(() => render());
           });
-          refs.guidedModeButtons.appendChild(button);
+          const label = document.createElement("label");
+          label.setAttribute("for", input.id);
+          label.innerHTML = `<span class="radio-dot" aria-hidden="true"></span><span>${mode.label}</span>`;
+          wrapper.appendChild(input);
+          wrapper.appendChild(label);
+          refs.guidedModeButtons.appendChild(wrapper);
         });
       }
 
@@ -3759,7 +4102,9 @@
         ensureHoldStateCurrent();
         const scenario = currentScenario();
         const step = currentStep();
-        const conversation = buildTranscriptEntries();
+        const digitalTwinEntries = buildDigitalTwinEntries();
+        const showDigitalTwin = state.dashboardMode !== "monitoring" && digitalTwinEntries.length > 0;
+        const conversation = showDigitalTwin ? digitalTwinEntries : buildTranscriptEntries();
         const message = currentStructuredMessage();
         const sharedContext = currentScenarioContext();
         const selectedAddressRecord = selectedAddressById(sharedContext.address_id || state.selectedAddressId);
@@ -3774,10 +4119,7 @@
         const guidedStepList = guidedSteps();
         refs.chatStream.innerHTML = "";
         conversation.forEach((entry) => {
-          const bubble = document.createElement("div");
-          bubble.className = `bubble ${entry.role}`;
-          bubble.textContent = entry.text;
-          refs.chatStream.appendChild(bubble);
+          refs.chatStream.appendChild(renderChatBubble(entry));
         });
         if (!conversation.length) {
           const empty = document.createElement("div");
@@ -3785,6 +4127,11 @@
           empty.textContent = scenario.simple_explanation || "No demo conversation available yet.";
           refs.chatStream.appendChild(empty);
         }
+        if (showDigitalTwin) {
+          refs.chatStream.scrollTop = 0;
+        }
+        refs.chatStream.hidden = state.dashboardMode === "monitoring";
+        refs.slotList.hidden = state.dashboardMode === "monitoring";
         refs.slotList.innerHTML = "";
         if ((message.actions || []).length) {
           const actionGroup = document.createElement("div");
@@ -3891,6 +4238,7 @@
           : `<div class="small">${t("monitoringEmpty")}</div>`;
         refs.guidedFocusChip.textContent = `${t("guidedUiFocusLabel")}: ${(guidedStep && guidedStep.ui_focus) || "chatStream"}`;
         refs.dashboardSummary.innerHTML = "";
+        const latestGoogleWriteback = ((((state.demoScenarioContext || {}).metadata || {}).real_callback || {}).google_booking_result) || null;
         [
           [t("scenarioSummary"), scenario.title],
           [t("traceId"), step.trace_id || "-"],
@@ -3906,12 +4254,22 @@
           ["Hold Status", state.holdStatus || "-"],
           ["Hold Minutes", String(state.slotHoldMinutes)],
           [t("resultingPathLabel"), state.interactionStatus?.resultingPath || "-"],
+          ["Google Writeback", latestGoogleWriteback?.status || "-"],
+          ["Target Calendar", latestGoogleWriteback?.target_calendar_summary || "-"],
+          ["Calendar ID", latestGoogleWriteback?.target_calendar_id || "-"],
+          ["Provider Ref", latestGoogleWriteback?.provider_reference || "-"],
         ].forEach(([label, value]) => {
           const metric = document.createElement("div");
           metric.className = "metric";
           metric.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
           refs.dashboardSummary.appendChild(metric);
         });
+        if (latestGoogleWriteback && latestGoogleWriteback.html_link) {
+          const metric = document.createElement("div");
+          metric.className = "metric";
+          metric.innerHTML = `<span class="label">Google Event</span><strong><a href="${latestGoogleWriteback.html_link}" target="_blank" rel="noreferrer">Open Calendar Event</a></strong>`;
+          refs.dashboardSummary.appendChild(metric);
+        }
       }
 
       function renderMonitoring() {
@@ -4895,6 +5253,7 @@
         renderScenarioSelect();
         renderScenarioExecutionModes();
         renderScenarioAddressSelect();
+        renderScenarioAppointmentTypeSelect();
         renderDashboardModes();
         renderGuidedModes();
         renderSettingsSubnav();
@@ -5319,6 +5678,15 @@
             refreshAddressLinks();
             render();
           })
+          .catch((error) => {
+            state.scenarioRunBanner = { kind: "error", message: error.message };
+            render();
+          });
+      });
+      refs.scenarioAppointmentTypeSelect.addEventListener("change", (event) => {
+        state.selectedAppointmentType = event.target.value || "dentist";
+        persistScenarioContext({ appointment_type: state.selectedAppointmentType, status: "configured", current_step: "appointment_type_selected" })
+          .then(() => render())
           .catch((error) => {
             state.scenarioRunBanner = { kind: "error", message: error.message };
             render();

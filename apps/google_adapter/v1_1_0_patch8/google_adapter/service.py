@@ -52,6 +52,90 @@ APPOINTMENT_TYPE_BLUEPRINTS = {
             "monitoring_label": "dentist.cleaning.search.requested",
         },
     ],
+    "doctor": [
+        {
+            "title": "Doctor Appointment - Consultation",
+            "type": "Doctor Appointment",
+            "location": "Medical Practice",
+            "purpose": "General doctor consultation",
+            "description": "General practitioner consultation appointment.",
+            "category": "Doctor Appointment",
+            "scenario_label": "doctor",
+            "customer_prompt": "I want to book a doctor appointment.",
+            "reminder_text": "Reminder: Your doctor appointment is scheduled soon.",
+            "follow_up_action": "Would you like to keep, reschedule, or cancel?",
+            "monitoring_label": "doctor.consultation.search.requested",
+        },
+        {
+            "title": "Doctor Appointment - Follow-up",
+            "type": "Doctor Appointment",
+            "location": "Medical Practice",
+            "purpose": "Medical follow-up visit",
+            "description": "Follow-up visit with a doctor.",
+            "category": "Doctor Appointment",
+            "scenario_label": "doctor",
+            "customer_prompt": "I need a follow-up doctor appointment.",
+            "reminder_text": "Reminder: Your doctor follow-up appointment is scheduled soon.",
+            "follow_up_action": "Would you like to keep, reschedule, or cancel?",
+            "monitoring_label": "doctor.followup.search.requested",
+        },
+    ],
+    "technician": [
+        {
+            "title": "Technician Visit - Inspection",
+            "type": "Technician Visit",
+            "location": "Customer Site",
+            "purpose": "Technician inspection visit",
+            "description": "On-site technician inspection appointment.",
+            "category": "Technician Visit",
+            "scenario_label": "technician",
+            "customer_prompt": "I need a technician visit.",
+            "reminder_text": "Reminder: Your technician visit is scheduled soon.",
+            "follow_up_action": "Would you like to keep, reschedule, cancel, or request a call?",
+            "monitoring_label": "technician.inspection.search.requested",
+        },
+        {
+            "title": "Technician Visit - Service Window",
+            "type": "Technician Visit",
+            "location": "Customer Site",
+            "purpose": "Technician service window",
+            "description": "Technician service appointment window.",
+            "category": "Technician Visit",
+            "scenario_label": "technician",
+            "customer_prompt": "Please schedule a technician service window.",
+            "reminder_text": "Reminder: Your technician service window is scheduled soon.",
+            "follow_up_action": "Would you like to keep, reschedule, cancel, or request a call?",
+            "monitoring_label": "technician.service.search.requested",
+        },
+    ],
+    "tee_time": [
+        {
+            "title": "Tee Time - Morning Round",
+            "type": "Tee Time",
+            "location": "Golf Course",
+            "purpose": "Morning tee time booking",
+            "description": "Morning golf tee time reservation.",
+            "category": "Tee Time",
+            "scenario_label": "tee_time",
+            "customer_prompt": "I want to book a tee time.",
+            "reminder_text": "Reminder: Your tee time is scheduled soon.",
+            "follow_up_action": "Would you like to keep, reschedule, or cancel?",
+            "monitoring_label": "tee_time.morning.search.requested",
+        },
+        {
+            "title": "Tee Time - Afternoon Round",
+            "type": "Tee Time",
+            "location": "Golf Course",
+            "purpose": "Afternoon tee time booking",
+            "description": "Afternoon golf tee time reservation.",
+            "category": "Tee Time",
+            "scenario_label": "tee_time",
+            "customer_prompt": "I need an afternoon tee time.",
+            "reminder_text": "Reminder: Your afternoon tee time is scheduled soon.",
+            "follow_up_action": "Would you like to keep, reschedule, or cancel?",
+            "monitoring_label": "tee_time.afternoon.search.requested",
+        },
+    ],
     "wallbox": [
         {
             "title": "Wallbox Technical Inspection",
@@ -143,7 +227,7 @@ class DemoCalendarPatch6Request(BaseModel):
     mode: Literal["simulation", "test"] = "simulation"
     action: Literal["prepare", "generate", "delete", "reset"] = "generate"
     count: int = Field(default=6, ge=1, le=30)
-    appointment_type: Literal["dentist", "wallbox", "gas_meter", "water_meter"] = "dentist"
+    appointment_type: Literal["dentist", "doctor", "technician", "tee_time", "wallbox", "gas_meter", "water_meter"] = "dentist"
     from_date: date
     to_date: date
     include_customer_name: bool = True
@@ -475,7 +559,7 @@ class GoogleAvailabilitySlotsRequest(BaseModel):
     to_date: date
     max_slots: int = Field(default=5, ge=1, le=20)
     duration_minutes: int = Field(default=45, ge=15, le=240)
-    appointment_type: Literal["dentist", "wallbox", "gas_meter", "water_meter"] = "dentist"
+    appointment_type: Literal["dentist", "doctor", "technician", "tee_time", "wallbox", "gas_meter", "water_meter"] = "dentist"
 
     @model_validator(mode="after")
     def validate_range(self) -> "GoogleAvailabilitySlotsRequest":
@@ -505,7 +589,7 @@ class GoogleBookingCreateRequest(BaseModel):
     start_time: datetime
     end_time: datetime
     label: str
-    appointment_type: Literal["dentist", "wallbox", "gas_meter", "water_meter"] = "dentist"
+    appointment_type: Literal["dentist", "doctor", "technician", "tee_time", "wallbox", "gas_meter", "water_meter"] = "dentist"
     customer_name: str = "Demo Customer"
     customer_email: Optional[str] = None
     customer_mobile: Optional[str] = None
@@ -527,7 +611,7 @@ class GoogleBookingRescheduleRequest(BaseModel):
     start_time: datetime
     end_time: datetime
     label: str
-    appointment_type: Literal["dentist", "wallbox", "gas_meter", "water_meter"] = "dentist"
+    appointment_type: Literal["dentist", "doctor", "technician", "tee_time", "wallbox", "gas_meter", "water_meter"] = "dentist"
 
 
 class GoogleAvailabilityResult(BaseModel):

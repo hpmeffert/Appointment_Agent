@@ -42,7 +42,7 @@ class DemoScenarioContextUpdate(BaseModel):
 
 
 class DemoScenarioContextPayload(BaseModel):
-    version: str = "v1.3.9-patch9"
+    version: str = "v1.3.10"
     context_key: str = CONTEXT_KEY
     scenario_id: str
     mode: str
@@ -179,7 +179,7 @@ class DemoScenarioContextService:
         )
         record = self.repo.save(
             context_key=CONTEXT_KEY,
-            version="v1.3.9-patch9",
+            version="v1.3.10",
             scenario_id=update.scenario_id or (current.scenario_id if current else "confirm-appointment"),
             mode=mode,
             address_id=(address_payload or {}).get("address_id"),

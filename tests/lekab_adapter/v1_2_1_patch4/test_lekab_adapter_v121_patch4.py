@@ -464,3 +464,75 @@ def test_lekab_v121_patch4_monitor_report_cards_show_communication_history_label
     assert "Delivery And Replies" in titles
     assert "Routing And Context" in titles
     assert "submitted" in payload["filters"]["statuses"]
+
+
+def test_lekab_v121_public_sms_route_uses_documented_sms_fields(monkeypatch) -> None:
+    client = TestClient(app)
+    captured: dict[str, object] = {}
+
+    class DummyResponse:
+        status_code = 202
+        text = '{"status":"accepted"}'
+
+        def json(self):
+            return {"status": "accepted"}
+
+    class DummyClient:
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def post(self, url, headers=None, json=None):
+            captured["url"] = url
+            captured["headers"] = headers or {}
+            captured["json"] = json or {}
+            return DummyResponse()
+
+    monkeypatch.setattr("lekab_adapter.v1_2_1_patch4.lekab_adapter.service.httpx.Client", DummyClient)
+
+    save_response = client.post(
+        "/api/lekab/v1.2.1-patch4/settings/rcs",
+        json={
+            "values": {
+                "workspace_id": "lekab-sms-check",
+                "environment_name": "SMS Check",
+                "rime_base_url": "https://secure.lekab.com/rime/send",
+                "sms_base_url": "https://secure.lekab.com/rime/send",
+                "callback_url": "https://demo.example.test/api/lekab/inbound",
+                "test_recipient_address": "491705707716",
+                "rcs_enabled": True,
+                "sms_enabled": True,
+                "mock_connection_mode": False,
+                "rime_api_key": "real-rime-key",
+                "sms_sender_name": "APPT",
+            }
+        },
+    )
+    assert save_response.status_code == 200
+
+    response = client.post(
+        "/api/lekab/v1.2.1/messages/send/sms",
+        json={
+            "tenant_id": "default",
+            "correlation_id": "trace-sms-public-route",
+            "phone_number": "+491705707716",
+            "body": "SMS schema verification",
+            "message_type": "text",
+            "actions": [],
+            "metadata": {"source": "pytest"},
+        },
+    )
+    assert response.status_code == 200
+    assert captured["url"] == "https://secure.lekab.com/rime/send"
+    assert captured["headers"]["X-API-Key"] == "real-rime-key"
+    assert captured["json"]["channels"] == "SMS"
+    assert captured["json"]["address"] == "+491705707716"
+    assert captured["json"]["smsText"] == "SMS schema verification"
+    assert captured["json"]["smsSender"] == "APPT"
+    assert "sender" not in captured["json"]
+    assert "richMessage" not in captured["json"]

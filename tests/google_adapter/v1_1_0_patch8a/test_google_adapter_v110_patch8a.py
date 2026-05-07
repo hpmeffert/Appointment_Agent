@@ -173,3 +173,25 @@ def test_google_v110_patch8a_expired_hold_blocks_booking() -> None:
     assert booking["success"] is False
     assert booking["status"] == "hold_expired"
     assert booking["technical_reason"] == "slot.hold.expired"
+
+
+def test_google_v110_patch8a_rejects_selected_slot_inside_lead_time_window() -> None:
+    client = TestClient(app)
+    start_time = datetime.now(timezone.utc) + timedelta(minutes=5)
+    end_time = start_time + timedelta(minutes=30)
+
+    response = client.post(
+        "/api/google/v1.1.0-patch8a/availability/check",
+        json={
+            "mode": "simulation",
+            "start_time": start_time.isoformat(),
+            "end_time": end_time.isoformat(),
+            "timezone": "Europe/Berlin",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["slot_available"] is False
+    assert payload["technical_reason"] == "slot_in_past"
+    assert "slot.past_rejected" in payload["monitoring_labels"]

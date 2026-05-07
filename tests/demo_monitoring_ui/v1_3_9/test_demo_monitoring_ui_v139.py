@@ -10,7 +10,7 @@ def test_demo_monitoring_v139_routes_load() -> None:
 
     combined = client.get("/ui/demo-monitoring/v1.3.9")
     assert combined.status_code == 200
-    assert "v1.3.9-patch9" in combined.text
+    assert "v1.3.10" in combined.text
     assert 'const ADDRESS_API_VERSION = "v1.3.9"' in combined.text
     assert 'const DEMO_API_VERSION = "v1.3.9"' in combined.text
     assert 'const GOOGLE_API_VERSION = "v1.3.6"' in combined.text
@@ -21,6 +21,38 @@ def test_demo_monitoring_v139_routes_load() -> None:
     assert "runScenarioSimulationBtn" in combined.text
     assert "scenarioArtifactsDetail" in combined.text
     assert "scenarioModeButtons" in combined.text
+    assert "scenarioAppointmentTypeSelect" in combined.text
+    assert "function appointmentTypeConfirmationText({" in combined.text
+    assert "Wir bestaetigen Ihren Zahnarzt Termin am" in combined.text
+    assert "Wir bestaetigen Ihren Termin (Arzt) am" in combined.text
+    assert "Wir bestaetigen Ihren Termin (Techniker) am" in combined.text
+    assert "Wir bestaetigen Ihren Termin (T-Time) am" in combined.text
+    assert 'input.type = "radio";' in combined.text
+    assert 'input.name = "scenarioExecutionMode";' in combined.text
+    assert 'input.name = "dashboardMode";' in combined.text
+    assert 'input.name = "guidedMode";' in combined.text
+    assert ".radio-chip label {" in combined.text
+    assert ".radio-chip label," in combined.text
+    assert ".radio-chip label span {" in combined.text
+    assert "color: #fff !important;" in combined.text
+    assert "opacity: 1;" in combined.text
+    assert ".radio-chip label span:last-child {" in combined.text
+    assert "padding-left: 4px;" in combined.text
+    assert "text-shadow: 0 1px 0 rgba(15, 32, 51, 0.24);" in combined.text
+    assert "max-height: 720px;" in combined.text
+    assert "scrollbar-width: thin;" in combined.text
+    assert ".chat::-webkit-scrollbar" in combined.text
+    assert '.radio-chip input[type="radio"]:checked + label {' in combined.text
+    assert "color: #fff;" in combined.text
+    assert "font-weight: 700;" in combined.text
+    assert "const parseMessageTimestamp = (message) => {" in combined.text
+    assert "const timestampDiff = parseMessageTimestamp(right) - parseMessageTimestamp(left);" in combined.text
+    assert 'return String(right.message_id || "").localeCompare(String(left.message_id || ""));' in combined.text
+    assert "refs.chatStream.scrollTop = 0;" in combined.text
+    assert '["Target Calendar", latestGoogleWriteback?.target_calendar_summary || "-"],' in combined.text
+    assert '["Calendar ID", latestGoogleWriteback?.target_calendar_id || "-"],' in combined.text
+    assert '["Provider Ref", latestGoogleWriteback?.provider_reference || "-"],' in combined.text
+    assert 'Open Calendar Event' in combined.text
     assert "scenarioAddressSelect" in combined.text
     assert "hydrationDiagnostic" in combined.text
     assert "browserDiagnosticsBody" in combined.text
@@ -32,62 +64,80 @@ def test_demo_monitoring_v139_routes_load() -> None:
 
     standalone = client.get("/ui/address-database/v1.3.9")
     assert standalone.status_code == 200
-    assert "Address Database v1.3.9-patch9" in standalone.text
+    assert "Address Database v1.3.10" in standalone.text
     assert 'const INITIAL_PAGE = "addresses"' in standalone.text
 
     combined_patch = client.get("/ui/demo-monitoring/v1.3.9-patch1")
     assert combined_patch.status_code == 200
-    assert "v1.3.9-patch9" in combined_patch.text
+    assert "v1.3.10" in combined_patch.text
 
     standalone_patch = client.get("/ui/address-database/v1.3.9-patch1")
     assert standalone_patch.status_code == 200
-    assert "Address Database v1.3.9-patch9" in standalone_patch.text
+    assert "Address Database v1.3.10" in standalone_patch.text
 
     combined_patch2 = client.get("/ui/demo-monitoring/v1.3.9-patch2")
     assert combined_patch2.status_code == 200
-    assert "v1.3.9-patch9" in combined_patch2.text
+    assert "v1.3.10" in combined_patch2.text
 
     combined_patch3 = client.get("/ui/demo-monitoring/v1.3.9-patch3")
     assert combined_patch3.status_code == 200
-    assert "v1.3.9-patch9" in combined_patch3.text
+    assert "v1.3.10" in combined_patch3.text
 
     combined_patch4 = client.get("/ui/demo-monitoring/v1.3.9-patch4")
     assert combined_patch4.status_code == 200
-    assert "v1.3.9-patch9" in combined_patch4.text
+    assert "v1.3.10" in combined_patch4.text
 
     combined_patch5 = client.get("/ui/demo-monitoring/v1.3.9-patch5")
     assert combined_patch5.status_code == 200
-    assert "v1.3.9-patch9" in combined_patch5.text
+    assert "v1.3.10" in combined_patch5.text
 
     combined_patch6 = client.get("/ui/demo-monitoring/v1.3.9-patch6")
     assert combined_patch6.status_code == 200
-    assert "v1.3.9-patch9" in combined_patch6.text
+    assert "v1.3.10" in combined_patch6.text
 
     combined_patch7 = client.get("/ui/demo-monitoring/v1.3.9-patch7")
     assert combined_patch7.status_code == 200
-    assert "v1.3.9-patch9" in combined_patch7.text
+    assert "v1.3.10" in combined_patch7.text
 
     combined_patch8 = client.get("/ui/demo-monitoring/v1.3.9-patch8")
     assert combined_patch8.status_code == 200
-    assert "v1.3.9-patch9" in combined_patch8.text
+    assert "v1.3.10" in combined_patch8.text
 
 
 def test_demo_monitoring_v139_payload_exposes_addresses_page() -> None:
+    session = SessionLocal()
+    try:
+        DemoScenarioContextService(session).save_context(
+            DemoScenarioContextUpdate(
+                scenario_id="confirm-appointment",
+                mode="simulation",
+                address_id="addr-demo-001",
+                status="idle",
+                metadata={"ui_modes": {"dashboard_mode": "combined", "guided_mode": "guided"}},
+            )
+        )
+    finally:
+        session.close()
+
     client = TestClient(app)
 
     payload = client.get("/api/demo-monitoring/v1.3.9/payload?lang=en").json()
-    assert payload["version"] == "v1.3.9-patch9"
+    assert payload["version"] == "v1.3.10"
     assert payload["ui_contract"]["demo_api_version"] == "v1.3.9"
-    assert payload["ui_contract"]["patch_alias_version"] == "v1.3.9-patch9"
+    assert payload["ui_contract"]["patch_alias_version"] == "v1.3.10"
     assert payload["ui_contract"]["legacy_patch_aliases"] == ["v1.3.9-patch1", "v1.3.9-patch2", "v1.3.9-patch3", "v1.3.9-patch4", "v1.3.9-patch5", "v1.3.9-patch6", "v1.3.9-patch7", "v1.3.9-patch8"]
-    assert payload["ui_version"] == "v1.3.9-patch9"
+    assert payload["ui_version"] == "v1.3.10"
     assert payload["api_version"] == "v1.3.9"
     assert payload["generated_at_utc"].endswith("Z")
     assert payload["menus"][0]["id"] == "dashboard"
     assert payload["operator_panel"]["scenario_options"]
     assert payload["operator_panel"]["address_options"]
+    assert [item["id"] for item in payload["operator_panel"]["appointment_type_options"]] == ["dentist", "doctor", "technician", "tee_time"]
     assert payload["current_story"]["id"]
     assert payload["current_mode"]["scenario_mode"]
+    assert payload["current_mode"]["dashboard_mode"] == "combined"
+    assert payload["current_mode"]["guided_mode"] == "guided"
+    assert payload["current_mode"]["appointment_type"] == "dentist"
     assert payload["google_workspace"]["calendar_ref"]
     assert payload["messages_customer_journey"]["correlation_ref"]
     assert payload["messages_customer_journey"]["suggestion_buttons"]
@@ -110,7 +160,7 @@ def test_demo_monitoring_v139_payload_exposes_addresses_page() -> None:
 
     payload_patch = client.get("/api/demo-monitoring/v1.3.9-patch1/payload?lang=en")
     assert payload_patch.status_code == 200
-    assert payload_patch.json()["version"] == "v1.3.9-patch9"
+    assert payload_patch.json()["version"] == "v1.3.10"
     assert payload_patch.json()["ui_contract"] == payload["ui_contract"]
 
     payload_patch2 = client.get("/api/demo-monitoring/v1.3.9-patch2/payload?lang=en")
@@ -175,13 +225,95 @@ def test_demo_monitoring_v139_payload_marks_real_callback_selection() -> None:
     assert any(item.get("selected") for item in payload["messages_customer_journey"]["real_channel_payload"]["suggestions"])
 
 
+def test_demo_monitoring_v139_context_persists_radio_modes_and_exposes_them_in_payload() -> None:
+    client = TestClient(app)
+
+    updated = client.put(
+        "/api/demo-monitoring/v1.3.9/scenario-context",
+        json={
+            "scenario_id": "confirm-appointment",
+            "mode": "real",
+            "address_id": "addr-demo-001",
+            "appointment_type": "doctor",
+            "dashboard_mode": "demo",
+            "guided_mode": "free",
+            "status": "configured",
+        },
+    )
+    assert updated.status_code == 200
+    body = updated.json()
+    assert body["appointment_type"] == "doctor"
+    assert body["metadata"]["ui_modes"]["dashboard_mode"] == "demo"
+    assert body["metadata"]["ui_modes"]["guided_mode"] == "free"
+
+    payload = client.get("/api/demo-monitoring/v1.3.9/payload?lang=en").json()
+    assert payload["operator_panel"]["dashboard_mode"] == "demo"
+    assert payload["operator_panel"]["guided_mode"] == "free"
+    assert payload["operator_panel"]["selected_appointment_type"] == "doctor"
+    assert payload["current_mode"]["dashboard_mode"] == "demo"
+    assert payload["current_mode"]["guided_mode"] == "free"
+    assert payload["current_mode"]["appointment_type"] == "doctor"
+
+
+def test_demo_monitoring_v139_payload_keeps_real_digital_twin_message_contract() -> None:
+    session = SessionLocal()
+    try:
+        DemoScenarioContextService(session).save_context(
+            DemoScenarioContextUpdate(
+                scenario_id="confirm-appointment",
+                mode="real",
+                address_id="addr-demo-001",
+                appointment_id="appt-real-twin-001",
+                booking_reference="book-real-twin-001",
+                correlation_ref="corr-real-twin-001",
+                current_step="reschedule_requested",
+                status="action_requested",
+                metadata={
+                    "real_callback": {
+                        "incoming_data": "reschedule_appointment",
+                        "selected_action": "reschedule",
+                        "button_state": "selected",
+                    },
+                    "customer_journey_message": {
+                        "text": "Choose the preferred scheduling window.",
+                        "actions": [
+                            {"action_id": "reschedule", "label": "Reschedule", "value": "reschedule", "canonical_action": "appointment.reschedule_requested"},
+                            {"action_id": "cancel", "label": "Cancel", "value": "cancel", "canonical_action": "appointment.cancel_requested"},
+                        ],
+                        "suggestion_buttons": [
+                            {"action_id": "reschedule", "label": "Reschedule", "value": "reschedule", "canonical_action": "appointment.reschedule_requested"},
+                            {"action_id": "cancel", "label": "Cancel", "value": "cancel", "canonical_action": "appointment.cancel_requested"},
+                        ],
+                        "real_channel_payload": {
+                            "message_type": "suggestion_buttons",
+                            "suggestions": [
+                                {"label": "Reschedule", "value": "reschedule", "canonical_action": "appointment.reschedule_requested"},
+                                {"label": "Cancel", "value": "cancel", "canonical_action": "appointment.cancel_requested"},
+                            ],
+                        },
+                    },
+                },
+            )
+        )
+    finally:
+        session.close()
+
+    client = TestClient(app)
+    payload = client.get("/api/demo-monitoring/v1.3.9/payload?lang=en").json()
+    assert payload["messages_customer_journey"]["mode"] == "real"
+    assert payload["messages_customer_journey"]["current_message"]["text"] == "Choose the preferred scheduling window."
+    assert payload["messages_customer_journey"]["current_message"]["actions"]
+    assert payload["messages_customer_journey"]["current_message"]["real_channel_payload"]["suggestions"]
+    assert any(item.get("selected") for item in payload["messages_customer_journey"]["current_message"]["actions"])
+
+
 def test_demo_monitoring_v139_help_route_lists_address_features() -> None:
     client = TestClient(app)
 
     payload = client.get("/api/demo-monitoring/v1.3.9/help").json()
-    assert payload["version"] == "v1.3.9-patch9"
+    assert payload["version"] == "v1.3.10"
     assert payload["route_contract"]["demo_api_version"] == "v1.3.9"
-    assert payload["route_contract"]["display_version"] == "v1.3.9-patch9"
+    assert payload["route_contract"]["display_version"] == "v1.3.10"
     assert "address_database_menu_entry" in payload["integrated_features"]
     assert "cross_module_address_anchor" in payload["integrated_features"]
     assert "appointment_address_assignment_controls" in payload["integrated_features"]
@@ -192,7 +324,7 @@ def test_demo_monitoring_v139_help_route_lists_address_features() -> None:
 
     payload_patch = client.get("/api/demo-monitoring/v1.3.9-patch1/help")
     assert payload_patch.status_code == 200
-    assert payload_patch.json()["version"] == "v1.3.9-patch9"
+    assert payload_patch.json()["version"] == "v1.3.10"
     assert payload_patch.json()["route_contract"] == payload["route_contract"]
 
     payload_patch2 = client.get("/api/demo-monitoring/v1.3.9-patch2/help")
@@ -230,7 +362,7 @@ def test_demo_monitoring_v139_exposes_and_updates_unified_scenario_context() -> 
     current = client.get("/api/demo-monitoring/v1.3.9/scenario-context")
     assert current.status_code == 200
     body = current.json()
-    assert body["version"] == "v1.3.9-patch9"
+    assert body["version"] == "v1.3.10"
     assert body["address_id"]
     assert body["selected_address"]["address_id"] == body["address_id"]
 

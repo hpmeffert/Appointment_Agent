@@ -11,6 +11,7 @@ from appointment_agent_shared.models import MessageAction
 from appointment_agent_shared.config import settings
 
 from .service import LekabMessagingService
+from lekab_adapter.v1_2_1_patch4.lekab_adapter.service import LekabMessagingSettingsService
 
 router = APIRouter(prefix="/api/lekab/v1.2.1", tags=["lekab-adapter-v1.2.1"])
 
@@ -57,6 +58,46 @@ def get_service(session: Session = Depends(get_session)) -> LekabMessagingServic
     return LekabMessagingService(session, mock_mode=settings.lekab_mock_mode)
 
 
+def get_provider_send_service(session: Session = Depends(get_session)) -> LekabMessagingSettingsService:
+    return LekabMessagingSettingsService(session, mock_mode=settings.lekab_mock_mode)
+
+
+def _dispatch_via_provider_service(
+    *,
+    channel: str,
+    request: SendMessageRequest,
+    service: LekabMessagingSettingsService,
+) -> dict[str, Any]:
+    message = service.send_message(
+        channel=channel,
+        tenant_id=request.tenant_id,
+        correlation_id=request.correlation_id,
+        phone_number=request.phone_number,
+        body=request.body,
+        customer_id=request.customer_id,
+        contact_reference=request.contact_reference,
+        journey_id=request.journey_id,
+        booking_reference=request.booking_reference,
+        message_type=request.message_type,
+        actions=[action.model_dump() for action in request.actions],
+        metadata=request.metadata,
+    )
+    payload = message.model_dump(mode="json")
+    if message.status == "failed":
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "error": "lekab_provider_send_failed",
+                "channel": channel,
+                "phone_number": request.phone_number,
+                "provider_message_id": message.provider_message_id,
+                "provider_job_id": message.provider_job_id,
+                "provider_payload": message.provider_payload,
+            },
+        )
+    return payload
+
+
 @router.get("/help")
 def help_view() -> dict[str, Any]:
     return {
@@ -95,39 +136,13 @@ def resolve_contact(
 
 
 @router.post("/messages/send/rcs")
-def send_rcs(request: SendMessageRequest, service: LekabMessagingService = Depends(get_service)) -> dict[str, Any]:
-    return service.send_message(
-        channel="RCS",
-        tenant_id=request.tenant_id,
-        correlation_id=request.correlation_id,
-        phone_number=request.phone_number,
-        body=request.body,
-        customer_id=request.customer_id,
-        contact_reference=request.contact_reference,
-        journey_id=request.journey_id,
-        booking_reference=request.booking_reference,
-        message_type=request.message_type,
-        actions=[action.model_dump() for action in request.actions],
-        metadata=request.metadata,
-    ).model_dump(mode="json")
+def send_rcs(request: SendMessageRequest, service: LekabMessagingSettingsService = Depends(get_provider_send_service)) -> dict[str, Any]:
+    return _dispatch_via_provider_service(channel="RCS", request=request, service=service)
 
 
 @router.post("/messages/send/sms")
-def send_sms(request: SendMessageRequest, service: LekabMessagingService = Depends(get_service)) -> dict[str, Any]:
-    return service.send_message(
-        channel="SMS",
-        tenant_id=request.tenant_id,
-        correlation_id=request.correlation_id,
-        phone_number=request.phone_number,
-        body=request.body,
-        customer_id=request.customer_id,
-        contact_reference=request.contact_reference,
-        journey_id=request.journey_id,
-        booking_reference=request.booking_reference,
-        message_type=request.message_type,
-        actions=[action.model_dump() for action in request.actions],
-        metadata=request.metadata,
-    ).model_dump(mode="json")
+def send_sms(request: SendMessageRequest, service: LekabMessagingSettingsService = Depends(get_provider_send_service)) -> dict[str, Any]:
+    return _dispatch_via_provider_service(channel="SMS", request=request, service=service)
 
 
 @router.post("/messages/inbound")

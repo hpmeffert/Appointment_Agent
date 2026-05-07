@@ -57,6 +57,7 @@ def ensure_sqlite_schema_compatibility() -> None:
         },
         "address_records": {
             "timezone": "ALTER TABLE address_records ADD COLUMN timezone VARCHAR(80)",
+            "preferred_language": "ALTER TABLE address_records ADD COLUMN preferred_language VARCHAR(16)",
         },
     }
     with engine.begin() as connection:

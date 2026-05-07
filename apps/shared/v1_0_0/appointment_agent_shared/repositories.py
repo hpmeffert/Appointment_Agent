@@ -328,6 +328,7 @@ class AddressRepository:
         country: Optional[str] = None,
         email: Optional[str] = None,
         phone: Optional[str] = None,
+        preferred_language: Optional[str] = None,
         timezone: Optional[str] = None,
         preferred_channel: Optional[str] = None,
         notes: Optional[str] = None,
@@ -352,6 +353,7 @@ class AddressRepository:
         record.country = country
         record.email = email
         record.phone = phone
+        record.preferred_language = preferred_language
         record.timezone = timezone
         record.preferred_channel = preferred_channel
         record.notes = notes

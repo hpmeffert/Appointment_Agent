@@ -72,6 +72,7 @@ class AddressProfile(BaseModel):
     country: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+    preferred_language: Optional[str] = None
     timezone: Optional[str] = None
     preferred_channel: Optional[str] = None
     notes: Optional[str] = None
@@ -464,6 +465,7 @@ class AddressRecord(Base):
     country: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String(320), nullable=True, index=True)
     phone: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    preferred_language: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
     timezone: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
     preferred_channel: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(String(2000), nullable=True)

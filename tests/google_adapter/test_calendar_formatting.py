@@ -143,6 +143,12 @@ def test_v136_booking_create_and_reschedule_use_selected_address_metadata(monkey
 
     assert create_result.success is True
     assert reschedule_result.success is True
+    assert create_result.target_calendar_id
+    assert create_result.target_calendar_summary
+    assert create_result.html_link == "https://calendar.google.test/event"
+    assert reschedule_result.target_calendar_id
+    assert reschedule_result.target_calendar_summary
+    assert reschedule_result.html_link == "https://calendar.google.test/event"
     assert captured_events[0]["title"] == "Dentist Appointment – Anna Berger"
     assert "Address:" in captured_events[0]["description"]
     assert "Rescheduled appointment confirmed" in captured_events[0]["description"]
@@ -218,6 +224,183 @@ def test_v136_reschedule_uses_request_timezone_for_google_event_and_description(
     assert captured_events[0]["start_time"].hour == 14
     assert "Time: 14:00" in captured_events[0]["description"]
     assert "Rochusstrasse 47" in captured_events[0]["description"]
+
+
+def test_v136_reschedule_live_writeback_creates_new_event_before_deleting_old(monkeypatch) -> None:
+    operations: list[tuple[str, str]] = []
+
+    def _create_demo_event(**kwargs):
+        operations.append(("create", kwargs["metadata"]["appointment_agent_booking_reference"]))
+        return SimpleNamespace(
+            provider_reference="provider-book-order-001-new",
+            event_id="event-book-order-001-new",
+            html_link="https://calendar.google.test/event",
+        )
+
+    def _get_event(provider_reference):
+        operations.append(("get", provider_reference))
+        return {"id": provider_reference}
+
+    def _delete_event(provider_reference):
+        operations.append(("delete", provider_reference))
+        return None
+
+    with SessionLocal() as session:
+        service = GoogleAdapterServiceV136(session)
+        monkeypatch.setattr(
+            service,
+            "_require_supported_mode",
+            lambda mode: SimpleNamespace(mode="test", live_calendar_writes=True),
+        )
+        monkeypatch.setattr(
+            service,
+            "check_availability_patch8",
+            lambda request: SimpleNamespace(
+                slot_available=True,
+                google_source="live",
+                message="Selected slot is available.",
+                selected_slot={},
+                alternative_slots=[],
+                technical_reason=None,
+            ),
+        )
+        monkeypatch.setattr(service.gateway, "create_demo_event", _create_demo_event)
+        monkeypatch.setattr(service.gateway, "get_event", _get_event)
+        monkeypatch.setattr(service.gateway, "delete_event", _delete_event)
+
+        start_time = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=14)
+        end_time = start_time + timedelta(minutes=30)
+        service.create_booking_patch8(
+            GoogleBookingCreateRequest(
+                mode="test",
+                slot_id="slot-order-001",
+                start_time=start_time,
+                end_time=end_time,
+                label="Tue, 05 May, 11:30",
+                appointment_type="dentist",
+                customer_name="Anna Berger",
+                booking_reference="book-order-001",
+            )
+        )
+        operations.clear()
+
+        reschedule_result = service.reschedule_booking_patch8(
+            GoogleBookingRescheduleRequest(
+                mode="test",
+                booking_reference="book-order-001",
+                provider_reference="provider-book-order-001",
+                slot_id="slot-order-002",
+                start_time=start_time + timedelta(days=1),
+                end_time=end_time + timedelta(days=1),
+                label="Wed, 06 May, 09:00",
+                appointment_type="dentist",
+                customer_name="Anna Berger",
+            )
+        )
+
+    assert reschedule_result.success is True
+    assert operations == [
+        ("get", "provider-book-order-001"),
+        ("create", "book-order-001"),
+        ("delete", "provider-book-order-001"),
+    ]
+
+
+def test_v136_reschedule_live_writeback_keeps_old_event_when_new_create_fails(monkeypatch) -> None:
+    operations: list[tuple[str, str]] = []
+
+    def _seed_create_demo_event(**kwargs):
+        operations.append(("create", kwargs["metadata"]["appointment_agent_booking_reference"]))
+        booking_reference = kwargs["metadata"]["appointment_agent_booking_reference"]
+        return SimpleNamespace(
+            provider_reference=f"provider-{booking_reference}",
+            event_id=f"event-{booking_reference}",
+            html_link="https://calendar.google.test/event",
+        )
+
+    def _failing_create_demo_event(**kwargs):
+        operations.append(("create", kwargs["metadata"]["appointment_agent_booking_reference"]))
+        raise RuntimeError("google create failed")
+
+    def _get_event(provider_reference):
+        operations.append(("get", provider_reference))
+        return {"id": provider_reference}
+
+    def _delete_event(provider_reference):
+        operations.append(("delete", provider_reference))
+        return None
+
+    with SessionLocal() as session:
+        service = GoogleAdapterServiceV136(session)
+        monkeypatch.setattr(
+            service,
+            "_require_supported_mode",
+            lambda mode: SimpleNamespace(mode="test", live_calendar_writes=True),
+        )
+        monkeypatch.setattr(
+            service,
+            "check_availability_patch8",
+            lambda request: SimpleNamespace(
+                slot_available=True,
+                google_source="live",
+                message="Selected slot is available.",
+                selected_slot={},
+                alternative_slots=[],
+                technical_reason=None,
+            ),
+        )
+        monkeypatch.setattr(service.gateway, "create_demo_event", _seed_create_demo_event)
+        monkeypatch.setattr(service.gateway, "get_event", _get_event)
+        monkeypatch.setattr(service.gateway, "delete_event", _delete_event)
+
+        start_time = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=10)
+        end_time = start_time + timedelta(minutes=30)
+        service.create_booking_patch8(
+            GoogleBookingCreateRequest(
+                mode="test",
+                slot_id="slot-order-003",
+                start_time=start_time,
+                end_time=end_time,
+                label="Tue, 05 May, 11:30",
+                appointment_type="dentist",
+                customer_name="Anna Berger",
+                booking_reference="book-order-003",
+            )
+        )
+
+        original_record = service.bookings.get("book-order-003")
+        assert original_record is not None
+        original_external_id = original_record.external_id
+        operations.clear()
+        monkeypatch.setattr(service.gateway, "create_demo_event", _failing_create_demo_event)
+
+        try:
+            service.reschedule_booking_patch8(
+                GoogleBookingRescheduleRequest(
+                    mode="test",
+                    booking_reference="book-order-003",
+                    provider_reference=original_external_id,
+                    slot_id="slot-order-004",
+                    start_time=start_time + timedelta(days=1),
+                    end_time=end_time + timedelta(days=1),
+                    label="Wed, 06 May, 09:00",
+                    appointment_type="dentist",
+                    customer_name="Anna Berger",
+                )
+            )
+        except RuntimeError as exc:
+            assert str(exc) == "google create failed"
+        else:
+            raise AssertionError("Expected create_demo_event failure to propagate.")
+
+        current_record = service.bookings.get("book-order-003")
+
+    assert current_record is not None
+    assert current_record.external_id == original_external_id
+    assert operations == [
+        ("get", original_external_id),
+        ("create", "book-order-003"),
+    ]
 
 
 def test_v136_demo_generate_uses_linked_address_name_over_subtype() -> None:

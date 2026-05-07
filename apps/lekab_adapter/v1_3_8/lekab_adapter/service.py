@@ -4,10 +4,12 @@ from copy import deepcopy
 from datetime import date, datetime, timedelta, timezone
 from hashlib import sha256
 import json
+import logging
 from typing import Any
 from uuid import uuid4
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+import httpx
 from sqlalchemy.orm import Session
 
 from appointment_agent_shared.commands import ReminderActionCommand
@@ -36,6 +38,92 @@ from google_adapter.v1_3_6.google_adapter.service import GoogleAdapterServiceV13
 from lekab_adapter.v1_2_1_patch4.lekab_adapter.service import LekabMessagingSettingsService
 
 from .reply_engine import ReplyToActionEngine
+
+
+logger = logging.getLogger("appointment_agent.lekab.reply_bridge")
+
+
+CONVERSATIONAL_REPLY_TEMPLATES = {
+    "reschedule_window_prompt": {
+        "en": "Choose the preferred scheduling window.",
+        "de": "Waehlen Sie bitte das bevorzugte Terminfenster.",
+    },
+    "date_suggestion_prompt": {
+        "en": "Choose one of the proposed dates.",
+        "de": "Waehlen Sie bitte eines der vorgeschlagenen Daten.",
+    },
+    "time_suggestion_prompt": {
+        "en": "Choose one of the proposed times.",
+        "de": "Waehlen Sie bitte eine der vorgeschlagenen Uhrzeiten.",
+    },
+    "no_dates_found": {
+        "en": "No free dates were found in the selected timeframe. Choose another window and we will keep searching.",
+        "de": "Im gewaehlten Zeitraum wurden keine freien Daten gefunden. Waehlen Sie ein anderes Fenster und wir suchen weiter.",
+    },
+    "no_times_found": {
+        "en": "No free times were found for the selected date. Choose another date and we will suggest new times.",
+        "de": "Fuer das gewaehlte Datum wurden keine freien Uhrzeiten gefunden. Waehlen Sie bitte ein anderes Datum.",
+    },
+    "clarification_relative": {
+        "en": "I could not map that reply yet. Please choose one of the scheduling windows below.",
+        "de": "Diese Antwort konnte noch nicht eindeutig zugeordnet werden. Bitte waehlen Sie eines der Terminfenster unten.",
+    },
+    "clarification_initial": {
+        "en": "I could not map that reply yet. Please confirm, reschedule, or cancel with one of the buttons below.",
+        "de": "Diese Antwort konnte noch nicht eindeutig zugeordnet werden. Bitte bestaetigen, verschieben oder absagen Sie ueber die Buttons unten.",
+    },
+    "clarification_date": {
+        "en": "I could not match that date reply yet. Please choose one of the proposed dates.",
+        "de": "Diese Datumsantwort konnte noch nicht eindeutig zugeordnet werden. Bitte waehlen Sie eines der vorgeschlagenen Daten.",
+    },
+    "clarification_time": {
+        "en": "I could not match that time reply yet. Please choose one of the proposed times.",
+        "de": "Diese Uhrzeit konnte noch nicht eindeutig zugeordnet werden. Bitte waehlen Sie eine der vorgeschlagenen Uhrzeiten.",
+    },
+    "confirmation_prompt": {
+        "en": "{slot_label} selected. Confirm to update the appointment, or choose Reschedule/Cancel.",
+        "de": "{slot_label} wurde ausgewaehlt. Bitte bestaetigen Sie die Terminaktualisierung oder waehlen Sie Verschieben/Absagen.",
+    },
+    "confirmed_with_calendar": {
+        "en": "Your appointment is confirmed and synced to Google Calendar.",
+        "de": "Ihr Termin ist bestaetigt und mit Google Kalender synchronisiert.",
+    },
+    "confirmed_basic": {
+        "en": "Your appointment is confirmed.",
+        "de": "Ihr Termin ist bestaetigt.",
+    },
+    "cancellation_recorded": {
+        "en": "Your appointment cancellation was recorded.",
+        "de": "Ihre Terminabsage wurde erfasst.",
+    },
+    "callback_recorded": {
+        "en": "A callback request was recorded and will be handled by the team.",
+        "de": "Ein Rueckrufwunsch wurde erfasst und vom Team bearbeitet.",
+    },
+}
+
+APPOINTMENT_TYPE_CONFIRMATION_TEMPLATES = {
+    "dentist": {
+        "en": "We confirm your dentist appointment on {weekday} {date_label} at {time_label}. Thank you for your reservation.",
+        "de": "Wir bestaetigen Ihren Zahnarzt Termin am {weekday} {date_label} um {time_label}. Vielen Dank fuer Ihre Reservierung.",
+    },
+    "doctor": {
+        "en": "We confirm your doctor appointment on {weekday} {date_label} at {time_label}. Thank you for your reservation.",
+        "de": "Wir bestaetigen Ihren Termin (Arzt) am {weekday} {date_label} um {time_label}. Vielen Dank fuer Ihre Reservierung.",
+    },
+    "technician": {
+        "en": "We confirm your technician appointment on {weekday} {date_label} at {time_label}. Thank you for your reservation.",
+        "de": "Wir bestaetigen Ihren Termin (Techniker) am {weekday} {date_label} um {time_label}. Vielen Dank fuer Ihre Reservierung.",
+    },
+    "tee_time": {
+        "en": "We confirm your tee time on {weekday} {date_label} at {time_label}. Thank you for your reservation.",
+        "de": "Wir bestaetigen Ihren Termin (T-Time) am {weekday} {date_label} um {time_label}. Vielen Dank fuer Ihre Reservierung.",
+    },
+    "_default": {
+        "en": "We confirm your appointment on {weekday} {date_label} at {time_label}. Thank you for your reservation.",
+        "de": "Wir bestaetigen Ihren Termin am {weekday} {date_label} um {time_label}. Vielen Dank fuer Ihre Reservierung.",
+    },
+}
 
 
 class LekabReplyActionService(LekabMessagingSettingsService):
@@ -120,6 +208,112 @@ class LekabReplyActionService(LekabMessagingSettingsService):
             result["real_callback_bridge"] = deepcopy(last_processed["bridge_result"])
         return result
 
+    def forward_latest_callback(self, forward_url: str, *, trace_id: str | None = None) -> dict[str, Any]:
+        result = self.fetch_latest_callback(trace_id=trace_id)
+        normalized_forward_url = str(forward_url or "").strip()
+        forwarded_results: list[dict[str, Any]] = []
+        errors: list[str] = []
+        processed_callbacks = result.get("processed_callbacks") if isinstance(result.get("processed_callbacks"), list) else []
+        callbacks_to_forward = [item for item in processed_callbacks if isinstance(item, dict)]
+        forward_source = "processed_callbacks"
+        if not callbacks_to_forward:
+            fallback_item = self._build_latest_reply_forward_item(result)
+            if fallback_item is not None:
+                callbacks_to_forward = [fallback_item]
+                forward_source = "latest_reply_fallback"
+
+        for item in callbacks_to_forward:
+            callback_payload = item.get("callback_payload") if isinstance(item.get("callback_payload"), dict) else None
+            if callback_payload is None:
+                continue
+            phone_number = str(callback_payload.get("phone_number") or callback_payload.get("from") or "").strip()
+            message_text = str(callback_payload.get("incoming_data") or callback_payload.get("text") or callback_payload.get("reply") or "").strip()
+            raw_callback = item.get("raw_callback_payload") if isinstance(item.get("raw_callback_payload"), dict) else {}
+            summary_channel = str(item.get("channel") or callback_payload.get("channel") or "").strip().lower()
+            if not summary_channel:
+                summary_channel = "sms" if "SMS" in json.dumps(raw_callback, ensure_ascii=False).upper() else "rcs"
+            channel = "sms" if summary_channel == "sms" else "rcs"
+            event_id = str(item.get("event_id") or "").strip()
+            forward_payload = {
+                "eventId": event_id,
+                "event_id": event_id,
+                "phoneNumber": phone_number,
+                "message": message_text,
+                "channel": channel,
+                "phone_number": phone_number,
+                "text": message_text,
+            }
+            logger.info(
+                "callback_bridge_forward_attempt",
+                extra={
+                    "trace_id": trace_id,
+                    "forward_url": normalized_forward_url,
+                    "phone_number": phone_number,
+                    "message": message_text[:160],
+                    "channel": channel,
+                    "event_id": event_id,
+                    "mapping_result": item.get("bridge_result"),
+                    "forward_source": forward_source,
+                },
+            )
+            try:
+                with httpx.Client(timeout=10.0) as client:
+                    response = client.post(
+                        normalized_forward_url,
+                        headers={
+                            "content-type": "application/json; charset=utf-8",
+                            "x-trace-id": str(trace_id or f"lekab-forward-{uuid4().hex[:12]}"),
+                        },
+                        json=forward_payload,
+                    )
+                response_excerpt = response.text[:300]
+                forwarded_results.append({
+                    "event_id": event_id,
+                    "phone_number": phone_number,
+                    "message": message_text,
+                    "channel": channel,
+                    "mapping_result": item.get("bridge_result"),
+                    "forward_source": forward_source,
+                    "status_code": response.status_code,
+                    "ok": 200 <= response.status_code < 300,
+                    "response_excerpt": response_excerpt,
+                })
+                logger.info(
+                    "callback_bridge_forward_result",
+                    extra={
+                        "trace_id": trace_id,
+                        "forward_url": normalized_forward_url,
+                        "status_code": response.status_code,
+                        "ok": 200 <= response.status_code < 300,
+                        "event_id": event_id,
+                        "forward_source": forward_source,
+                        "response_excerpt": response_excerpt,
+                    },
+                )
+                if not (200 <= response.status_code < 300):
+                    errors.append(f"forward failed for {event_id or 'unknown-event'}: status {response.status_code}")
+            except httpx.HTTPError as exc:
+                errors.append(f"forward failed for {event_id or 'unknown-event'}: {exc.__class__.__name__}")
+                logger.warning(
+                    "callback_bridge_forward_error",
+                    extra={
+                        "trace_id": trace_id,
+                        "forward_url": normalized_forward_url,
+                        "event_id": event_id,
+                        "forward_source": forward_source,
+                        "error": str(exc),
+                    },
+                )
+        result["bridge_architecture"] = "LEKAB -> webhook.site -> Appointment-Agent -> Chat-Agent"
+        result["temporary_bridge"] = True
+        result["forward_url"] = normalized_forward_url
+        result["forward_source"] = forward_source
+        result["processed_callbacks"] = len(processed_callbacks)
+        result["forwarded_callbacks"] = sum(1 for item in forwarded_results if item.get("ok"))
+        result["forwarded_results"] = forwarded_results
+        result["errors"] = errors
+        return result
+
     def _process_unseen_webhook_callbacks(
         self,
         *,
@@ -187,6 +381,66 @@ class LekabReplyActionService(LekabMessagingSettingsService):
             )
         return processed
 
+    def _build_latest_reply_forward_item(self, fetch_result: dict[str, Any]) -> dict[str, Any] | None:
+        raw_feed = fetch_result.get("raw_fetch_response_json")
+        request_items: list[dict[str, Any]] = []
+        if isinstance(raw_feed, dict):
+            for key in ("data", "requests"):
+                items = raw_feed.get(key)
+                if isinstance(items, list):
+                    request_items = [item for item in items if isinstance(item, dict)]
+                    break
+        elif isinstance(raw_feed, list):
+            request_items = [item for item in raw_feed if isinstance(item, dict)]
+        if not request_items:
+            return None
+
+        def _sort_key(item: dict[str, Any]) -> tuple[int, str]:
+            sorting = int(item.get("sorting") or 0)
+            created = str(item.get("created_at") or "")
+            return (sorting, created)
+
+        for item in sorted(request_items, key=_sort_key, reverse=True):
+            event_id = str(item.get("uuid") or "").strip()
+            if not event_id:
+                continue
+            summary = self._summarize_webhook_callback(item)
+            if summary.get("normalized_event_type") != "message.reply_received":
+                continue
+            linkage = self.address_linkage.resolve(
+                tenant_id="default",
+                booking_reference=(summary.get("action_candidate") or {}).get("parameters", {}).get("booking_reference"),
+                appointment_id=(summary.get("action_candidate") or {}).get("parameters", {}).get("appointment_id"),
+                correlation_ref=(summary.get("action_candidate") or {}).get("parameters", {}).get("correlation_ref"),
+                phone_number=self._resolve_customer_phone(summary),
+            )
+            callback_payload = self._build_callback_payload_from_fetch_result(
+                result={"success": True, "response_json": item},
+                summary=summary,
+                linkage=linkage,
+            )
+            if callback_payload is None:
+                continue
+            return {
+                "event_id": event_id,
+                "raw_callback_payload": deepcopy(item),
+                "normalized_event_type": summary.get("normalized_event_type"),
+                "reply_intent": summary.get("reply_intent"),
+                "reply_datetime_candidates": deepcopy(summary.get("reply_datetime_candidates") or []),
+                "callback_transport": summary.get("callback_transport"),
+                "callback_source_method": summary.get("callback_source_method"),
+                "bridge_result": {
+                    "source": "latest_reply_fallback",
+                    "already_seen": self.callback_receipts.exists(event_id),
+                    "address_id": linkage.address_id,
+                    "appointment_id": linkage.appointment_id,
+                    "correlation_ref": linkage.correlation_ref,
+                },
+                "callback_payload": deepcopy(callback_payload),
+                "channel": str(summary.get("channel") or "RCS").lower(),
+            }
+        return None
+
     def _resolve_customer_phone(self, summary: dict[str, Any]) -> str | None:
         for key in ("from", "to"):
             candidate = str(summary.get(key) or "").strip()
@@ -206,6 +460,113 @@ class LekabReplyActionService(LekabMessagingSettingsService):
             if str(item.get("value")) == value:
                 return str(item.get("label_en") or item.get("label") or value)
         return value
+
+    def _normalize_language(self, value: str | None) -> str:
+        return "de" if str(value or "").strip().lower().startswith("de") else "en"
+
+    def _resolve_language(self, *, normalized: dict[str, Any] | None = None, journey: Any = None) -> str:
+        context = self.contexts.get_context()
+        context_address = context.selected_address or {}
+        address_id = (
+            (normalized or {}).get("address_id")
+            or context.address_id
+            or context_address.get("address_id")
+        )
+        selected_address = self.addresses.get(address_id) if address_id else None
+        candidate = (
+            self._address_value(selected_address, "preferred_language")
+            or self._address_value(context_address, "preferred_language")
+            or str(getattr(journey, "locale", "") or "").strip()
+            or settings.default_language
+        )
+        return self._normalize_language(candidate)
+
+    def _template_text(self, template_key: str, language: str, **values: Any) -> str:
+        template = CONVERSATIONAL_REPLY_TEMPLATES[template_key][self._normalize_language(language)]
+        return template.format(**values)
+
+    def _confirmation_datetime_parts(self, value: datetime, language: str) -> tuple[str, str, str]:
+        normalized_language = self._normalize_language(language)
+        if value.tzinfo is None:
+            local_value = value.replace(tzinfo=self._display_timezone())
+        else:
+            local_value = value.astimezone(self._display_timezone())
+        if normalized_language == "de":
+            weekday_names = [
+                "Montag",
+                "Dienstag",
+                "Mittwoch",
+                "Donnerstag",
+                "Freitag",
+                "Samstag",
+                "Sonntag",
+            ]
+            month_names = [
+                "Jan",
+                "Feb",
+                "Maerz",
+                "Apr",
+                "Mai",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Okt",
+                "Nov",
+                "Dez",
+            ]
+            date_label = f"{local_value.day:02d}. {month_names[local_value.month - 1]}"
+        else:
+            weekday_names = [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday",
+            ]
+            month_names = [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dec",
+            ]
+            date_label = f"{local_value.day:02d} {month_names[local_value.month - 1]}"
+        return weekday_names[local_value.weekday()], date_label, local_value.strftime("%H:%M")
+
+    def _appointment_confirmation_text(
+        self,
+        *,
+        appointment_type: str,
+        pending_slot: dict[str, Any] | None,
+        language: str,
+    ) -> str | None:
+        if not isinstance(pending_slot, dict):
+            return None
+        start_raw = str(pending_slot.get("start") or "").strip()
+        if not start_raw:
+            return None
+        try:
+            start_value = datetime.fromisoformat(start_raw)
+        except ValueError:
+            return None
+        weekday, date_label, time_label = self._confirmation_datetime_parts(start_value, language)
+        normalized_language = self._normalize_language(language)
+        template_bundle = APPOINTMENT_TYPE_CONFIRMATION_TEMPLATES.get(
+            str(appointment_type or "").strip().lower(),
+            APPOINTMENT_TYPE_CONFIRMATION_TEMPLATES["_default"],
+        )
+        template = template_bundle[normalized_language]
+        return template.format(weekday=weekday, date_label=date_label, time_label=time_label)
 
     def _date_token_to_datetime(self, token: str) -> datetime | None:
         mapping = {
@@ -759,8 +1120,22 @@ class LekabReplyActionService(LekabMessagingSettingsService):
                 "source": "real_lekab_callback",
                 "trace_id": callback_trace_id,
                 "resolved_action": resolved_action,
+                "action_candidate": deepcopy(normalized.get("action_candidate") or {}),
+                "action_type": (
+                    (normalized.get("action_candidate") or {}).get("action_type")
+                    or {
+                        "slot_selection": "appointment.slot_selected",
+                        "reschedule": "appointment.reschedule_requested",
+                        "cancel": "appointment.cancel_requested",
+                        "confirm": "appointment.confirm_requested",
+                    }.get(str(normalized.get("reply_intent") or "").strip().lower())
+                ),
                 "callback_event": normalized["event_type"],
                 "incoming_type": normalized["incoming_type"],
+                "reply_intent": normalized.get("reply_intent"),
+                "reply_datetime_candidates": list(normalized.get("reply_datetime_candidates") or []),
+                "interpretation_state": normalized.get("interpretation_state"),
+                "interpretation_confidence": normalized.get("interpretation_confidence"),
             },
         )
 
@@ -847,6 +1222,8 @@ class LekabReplyActionService(LekabMessagingSettingsService):
             return None
         incoming_data = self._resolve_callback_bridge_value(summary)
         if not incoming_data:
+            incoming_data = str(summary.get("body_text") or "").strip()
+        if not incoming_data:
             return None
         response_json = result.get("response_json") if isinstance(result.get("response_json"), dict) else {}
         parsed_content = summary.get("parsed_content_json") if isinstance(summary.get("parsed_content_json"), dict) else {}
@@ -863,6 +1240,11 @@ class LekabReplyActionService(LekabMessagingSettingsService):
             "from": summary.get("from") or parsed_content.get("from"),
             "phone_number": summary.get("from") or parsed_content.get("from"),
             "reply_label": self._extract_reply_label(parsed_content),
+            "reply_intent": summary.get("reply_intent"),
+            "reply_datetime_candidates": deepcopy(summary.get("reply_datetime_candidates") or []),
+            "interpretation_state": summary.get("interpretation_state"),
+            "interpretation_confidence": summary.get("interpretation_confidence"),
+            "action_candidate": deepcopy(summary.get("action_candidate") or {}),
             "callback_transport": summary.get("callback_transport"),
             "received_at": summary.get("provider_timestamp"),
             "source": "webhook_site_fetch_bridge",
@@ -957,6 +1339,8 @@ class LekabReplyActionService(LekabMessagingSettingsService):
         incoming_data = str(payload.get("incoming_data") or payload.get("text") or payload.get("reply") or "").strip()
         incoming_type = str(payload.get("incoming_type") or payload.get("type") or "UNKNOWN").strip().upper()
         event_type = str(payload.get("event") or payload.get("event_type") or "INCOMING").strip().upper()
+        reply_intent = str(payload.get("reply_intent") or "").strip() or None
+        action_candidate = deepcopy(payload.get("action_candidate") or {}) if isinstance(payload.get("action_candidate"), dict) else {}
         action_map = {
             "confirm_appointment": ("keep", "confirmation_complete", "confirmed"),
             "keep_appointment": ("keep", "confirmation_complete", "confirmed"),
@@ -1000,17 +1384,23 @@ class LekabReplyActionService(LekabMessagingSettingsService):
             "journey_id": str(payload.get("correlation_id") or payload.get("correlation_ref") or demo_namespace.get("correlation_ref") or "lekab-callback"),
             "reply_payload": incoming_data or "unknown_callback",
             "reply_label": payload.get("reply_label") or incoming_data or "unknown_callback",
+            "reply_intent": reply_intent,
+            "reply_datetime_candidates": list(payload.get("reply_datetime_candidates") or []),
+            "interpretation_state": payload.get("interpretation_state"),
+            "interpretation_confidence": payload.get("interpretation_confidence"),
+            "action_candidate": action_candidate,
             "callback_transport": str(payload.get("callback_transport") or incoming_type or "unknown").strip().lower(),
             "received_at": payload.get("received_at"),
             "payload_version": "1.0",
             "source": str(payload.get("source") or "lekab_callback"),
         }
 
-    def _localized_button_payload(self, button_source: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _localized_button_payload(self, button_source: list[dict[str, Any]], language: str) -> list[dict[str, Any]]:
+        normalized_language = self._normalize_language(language)
         return [
             {
                 "action_id": item["action_id"],
-                "label": item["label_en"],
+                "label": item["label_de"] if normalized_language == "de" else item["label_en"],
                 "value": item["value"],
                 "action_type": item.get("action_type", "reply"),
                 "canonical_action": item.get("canonical_action"),
@@ -1020,17 +1410,17 @@ class LekabReplyActionService(LekabMessagingSettingsService):
             for item in button_source
         ]
 
-    def _real_channel_payload(self, text: str, button_source: list[dict[str, Any]], next_step_map: dict[str, str]) -> dict[str, Any]:
+    def _real_channel_payload(self, text: str, button_source: list[dict[str, Any]], next_step_map: dict[str, str], language: str) -> dict[str, Any]:
         return {
             "channel": "RCS",
             "message_type": "suggestion_buttons",
             "text": text,
-            "suggestions": self._localized_button_payload(button_source),
+            "suggestions": self._localized_button_payload(button_source, language),
             "next_step_map": deepcopy(next_step_map),
         }
 
-    def _customer_journey_message(self, *, text: str, button_source: list[dict[str, Any]], next_step_map: dict[str, str], selected_button: str | None = None) -> dict[str, Any]:
-        buttons = self._localized_button_payload(button_source)
+    def _customer_journey_message(self, *, text: str, button_source: list[dict[str, Any]], next_step_map: dict[str, str], language: str, selected_button: str | None = None) -> dict[str, Any]:
+        buttons = self._localized_button_payload(button_source, language)
         return {
             "text": text,
             "actions": deepcopy(buttons),
@@ -1039,7 +1429,7 @@ class LekabReplyActionService(LekabMessagingSettingsService):
             "journey_step_type": "real_callback_follow_up",
             "selected_button": selected_button,
             "next_step_map": deepcopy(next_step_map),
-            "real_channel_payload": self._real_channel_payload(text, button_source, next_step_map),
+            "real_channel_payload": self._real_channel_payload(text, button_source, next_step_map, language),
         }
 
     def _send_follow_up_message(self, *, normalized: dict[str, Any], journey: Any, correlation_ref: str | None) -> dict[str, Any] | None:
@@ -1047,11 +1437,12 @@ class LekabReplyActionService(LekabMessagingSettingsService):
         if not phone_number:
             return None
         resolved_action = normalized.get("resolved_action")
+        language = self._resolve_language(normalized=normalized, journey=journey)
         text = None
         button_source: list[dict[str, Any]] = []
         next_step_map: dict[str, str] = {}
         if resolved_action == "reschedule":
-            text = "Choose the preferred scheduling window."
+            text = self._template_text("reschedule_window_prompt", language)
             button_source = RELATIVE_BUTTONS
             next_step_map = {
                 "this_week": "date_choice",
@@ -1061,16 +1452,24 @@ class LekabReplyActionService(LekabMessagingSettingsService):
                 "next_free_slot": "date_choice",
             }
         elif resolved_action in {"this_week", "next_week", "this_month", "next_month", "next_free_slot"}:
-            text = "Choose one of the proposed dates."
+            text = self._template_text("date_suggestion_prompt", language)
             appointment_type = str(self.contexts.get_context().appointment_type or "dentist")
             dynamic_slots = self._load_dynamic_slots(relative_action=resolved_action, appointment_type=appointment_type)
             button_source, grouped_slots = self._date_buttons_from_slots(dynamic_slots)
             normalized["dynamic_grouped_slots"] = deepcopy(grouped_slots)
             next_step_map = {item["value"]: "time_choice" for item in button_source}
             if not button_source:
-                text = "No free dates were found in the selected timeframe."
+                text = self._template_text("no_dates_found", language)
+                button_source = RELATIVE_BUTTONS
+                next_step_map = {
+                    "this_week": "date_choice",
+                    "next_week": "date_choice",
+                    "this_month": "date_choice",
+                    "next_month": "date_choice",
+                    "next_free_slot": "date_choice",
+                }
         elif resolved_action in {"date_05_may", "date_06_may", "date_08_may", "date_12_may"} or self._is_dynamic_date_token(resolved_action):
-            text = "Choose one of the proposed times."
+            text = self._template_text("time_suggestion_prompt", language)
             if self._is_dynamic_date_token(resolved_action):
                 appointment_type = str(self.contexts.get_context().appointment_type or "dentist")
                 selected_date = self._parse_dynamic_date_token(normalized.get("incoming_data"))
@@ -1094,11 +1493,12 @@ class LekabReplyActionService(LekabMessagingSettingsService):
                     "time_1830": "slot_selected",
                 }
             if not button_source:
-                text = "No free times were found for the selected date."
+                text = self._template_text("no_times_found", language)
+                next_step_map = {}
         elif resolved_action in {"time_0900", "time_1130", "time_1600", "time_1830"} or self._is_dynamic_time_token(resolved_action):
             pending_slot = normalized.get("pending_slot") if isinstance(normalized.get("pending_slot"), dict) else {}
             slot_label = str(pending_slot.get("label") or normalized.get("reply_label") or "the selected slot")
-            text = f"{slot_label} selected. Confirm to update the appointment, or choose Reschedule/Cancel."
+            text = self._template_text("confirmation_prompt", language, slot_label=slot_label)
             button_source = INITIAL_BUTTONS
             next_step_map = {
                 "confirm": "confirmation_complete",
@@ -1107,16 +1507,52 @@ class LekabReplyActionService(LekabMessagingSettingsService):
             }
         elif resolved_action == "keep":
             google_booking_result = normalized.get("google_booking_result") if isinstance(normalized.get("google_booking_result"), dict) else {}
-            if google_booking_result.get("success"):
-                text = "Your appointment is confirmed and synced to Google Calendar."
-            else:
-                text = "Your appointment is confirmed."
+            appointment_type = str(self.contexts.get_context().appointment_type or "dentist")
+            pending_slot = normalized.get("pending_slot") if isinstance(normalized.get("pending_slot"), dict) else {}
+            text = self._appointment_confirmation_text(
+                appointment_type=appointment_type,
+                pending_slot=pending_slot,
+                language=language,
+            )
+            if text is None:
+                if google_booking_result.get("success"):
+                    text = self._template_text("confirmed_with_calendar", language)
+                else:
+                    text = self._template_text("confirmed_basic", language)
         elif resolved_action == "cancel":
-            text = "Your appointment cancellation was recorded."
+            text = self._template_text("cancellation_recorded", language)
             button_source = INITIAL_BUTTONS
         elif resolved_action == "call_me":
-            text = "A callback request was recorded and will be handled by the team."
+            text = self._template_text("callback_recorded", language)
             button_source = INITIAL_BUTTONS
+        elif normalized.get("status") == "awaiting_date_choice":
+            text = self._template_text("clarification_relative", language)
+            button_source = RELATIVE_BUTTONS
+            next_step_map = {
+                "this_week": "date_choice",
+                "next_week": "date_choice",
+                "this_month": "date_choice",
+                "next_month": "date_choice",
+                "next_free_slot": "date_choice",
+            }
+        elif normalized.get("status") == "awaiting_time_choice":
+            text = self._template_text("clarification_date", language)
+        elif normalized.get("status") == "awaiting_confirmation":
+            text = self._template_text("clarification_initial", language)
+            button_source = INITIAL_BUTTONS
+            next_step_map = {
+                "confirm": "confirmation_complete",
+                "reschedule": "relative_choice",
+                "cancel": "cancellation_complete",
+            }
+        elif normalized.get("current_step") in {"awaiting_customer_reply", "real_callback_received", "reschedule_requested"}:
+            text = self._template_text("clarification_initial", language)
+            button_source = INITIAL_BUTTONS
+            next_step_map = {
+                "confirm": "confirmation_complete",
+                "reschedule": "relative_choice",
+                "cancel": "cancellation_complete",
+            }
         if text is None:
             return None
         self.send_message(
@@ -1128,15 +1564,22 @@ class LekabReplyActionService(LekabMessagingSettingsService):
             booking_reference=normalized.get("booking_reference"),
             body=text,
             message_type="reply_follow_up" if button_source else "text",
-            actions=self._localized_button_payload(button_source),
+            actions=self._localized_button_payload(button_source, language),
             metadata={
                 "source": "real_callback_follow_up",
                 "resolved_action": resolved_action,
                 "address_id": normalized.get("address_id"),
                 "appointment_id": normalized.get("appointment_id"),
+                "language": language,
             },
         )
-        return self._customer_journey_message(text=text, button_source=button_source, next_step_map=next_step_map, selected_button=normalized.get("incoming_data"))
+        return self._customer_journey_message(
+            text=text,
+            button_source=button_source,
+            next_step_map=next_step_map,
+            language=language,
+            selected_button=normalized.get("incoming_data"),
+        )
 
     def _classify_reply_intent(self, text: str) -> dict[str, Any]:
         return self.reply_engine.analyze_reply(text)
@@ -1494,7 +1937,18 @@ class LekabReplyActionService(LekabMessagingSettingsService):
         for message in messages:
             metadata = message.get("metadata") or {}
             action_candidate = metadata.get("action_candidate") or {}
-            resolved_action = metadata.get("resolved_action") or {}
+            resolved_action = metadata.get("resolved_action") if isinstance(metadata.get("resolved_action"), dict) else {}
+            if not metadata.get("action_type") and action_candidate.get("action_type"):
+                metadata["action_type"] = action_candidate.get("action_type")
+                message["metadata"] = metadata
+            if not metadata.get("action_type"):
+                metadata["action_type"] = resolved_action.get("action_type") or {
+                    "slot_selection": "appointment.slot_selected",
+                    "reschedule": "appointment.reschedule_requested",
+                    "cancel": "appointment.cancel_requested",
+                    "confirm": "appointment.confirm_requested",
+                }.get(str(metadata.get("reply_intent") or "").strip().lower())
+                message["metadata"] = metadata
             if action_candidate:
                 action_requested += 1
                 interpretation_state = (

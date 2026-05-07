@@ -81,3 +81,32 @@ def test_address_database_v139_linkage_visible() -> None:
     assert appointment_payload["version"] == "v1.3.9"
     assert appointment_payload["links"][0]["address_id"] == address_id
     assert appointment_payload["links"][0]["address_summary"]["display_name"] == "Linked Address"
+
+
+def test_address_database_v139_persists_preferred_language() -> None:
+    client = TestClient(app)
+
+    created = client.post(
+        "/api/addresses/v1.3.9",
+        json={
+            "display_name": "German Contact",
+            "city": "Berlin",
+            "phone": "+491700000099",
+            "preferred_language": "de",
+        },
+    )
+    assert created.status_code == 200
+    address = created.json()
+    assert address["preferred_language"] == "de"
+
+    updated = client.put(
+        f"/api/addresses/v1.3.9/{address['address_id']}",
+        json={
+            "display_name": "German Contact Updated",
+            "city": "Berlin",
+            "phone": "+491700000099",
+            "preferred_language": "en",
+        },
+    )
+    assert updated.status_code == 200
+    assert updated.json()["preferred_language"] == "en"

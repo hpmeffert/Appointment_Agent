@@ -646,28 +646,46 @@ class LekabMessagingSettingsService(LekabMessagingService):
             "mock_mode": effective_mock_mode,
         }
         status = "accepted" if effective_mock_mode else "submitted"
-        if channel == "RCS" and not effective_mock_mode:
+        if channel in {"RCS", "SMS"} and not effective_mock_mode:
             if not readiness["ready"] or readiness.get("auth_mode") != "rime_api_key":
                 status = "failed"
                 provider_payload["provider_error"] = "real_send_blocked_configuration_not_ready"
             else:
-                seturl_result = self._configure_provider_callback_urls(
-                    values=values,
-                    secrets=secrets,
-                    trace_id=correlation_id,
-                    readiness=readiness,
-                )
-                provider_payload["seturl"] = deepcopy(seturl_result)
-                if not seturl_result.get("success"):
-                    callback_url = str(values.get("callback_url") or "").strip()
-                    webhook_fetch_url = str(values.get("webhook_fetch_url") or "").strip()
-                    best_effort_webhook_mode = "webhook.site" in callback_url and bool(webhook_fetch_url)
-                    if best_effort_webhook_mode:
-                        provider_payload["provider_warning"] = "seturl_failed_best_effort_send_enabled"
+                direct_chat_agent_path = channel == "RCS" and str((metadata or {}).get("source") or "").strip() == "chat-agent"
+                if channel == "RCS":
+                    if direct_chat_agent_path:
+                        provider_payload["seturl"] = {
+                            "success": True,
+                            "skipped": True,
+                            "reason": "chat_agent_direct_provider_path",
+                        }
                     else:
-                        status = "failed"
-                        provider_payload["provider_error"] = "seturl_failed"
+                        seturl_result = self._configure_provider_callback_urls(
+                            values=values,
+                            secrets=secrets,
+                            trace_id=correlation_id,
+                            readiness=readiness,
+                        )
+                        provider_payload["seturl"] = deepcopy(seturl_result)
+                        if not seturl_result.get("success"):
+                            callback_url = str(values.get("callback_url") or "").strip()
+                            webhook_fetch_url = str(values.get("webhook_fetch_url") or "").strip()
+                            best_effort_webhook_mode = "webhook.site" in callback_url and bool(webhook_fetch_url)
+                            if best_effort_webhook_mode:
+                                provider_payload["provider_warning"] = "seturl_failed_best_effort_send_enabled"
+                            else:
+                                status = "failed"
+                                provider_payload["provider_error"] = "seturl_failed"
                 if status != "failed":
+                    logger.info(
+                        "provider_send_requested",
+                        extra={
+                            "channel": channel,
+                            "recipient": phone_number,
+                            "trace_id": correlation_id,
+                            "endpoint": str(values.get("sms_base_url") or values.get("rime_base_url") or "").strip() if channel == "SMS" else str(values.get("rime_base_url") or "").strip(),
+                        },
+                    )
                     provider_result = self._send_provider_message_post(
                         values=values,
                         secrets=secrets,
@@ -681,6 +699,20 @@ class LekabMessagingSettingsService(LekabMessagingService):
                     provider_job_id = provider_result.get("provider_job_id") or provider_job_id
                     provider_payload.update(deepcopy(provider_result))
                     status = "submitted" if 200 <= provider_result.get("provider_status_code", 0) < 300 else "failed"
+                    logger.info(
+                        "provider_send_completed",
+                        extra={
+                            "channel": channel,
+                            "recipient": phone_number,
+                            "trace_id": correlation_id,
+                            "endpoint": provider_result.get("provider_endpoint"),
+                            "provider_status_code": provider_result.get("provider_status_code"),
+                            "provider_message_id": provider_result.get("provider_message_id"),
+                            "provider_job_id": provider_result.get("provider_job_id"),
+                            "provider_response_excerpt": provider_result.get("provider_response_excerpt"),
+                            "status": status,
+                        },
+                    )
 
         normalized = self._build_normalized_message(
             message_id=f"msg-{uuid4().hex[:12]}",
@@ -903,9 +935,14 @@ class LekabMessagingSettingsService(LekabMessagingService):
         payload = {
             "channels": channel,
             "address": phone_number,
-            "richMessage": {
-                "text": body,
-            },
+        }
+        if channel == "SMS":
+            # LEKAB /send expects SMS-specific fields for SMS delivery.
+            payload["smsText"] = body
+            return payload
+
+        payload["richMessage"] = {
+            "text": body,
         }
         if actions:
             payload["richMessage"]["suggestions"] = [
@@ -1111,6 +1148,15 @@ class LekabMessagingSettingsService(LekabMessagingService):
             "provider_timestamp": (parsed_content_json or {}).get("time"),
         }
 
+    def _legacy_action_type_for_reply_intent(self, reply_intent: Any) -> str | None:
+        normalized = str(reply_intent or "").strip().lower()
+        return {
+            "slot_selection": "appointment.slot_selected",
+            "reschedule": "appointment.reschedule_requested",
+            "cancel": "appointment.cancel_requested",
+            "confirm": "appointment.confirm_requested",
+        }.get(normalized)
+
     def _send_provider_message_post(
         self,
         *,
@@ -1123,15 +1169,30 @@ class LekabMessagingSettingsService(LekabMessagingService):
         actions: list[dict[str, Any]],
     ) -> dict[str, Any]:
         auth_mode = self._determine_auth_mode(values, secrets)
-        endpoint = str(values.get("rime_base_url") or "").strip()
+        endpoint = str(values.get("sms_base_url") or values.get("rime_base_url") or "").strip() if channel == "SMS" else str(values.get("rime_base_url") or "").strip()
         headers = self._build_rime_headers(secrets=secrets, trace_id=trace_id, auth_mode=auth_mode)
         payload = self._build_rime_send_payload(channel=channel, phone_number=phone_number, body=body, actions=actions)
+        if channel == "SMS" and str(values.get("sms_sender_name") or "").strip():
+            payload["smsSender"] = str(values.get("sms_sender_name") or "").strip()
         try:
             with httpx.Client(timeout=10.0) as client:
                 response = client.post(endpoint, headers=headers, json=payload)
+            provider_json = {}
+            try:
+                provider_json = response.json() if response.text and hasattr(response, "json") else {}
+            except (ValueError, AttributeError):
+                provider_json = {}
+            sent_items = provider_json.get("sent") if isinstance(provider_json, dict) else None
+            first_sent = sent_items[0] if isinstance(sent_items, list) and sent_items else {}
+            provider_message_id = first_sent.get("id") or provider_json.get("id") if isinstance(provider_json, dict) else None
+            provider_job_id = first_sent.get("jobId") or provider_json.get("jobId") if isinstance(provider_json, dict) else None
             return {
                 "provider_status_code": response.status_code,
                 "provider_response_excerpt": response.text[:300],
+                "provider_endpoint": endpoint,
+                "provider_message_id": provider_message_id,
+                "provider_job_id": provider_job_id,
+                "provider_response_json": provider_json if isinstance(provider_json, dict) else None,
                 "provider_request_preview": {
                     "method": "POST",
                     "url": endpoint,
@@ -1144,9 +1205,21 @@ class LekabMessagingSettingsService(LekabMessagingService):
                 },
             }
         except httpx.HTTPError as exc:
+            logger.warning(
+                "provider_send_http_error",
+                extra={
+                    "channel": channel,
+                    "recipient": phone_number,
+                    "trace_id": trace_id,
+                    "endpoint": endpoint,
+                    "error_class": exc.__class__.__name__,
+                    "error_message": str(exc)[:240],
+                },
+            )
             return {
                 "provider_status_code": 0,
                 "provider_response_excerpt": f"http_error:{exc.__class__.__name__}:{str(exc)[:240]}",
+                "provider_endpoint": endpoint,
                 "provider_request_preview": {
                     "method": "POST",
                     "url": endpoint,
@@ -1224,6 +1297,7 @@ class LekabMessagingSettingsService(LekabMessagingService):
                 "trace_id": trace_id,
                 "normalized_event_type": summary.get("normalized_event_type"),
                 "reply_intent": summary.get("reply_intent"),
+                "action_type": self._legacy_action_type_for_reply_intent(summary.get("reply_intent")),
                 "reply_datetime_candidates": summary.get("reply_datetime_candidates"),
                 "provider_timestamp": summary.get("provider_timestamp"),
                 "webhook_fetch_url": values.get("webhook_fetch_url"),
@@ -1385,9 +1459,21 @@ class LekabMessagingSettingsService(LekabMessagingService):
                 ],
             }
         except httpx.HTTPError as exc:
+            logger.warning(
+                "provider_send_http_error",
+                extra={
+                    "channel": channel,
+                    "recipient": phone_number,
+                    "trace_id": trace_id,
+                    "endpoint": endpoint,
+                    "error_class": exc.__class__.__name__,
+                    "error_message": str(exc)[:240],
+                },
+            )
             return {
                 "provider_status_code": 0,
                 "provider_response_excerpt": f"http_error:{exc.__class__.__name__}:{str(exc)[:240]}",
+                "provider_endpoint": endpoint,
                 "provider_request_preview": {
                     "method": "POST",
                     "url": rime_base_url,

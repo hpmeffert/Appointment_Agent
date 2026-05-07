@@ -7,14 +7,36 @@ from demo_monitoring_ui.v1_3_8.demo_monitoring_ui.payloads import build_v138_pay
 from .scenario_catalog import build_phase5_scenarios, scenario_catalog
 
 
+def _operator_appointment_types(lang: str) -> list[dict[str, str]]:
+    language = "de" if lang == "de" else "en"
+    return [
+        {
+            "id": "dentist",
+            "label": "Dentist" if language == "en" else "Zahnarzt",
+        },
+        {
+            "id": "doctor",
+            "label": "Doctor" if language == "en" else "Arzt",
+        },
+        {
+            "id": "technician",
+            "label": "Technician" if language == "en" else "Techniker",
+        },
+        {
+            "id": "tee_time",
+            "label": "Tee Time" if language == "en" else "Tee Time",
+        },
+    ]
+
+
 def build_v139_payload(lang: str = "en") -> dict:
     language = "de" if lang == "de" else "en"
     payload = deepcopy(build_v138_payload(lang=language))
-    payload["version"] = "v1.3.9-patch9"
+    payload["version"] = "v1.3.10"
     payload["ui_contract"] = {
-        "display_version": "v1.3.9-patch9",
+        "display_version": "v1.3.10",
         "demo_api_version": "v1.3.9",
-        "patch_alias_version": "v1.3.9-patch9",
+        "patch_alias_version": "v1.3.10",
         "legacy_patch_aliases": ["v1.3.9-patch1", "v1.3.9-patch2", "v1.3.9-patch3", "v1.3.9-patch4", "v1.3.9-patch5", "v1.3.9-patch6", "v1.3.9-patch7", "v1.3.9-patch8"],
         "google_api_version": "v1.3.6",
         "lekab_api_version": "v1.3.8",
@@ -145,6 +167,9 @@ def build_v139_payload(lang: str = "en") -> dict:
         "selected_source_real": "real_callback_or_test_path",
         "booking_confirmation_actions": next((item["steps"][0]["communication_message"]["actions"] for item in payload["scenarios"] if item["id"] == "confirm-appointment"), []),
     }
+    payload["operator_appointment_types"] = _operator_appointment_types(language)
+    if payload.get("google_demo_control"):
+        payload["google_demo_control"]["appointment_types"] = deepcopy(payload["operator_appointment_types"])
     payload["address_database"] = {
         "title": "Address Database" if language == "en" else "Adressdatenbank",
         "subtitle": (

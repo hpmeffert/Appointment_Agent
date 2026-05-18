@@ -101,13 +101,29 @@ class DemoScenarioTestingService:
         appointment_type: str = "dentist",
         from_date: str | None = None,
         to_date: str | None = None,
+        contact_target_mode: str | None = None,
+        manual_phone_number: str | None = None,
     ) -> dict[str, Any]:
         scenario = next((item for item in scenario_catalog(lang) if item["id"] == scenario_id), None)
         if scenario is None:
             raise ValueError(f"Unknown scenario_id: {scenario_id}")
+        normalized_contact_mode = "phone" if contact_target_mode == "phone" else "address"
+        manual_phone = str(manual_phone_number or "").strip()
+        if len(manual_phone) > 40:
+            raise ValueError("Dashboard+ mobile number is too long.")
+        if normalized_contact_mode == "phone" and not manual_phone:
+            raise ValueError("No mobile number entered for Dashboard+ phone mode.")
         if address_id:
             self.contexts.save_context(
-                DemoScenarioContextUpdate(address_id=address_id)
+                DemoScenarioContextUpdate(
+                    address_id=address_id,
+                    metadata={
+                        "dashboard_plus": {
+                            "contact_target_mode": normalized_contact_mode,
+                            "manual_phone_number": manual_phone,
+                        }
+                    },
+                )
             )
         run_mode = "real" if mode == "real" else "simulation"
         now = datetime.now(timezone.utc)
@@ -122,6 +138,10 @@ class DemoScenarioTestingService:
             to_date=to_date,
             output_channel=output_channel,
         )
+        selected_address_for_contact = dict(shared_context.selected_address or {})
+        if normalized_contact_mode == "phone":
+            selected_address_for_contact["phone"] = manual_phone
+            selected_address_for_contact["contact_target_mode"] = "manual_phone"
         correlation_ref = shared_context.correlation_ref or f"corr-{run_id}"
         appointment_context = {
             "address_id": shared_context.address_id,
@@ -129,8 +149,10 @@ class DemoScenarioTestingService:
             "booking_reference": shared_context.booking_reference,
             "calendar_ref": shared_context.calendar_ref,
             "correlation_ref": shared_context.correlation_ref,
-            "selected_address": shared_context.selected_address or {},
+            "selected_address": selected_address_for_contact,
             "output_channel": shared_context.output_channel or "rcs_sms",
+            "contact_target_mode": normalized_contact_mode,
+            "manual_phone_number": manual_phone,
         }
 
         self._publish(
@@ -286,6 +308,10 @@ class DemoScenarioTestingService:
                     latest_run_id=run_id,
                     started_at_utc=now,
                     metadata={
+                        "dashboard_plus": {
+                            "contact_target_mode": normalized_contact_mode,
+                            "manual_phone_number": manual_phone,
+                        },
                         "customer_journey_message": {
                             "text": scenario["outbound_text"],
                             "actions": deepcopy(scenario.get("suggestion_buttons") or []),
@@ -410,6 +436,10 @@ class DemoScenarioTestingService:
                 started_at_utc=now,
                 finished_at_utc=datetime.now(timezone.utc),
                 metadata={
+                    "dashboard_plus": {
+                        "contact_target_mode": normalized_contact_mode,
+                        "manual_phone_number": manual_phone,
+                    },
                     "latest_actual_action": actual_action,
                     "latest_actual_intent": actual_intent,
                     "latest_actual_state": actual_state,

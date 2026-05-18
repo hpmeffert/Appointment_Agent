@@ -16,6 +16,11 @@ def test_demo_monitoring_v139_routes_load() -> None:
     assert 'const GOOGLE_API_VERSION = "v1.3.6"' in combined.text
     assert 'const LEKAB_API_VERSION = "v1.3.8"' in combined.text
     assert "page-addresses" in combined.text
+    assert "page-dashboard-plus" in combined.text
+    assert "dashboardPlusPhoneInput" in combined.text
+    assert "dashboardPlusStartBtn" in combined.text
+    assert "Dashboard+" in combined.text
+    assert 'const INITIAL_PAGE = "dashboard-plus"' in combined.text
     assert "reminderAssignBtn" in combined.text
     assert "googleAddressSelect" in combined.text
     assert "runScenarioSimulationBtn" in combined.text
@@ -113,7 +118,10 @@ def test_demo_monitoring_v139_payload_exposes_addresses_page() -> None:
                 mode="simulation",
                 address_id="addr-demo-001",
                 status="idle",
-                metadata={"ui_modes": {"dashboard_mode": "combined", "guided_mode": "guided"}},
+                metadata={
+                    "ui_modes": {"dashboard_mode": "combined", "guided_mode": "guided"},
+                    "dashboard_plus": {"contact_target_mode": "address", "manual_phone_number": ""},
+                },
             )
         )
     finally:
@@ -129,9 +137,13 @@ def test_demo_monitoring_v139_payload_exposes_addresses_page() -> None:
     assert payload["ui_version"] == "v1.3.10"
     assert payload["api_version"] == "v1.3.9"
     assert payload["generated_at_utc"].endswith("Z")
-    assert payload["menus"][0]["id"] == "dashboard"
+    assert payload["menus"][0]["id"] == "dashboard-plus"
+    assert payload["menus"][1]["id"] == "dashboard"
     assert payload["operator_panel"]["scenario_options"]
     assert payload["operator_panel"]["address_options"]
+    assert payload["operator_panel"]["dashboard_plus"]["scenario_mode"] == "real"
+    assert payload["operator_panel"]["dashboard_plus"]["contact_target_mode"] == "address"
+    assert payload["operator_panel"]["dashboard_plus"]["selected_contact_phone"]
     assert [item["id"] for item in payload["operator_panel"]["appointment_type_options"]] == ["dentist", "doctor", "technician", "tee_time"]
     assert payload["current_story"]["id"]
     assert payload["current_mode"]["scenario_mode"]
@@ -154,6 +166,7 @@ def test_demo_monitoring_v139_payload_exposes_addresses_page() -> None:
     assert any(item["id"] == "confirm-appointment" for item in payload["scenario_testing"]["scenario_matrix"])
     assert any(item["id"] == "this-week" for item in payload["scenario_testing"]["scenario_matrix"])
     assert payload["interactive_demo_flow"]["phase6_enabled"] is True
+    assert any(page["id"] == "dashboard-plus" for page in payload["pages"])
     assert [item["label"] for item in payload["interactive_demo_flow"]["initial_actions"]] == ["Confirm", "Reschedule", "Cancel"]
     confirm_scenario = next(item for item in payload["scenarios"] if item["id"] == "confirm-appointment")
     assert [item["label"] for item in confirm_scenario["steps"][0]["communication_message"]["actions"]] == ["Confirm", "Reschedule", "Cancel"]
@@ -253,6 +266,35 @@ def test_demo_monitoring_v139_context_persists_radio_modes_and_exposes_them_in_p
     assert payload["current_mode"]["dashboard_mode"] == "demo"
     assert payload["current_mode"]["guided_mode"] == "free"
     assert payload["current_mode"]["appointment_type"] == "doctor"
+
+
+def test_demo_monitoring_v139_dashboard_plus_persists_manual_phone_target() -> None:
+    client = TestClient(app)
+
+    updated = client.put(
+        "/api/demo-monitoring/v1.3.9/scenario-context",
+        json={
+            "scenario_id": "confirm-appointment",
+            "mode": "real",
+            "address_id": "addr-demo-001",
+            "appointment_type": "dentist",
+            "contact_target_mode": "phone",
+            "manual_phone_number": "+491701112233",
+            "status": "configured",
+        },
+    )
+    assert updated.status_code == 200
+    body = updated.json()
+    assert body["metadata"]["dashboard_plus"]["contact_target_mode"] == "phone"
+    assert body["metadata"]["dashboard_plus"]["manual_phone_number"] == "+491701112233"
+
+    payload = client.get("/api/demo-monitoring/v1.3.9/payload?lang=en").json()
+    dashboard_plus = payload["operator_panel"]["dashboard_plus"]
+    assert dashboard_plus["scenario_mode"] == "real"
+    assert dashboard_plus["contact_target_mode"] == "phone"
+    assert dashboard_plus["manual_phone_number"] == "+491701112233"
+    assert dashboard_plus["selected_contact_phone"] == "+491701112233"
+    assert dashboard_plus["validation"]["manual_phone_required"] is False
 
 
 def test_demo_monitoring_v139_payload_keeps_real_digital_twin_message_contract() -> None:
@@ -442,7 +484,15 @@ def test_demo_monitoring_v139_can_run_real_scenario_without_external_failure() -
     try:
         run_response = client.post(
             "/api/demo-monitoring/v1.3.9/scenario-testing/run",
-            json={"scenario_id": "next-month", "mode": "real", "lang": "en", "address_id": "addr-demo-001", "appointment_type": "dentist"},
+            json={
+                "scenario_id": "next-month",
+                "mode": "real",
+                "lang": "en",
+                "address_id": "addr-demo-001",
+                "appointment_type": "dentist",
+                "contact_target_mode": "phone",
+                "manual_phone_number": "+491709998877",
+            },
         )
     finally:
         lekab_patch4_service.httpx.Client = original_client
@@ -450,6 +500,7 @@ def test_demo_monitoring_v139_can_run_real_scenario_without_external_failure() -
     assert run_response.status_code == 200
     payload = run_response.json()
     assert payload["mode"] == "real"
+    assert payload["selected_address"]["phone"] == "+491709998877"
     assert payload["actual"]["action"] is None
     assert payload["actual"]["state"] == "waiting_for_real_callback"
     assert payload["status"] == "waiting_for_callback"
@@ -459,3 +510,22 @@ def test_demo_monitoring_v139_can_run_real_scenario_without_external_failure() -
     assert "reply" in first_suggestion
     assert first_suggestion["reply"]["text"]
     assert first_suggestion["reply"]["postbackData"]
+
+
+def test_demo_monitoring_v139_dashboard_plus_real_run_requires_manual_phone() -> None:
+    client = TestClient(app)
+
+    run_response = client.post(
+        "/api/demo-monitoring/v1.3.9/scenario-testing/run",
+        json={
+            "scenario_id": "confirm-appointment",
+            "mode": "real",
+            "lang": "en",
+            "address_id": "addr-demo-001",
+            "appointment_type": "dentist",
+            "contact_target_mode": "phone",
+            "manual_phone_number": "",
+        },
+    )
+    assert run_response.status_code == 400
+    assert run_response.json()["detail"]["message"] == "No mobile number entered for Dashboard+ phone mode."

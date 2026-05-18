@@ -1,49 +1,48 @@
 # Appointment Agent User Guide v1.3.10 (EN)
 
 ## Scope
-Version `v1.3.10` improves two core behaviors in the Appointment Agent demonstrator:
-- safer appointment identification
-- future-only slot proposals
-
-The goal is that the system identifies the correct appointment first and only then offers valid future dates and times.
+Version `v1.3.10` introduces `Dashboard+`, a simplified real-mode cockpit view for sales demonstrations. It keeps the proven `Messages and Customer Journey` area, but reduces the operator panel to the controls a presenter needs in front of a customer.
 
 ## What Changed
-- The system can now work with stronger appointment references such as reservation-style references, appointment/calendar references, correlation references, customer numbers, and normalized phone numbers.
-- If several future appointments match the same customer, the system no longer guesses. It asks which appointment should be changed.
-- Slot proposals are future-only and respect a minimum lead time.
-- A selected slot is rechecked before mutation so stale or past slots are not confirmed accidentally.
+- `Dashboard+` is now the first top-menu entry, before the existing `Dashboard`.
+- The existing `Dashboard` remains available for detailed operator, monitoring, guided-demo, and protocol views.
+- `Dashboard+` always runs the scenario in `Real` mode.
+- The operator can choose whether the outbound message target comes from the selected address or from a manually entered mobile number.
+- If manual phone mode is selected and no mobile number is entered, the cockpit shows an error and blocks the real send.
+- The release remains additive and non-breaking for protected `v1.x` behavior.
 
-## Customer Experience
-### 1. Clear appointment targeting
-If the customer has only one relevant future appointment, the flow continues directly.
+## Dashboard+ Operator Panel
+1. Select a `Scenario`.
+2. Confirm that `Scenario Mode` shows `Real`.
+3. Choose the contact target:
+   - `Selected Address`: uses the phone number stored on the selected address record.
+   - `Phone Number`: uses the manually entered mobile number.
+4. Select the `Appointment Type`.
+5. Start the demo.
 
-### 2. Explicit selection for multiple appointments
-If more than one appointment fits, the system asks the customer which appointment should be confirmed, cancelled, or rescheduled.
+## Contact Target Rules
+- Default target mode is `Selected Address`.
+- Address mode keeps the previous behavior: the selected address phone number is used for sending.
+- Phone mode overrides only the message target phone number. The selected address can still provide appointment and correlation context.
+- Empty phone mode is rejected with a visible missing-mobile-number error.
+- Manual phone input is limited to `40` characters.
 
-### 3. Future-only slot proposals
-The system only proposes slots that are still valid in the future. Old or already elapsed same-day slots are filtered out.
-
-## Expected Behaviors
-- `Confirm` keeps the current appointment when the target is safely resolved.
-- `Reschedule` only continues when the target appointment is known.
-- `Cancel` only affects the resolved appointment and never guesses across multiple appointments.
-- `No match` results in a safe clarification or no-op response.
+## Messages And Customer Journey
+The `Messages and Customer Journey` area behaves like before:
+- It shows the live outbound prompt, reply suggestions, journey state, and slot/confirmation steps.
+- In `Real` mode, reply buttons are read-only because the cockpit waits for the provider callback.
+- Message monitor, RCS callback polling, and journey-state rendering continue to use the same underlying APIs.
 
 ## Safety Defaults
-- Minimum lead time: `30 minutes`
-- Maximum slot proposal window: bounded by configured booking window limits
-- Maximum offered dates/times: limited by the active flow configuration
 - Silence threshold default: `1300 ms`
+- Manual phone input limit: `40` characters
+- Scenario execution mode in Dashboard+: `Real`
+- Existing detailed dashboard and message monitor remain available for troubleshooting.
 
-## Typical Flow
-1. Reminder arrives.
-2. Customer selects `Reschedule`.
-3. System resolves which appointment is meant.
-4. If multiple appointments exist, the system asks which one should be changed.
-5. The system proposes future-only slots.
-6. Customer selects a slot.
-7. The slot is validated again before booking mutation.
-
-## Notes
-- `v1.3.10` is additive and should not break protected `v1.x` behavior.
-- Ambiguous appointment actions are intentionally blocked until the target is explicit.
+## Typical Sales Demo Flow
+1. Open `/ui/demo-monitoring/v1.3.10`.
+2. Stay on `Dashboard+`.
+3. Select the scenario, address or manual phone target, and appointment type.
+4. Start the demo.
+5. Show that the outbound journey appears in `Messages and Customer Journey`.
+6. Use the provider callback path or Message Monitor to show the customer response.

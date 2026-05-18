@@ -230,6 +230,7 @@
       .page { display: none; }
       .page.active { display: block; }
       .grid { display: grid; gap: 18px; grid-template-columns: 320px minmax(0, 1fr); }
+      .dashboard-plus-grid { display: grid; gap: 18px; grid-template-columns: 340px minmax(0, 1fr); align-items: start; }
       .page-grid { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .panel {
         background: var(--panel);
@@ -494,6 +495,33 @@
       .settings-status-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
       .settings-banner { margin: 0 0 16px; }
       .field-state { font-size: 12px; color: var(--muted); margin-top: 6px; }
+      .inline-choice {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .inline-choice input[type="radio"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--brand);
+      }
+      .mode-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 42px;
+        border: 1px solid var(--brand);
+        border-radius: 14px;
+        background: rgba(15, 76, 129, 0.1);
+        color: var(--brand);
+        padding: 10px 12px;
+        font-weight: 700;
+      }
+      .field-error {
+        color: var(--danger);
+        font-size: 12px;
+        margin-top: 6px;
+      }
       .diagnostic-banner {
         margin-top: 14px;
         border: 1px solid rgba(200, 90, 90, 0.38);
@@ -512,7 +540,7 @@
       }
 
       @media (max-width: 1120px) {
-        .grid, .page-grid, .card-strip, .message-grid, .message-filters, .settings-form-grid, .settings-status-grid, .split-layout, .address-form-grid, .address-link-grid { grid-template-columns: 1fr; }
+        .grid, .dashboard-plus-grid, .page-grid, .card-strip, .message-grid, .message-filters, .settings-form-grid, .settings-status-grid, .split-layout, .address-form-grid, .address-link-grid { grid-template-columns: 1fr; }
       }
     </style>
   </head>
@@ -558,7 +586,66 @@
           </div>
         </section>
 
-        <section class="page active" id="page-dashboard">
+        <section class="page active" id="page-dashboard-plus">
+          <div class="header-row">
+            <div>
+              <h2 id="dashboardPlusPageTitle">Dashboard+</h2>
+              <p id="dashboardPlusPageSub">Simplified real-mode demonstration for sales teams.</p>
+            </div>
+          </div>
+          <div class="dashboard-plus-grid">
+            <aside class="panel">
+              <h2 id="dashboardPlusOperatorTitle">Operator Panel</h2>
+              <div class="stack">
+                <div class="control">
+                  <label id="dashboardPlusScenarioLabel">Scenario</label>
+                  <select id="dashboardPlusScenarioSelect"></select>
+                  <div class="field-state" id="dashboardPlusScenarioState">loaded</div>
+                </div>
+                <div class="control">
+                  <label id="dashboardPlusScenarioModeLabel">Scenario Mode</label>
+                  <div class="mode-pill" id="dashboardPlusScenarioModeValue">Real</div>
+                </div>
+                <div class="control">
+                  <div class="inline-choice">
+                    <input id="dashboardPlusAddressRadio" name="dashboardPlusContactTarget" type="radio" value="address" checked />
+                    <label id="dashboardPlusAddressRadioLabel" for="dashboardPlusAddressRadio">Selected Address</label>
+                  </div>
+                  <select id="dashboardPlusAddressSelect"></select>
+                  <div class="field-state" id="dashboardPlusAddressState">loaded</div>
+                </div>
+                <div class="control">
+                  <div class="inline-choice">
+                    <input id="dashboardPlusPhoneRadio" name="dashboardPlusContactTarget" type="radio" value="phone" />
+                    <label id="dashboardPlusPhoneRadioLabel" for="dashboardPlusPhoneRadio">Phone Number</label>
+                  </div>
+                  <input id="dashboardPlusPhoneInput" type="tel" maxlength="40" placeholder="+49..." />
+                  <div class="field-error" id="dashboardPlusPhoneError" hidden>No mobile number entered.</div>
+                  <div class="field-state" id="dashboardPlusSelectedPhone">Selected target: -</div>
+                </div>
+                <div class="control">
+                  <label id="dashboardPlusAppointmentTypeLabel">Appointment Type</label>
+                  <select id="dashboardPlusAppointmentTypeSelect"></select>
+                </div>
+                <div class="action-row">
+                  <button id="dashboardPlusStartBtn" class="primary">Start Demo</button>
+                </div>
+                <div class="message-box" id="dashboardPlusStatusBanner">Ready for the next Dashboard+ demo.</div>
+              </div>
+            </aside>
+            <article class="panel">
+              <h2 id="dashboardPlusJourneyTitle">Messages and Customer Journey</h2>
+              <div class="message-box success" id="dashboardPlusLiveStatus">Live status: waiting for the next real demo step.</div>
+              <div class="flow-indicator" id="dashboardPlusFlowIndicator"></div>
+              <div class="chat" id="dashboardPlusChatStream"></div>
+              <div class="stack" id="dashboardPlusSlotList"></div>
+              <div class="message-box" id="dashboardPlusInteractionStatus"></div>
+              <div class="record small" id="dashboardPlusSpeakerNotes"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-dashboard">
           <div class="header-row">
             <div>
               <h2 id="dashboardPageTitle">Dashboard</h2>
@@ -1123,6 +1210,9 @@
         addressSearchText: "",
         addressStatusFilter: "active",
         selectedAddressId: null,
+        dashboardPlusContactTarget: "address",
+        dashboardPlusPhoneNumber: "",
+        dashboardPlusBanner: null,
         addressDraft: {},
         addressBanner: null,
         googleAssignedAddressId: null,
@@ -1159,6 +1249,7 @@
       const copy = {
         en: {
           dashboard: "Dashboard",
+          dashboardPlus: "Dashboard+",
           messageMonitor: "Message Monitor",
           reports: "Reports",
           monitoring: "Monitoring",
@@ -1171,6 +1262,17 @@
           heroText: "Dashboard explains the booking story, Message Monitor shows communication traffic, Reports turn that traffic into operator-facing clarity, and Google Demo Control keeps calendar actions in one place.",
           dashboardPageTitle: "Dashboard",
           dashboardPageSub: "Business-first overview with current story, slots, and operator summary.",
+          dashboardPlusPageTitle: "Dashboard+",
+          dashboardPlusPageSub: "Simplified real-mode demonstration for sales teams.",
+          dashboardPlusAddressTarget: "Selected Address",
+          dashboardPlusPhoneTarget: "Phone Number",
+          dashboardPlusPhonePlaceholder: "+49 mobile number",
+          dashboardPlusPhoneMissing: "No mobile number entered.",
+          dashboardPlusSelectedTarget: "Selected target",
+          dashboardPlusStart: "Start Demo",
+          dashboardPlusReady: "Ready for the next Dashboard+ demo.",
+          dashboardPlusStarted: "Dashboard+ real demo started.",
+          dashboardPlusModeHint: "Real",
           operatorTitle: "Operator Panel",
           scenario: "Scenario",
           scenarioMode: "Scenario Mode",
@@ -1442,6 +1544,7 @@
         },
         de: {
           dashboard: "Dashboard",
+          dashboardPlus: "Dashboard+",
           messageMonitor: "Message Monitor",
           reports: "Berichte",
           monitoring: "Monitoring",
@@ -1454,6 +1557,17 @@
           heroText: "Dashboard erklaert die Termin-Story, Message Monitor zeigt den Nachrichtenverkehr, Berichte machen daraus eine klare Operator-Sicht und Google Demo Control buendelt die Kalenderaktionen an einem Ort.",
           dashboardPageTitle: "Dashboard",
           dashboardPageSub: "Business-orientierter Ueberblick mit aktueller Story, Slots und Operator-Zusammenfassung.",
+          dashboardPlusPageTitle: "Dashboard+",
+          dashboardPlusPageSub: "Vereinfachte Real-Modus-Demonstration fuer den Vertrieb.",
+          dashboardPlusAddressTarget: "Ausgewaehlte Adresse",
+          dashboardPlusPhoneTarget: "Telefonnummer",
+          dashboardPlusPhonePlaceholder: "+49 Mobilnummer",
+          dashboardPlusPhoneMissing: "Keine Telefonnummer (Mobilnummer) eingegeben.",
+          dashboardPlusSelectedTarget: "Ausgewaehltes Ziel",
+          dashboardPlusStart: "Demo starten",
+          dashboardPlusReady: "Bereit fuer die naechste Dashboard+ Demo.",
+          dashboardPlusStarted: "Dashboard+ Real-Demo gestartet.",
+          dashboardPlusModeHint: "Real",
           operatorTitle: "Operator Panel",
           scenario: "Szenario",
           scenarioMode: "Szenario-Modus",
@@ -1738,6 +1852,34 @@
         hydrationDiagnosticTitle: document.getElementById("hydrationDiagnosticTitle"),
         hydrationDiagnosticBody: document.getElementById("hydrationDiagnosticBody"),
         hydrationDiagnosticList: document.getElementById("hydrationDiagnosticList"),
+        dashboardPlusPageTitle: document.getElementById("dashboardPlusPageTitle"),
+        dashboardPlusPageSub: document.getElementById("dashboardPlusPageSub"),
+        dashboardPlusOperatorTitle: document.getElementById("dashboardPlusOperatorTitle"),
+        dashboardPlusScenarioLabel: document.getElementById("dashboardPlusScenarioLabel"),
+        dashboardPlusScenarioSelect: document.getElementById("dashboardPlusScenarioSelect"),
+        dashboardPlusScenarioState: document.getElementById("dashboardPlusScenarioState"),
+        dashboardPlusScenarioModeLabel: document.getElementById("dashboardPlusScenarioModeLabel"),
+        dashboardPlusScenarioModeValue: document.getElementById("dashboardPlusScenarioModeValue"),
+        dashboardPlusAddressRadio: document.getElementById("dashboardPlusAddressRadio"),
+        dashboardPlusAddressRadioLabel: document.getElementById("dashboardPlusAddressRadioLabel"),
+        dashboardPlusAddressSelect: document.getElementById("dashboardPlusAddressSelect"),
+        dashboardPlusAddressState: document.getElementById("dashboardPlusAddressState"),
+        dashboardPlusPhoneRadio: document.getElementById("dashboardPlusPhoneRadio"),
+        dashboardPlusPhoneRadioLabel: document.getElementById("dashboardPlusPhoneRadioLabel"),
+        dashboardPlusPhoneInput: document.getElementById("dashboardPlusPhoneInput"),
+        dashboardPlusPhoneError: document.getElementById("dashboardPlusPhoneError"),
+        dashboardPlusSelectedPhone: document.getElementById("dashboardPlusSelectedPhone"),
+        dashboardPlusAppointmentTypeLabel: document.getElementById("dashboardPlusAppointmentTypeLabel"),
+        dashboardPlusAppointmentTypeSelect: document.getElementById("dashboardPlusAppointmentTypeSelect"),
+        dashboardPlusStartBtn: document.getElementById("dashboardPlusStartBtn"),
+        dashboardPlusStatusBanner: document.getElementById("dashboardPlusStatusBanner"),
+        dashboardPlusJourneyTitle: document.getElementById("dashboardPlusJourneyTitle"),
+        dashboardPlusLiveStatus: document.getElementById("dashboardPlusLiveStatus"),
+        dashboardPlusFlowIndicator: document.getElementById("dashboardPlusFlowIndicator"),
+        dashboardPlusChatStream: document.getElementById("dashboardPlusChatStream"),
+        dashboardPlusSlotList: document.getElementById("dashboardPlusSlotList"),
+        dashboardPlusInteractionStatus: document.getElementById("dashboardPlusInteractionStatus"),
+        dashboardPlusSpeakerNotes: document.getElementById("dashboardPlusSpeakerNotes"),
         dashboardPageTitle: document.getElementById("dashboardPageTitle"),
         dashboardPageSub: document.getElementById("dashboardPageSub"),
         operatorTitle: document.getElementById("operatorTitle"),
@@ -2203,6 +2345,13 @@
         if (uiModes.guided_mode) {
           state.guidedMode = uiModes.guided_mode;
         }
+        const dashboardPlus = (payload.metadata && payload.metadata.dashboard_plus) || {};
+        if (dashboardPlus.contact_target_mode) {
+          state.dashboardPlusContactTarget = dashboardPlus.contact_target_mode === "phone" ? "phone" : "address";
+        }
+        if (dashboardPlus.manual_phone_number !== undefined && dashboardPlus.manual_phone_number !== null) {
+          state.dashboardPlusPhoneNumber = dashboardPlus.manual_phone_number;
+        }
       }
 
       function persistScenarioContext(patch = {}) {
@@ -2218,6 +2367,8 @@
           to_date: patch.to_date || state.googleToDate || current.to_date,
           dashboard_mode: patch.dashboard_mode || currentUiModes.dashboard_mode || state.dashboardMode,
           guided_mode: patch.guided_mode || currentUiModes.guided_mode || state.guidedMode,
+          contact_target_mode: patch.contact_target_mode || state.dashboardPlusContactTarget,
+          manual_phone_number: patch.manual_phone_number !== undefined ? patch.manual_phone_number : state.dashboardPlusPhoneNumber,
           current_step: patch.current_step || current.current_step || "operator_panel_ready",
           status: patch.status || current.status || "idle",
         };
@@ -2331,6 +2482,7 @@
       function currentStructuredMessage() {
         const context = currentScenarioContext();
         const address = selectedAddressById(context.address_id || state.selectedAddressId);
+        const contactPhone = selectedDashboardPlusPhone();
         const payloadJourneyMessage = (((state.payload || {}).messages_customer_journey || {}).current_message || null);
         if (state.runtimeMessage) {
           return {
@@ -2350,7 +2502,7 @@
             appointment_id: payloadJourneyMessage.appointment_id || context.appointment_id,
             correlation_ref: payloadJourneyMessage.correlation_ref || context.correlation_ref,
             customer_name: address?.display_name || payloadJourneyMessage.customer_name || null,
-            phone_number: address?.phone || payloadJourneyMessage.phone_number || null,
+            phone_number: contactPhone || payloadJourneyMessage.phone_number || null,
           };
         }
         if (step.communication_message) {
@@ -2361,7 +2513,7 @@
           appointment_id: context.appointment_id,
               correlation_ref: context.correlation_ref,
               customer_name: address?.display_name || step.communication_message.customer_name,
-              phone_number: address?.phone || step.communication_message.phone_number,
+              phone_number: contactPhone || step.communication_message.phone_number,
             };
           }
           if (state.stepIndex > 0) {
@@ -2376,7 +2528,7 @@
                 appointment_id: context.appointment_id,
                 correlation_ref: context.correlation_ref,
                 customer_name: address?.display_name || previousActionStep.communication_message.customer_name,
-                phone_number: address?.phone || previousActionStep.communication_message.phone_number,
+                phone_number: contactPhone || previousActionStep.communication_message.phone_number,
               };
             }
           }
@@ -2386,7 +2538,7 @@
             appointment_id: context.appointment_id,
             correlation_ref: context.correlation_ref,
             customer_name: address?.display_name || step.communication_message.customer_name,
-            phone_number: address?.phone || step.communication_message.phone_number,
+            phone_number: contactPhone || step.communication_message.phone_number,
           };
         }
         return {
@@ -2398,7 +2550,7 @@
           appointment_id: context.appointment_id,
           correlation_ref: context.correlation_ref,
           customer_name: address?.display_name || null,
-          phone_number: address?.phone || null,
+          phone_number: contactPhone || null,
         };
       }
 
@@ -3362,6 +3514,21 @@
         return addresses.find((item) => item.address_id === addressId) || null;
       }
 
+      function selectedDashboardPlusPhone() {
+        if (state.dashboardPlusContactTarget === "phone") {
+          return String(state.dashboardPlusPhoneNumber || "").trim();
+        }
+        const address = selectedAddressById(state.selectedAddressId || currentScenarioContext().address_id);
+        return String(address?.phone || "").trim();
+      }
+
+      function dashboardPlusPhoneValidationMessage() {
+        if (state.dashboardPlusContactTarget === "phone" && !selectedDashboardPlusPhone()) {
+          return t("dashboardPlusPhoneMissing");
+        }
+        return "";
+      }
+
       function settingsGroupPage(pageId) {
         return pageId === "settings-rcs" ? "settings-rcs" : "settings-general";
       }
@@ -3466,10 +3633,21 @@
 
       function runScenario(mode) {
         state.scenarioExecutionMode = mode || state.scenarioExecutionMode;
+        const validationMessage = dashboardPlusPhoneValidationMessage();
+        if (state.scenarioExecutionMode === "real" && validationMessage) {
+          state.dashboardPlusBanner = { kind: "error", message: validationMessage };
+          state.scenarioRunBanner = { kind: "error", message: validationMessage };
+          renderDashboardPlus();
+          renderScenarioArtifacts();
+          return Promise.resolve();
+        }
         state.scenarioRunBanner = { kind: "warning", message: t("loading") };
+        state.dashboardPlusBanner = { kind: "warning", message: t("loading") };
         renderScenarioArtifacts();
         return persistScenarioContext({
           mode: state.scenarioExecutionMode,
+          contact_target_mode: state.dashboardPlusContactTarget,
+          manual_phone_number: state.dashboardPlusPhoneNumber,
           status: "running",
           current_step: "scenario_requested",
         }).then(() => fetchJson(`${scenarioApiBase()}/run`, {
@@ -3484,6 +3662,8 @@
             appointment_type: state.selectedAppointmentType,
             from_date: state.googleFromDate,
             to_date: state.googleToDate,
+            contact_target_mode: state.dashboardPlusContactTarget,
+            manual_phone_number: state.dashboardPlusPhoneNumber,
           }),
         }))
           .then((payload) => {
@@ -3505,10 +3685,16 @@
               kind: payload.success ? "success" : "warning",
               message: `${payload.scenario_title} | ${payload.status} | ${payload.actual.action || "-"} | ${payload.trace_id}`,
             };
-            return Promise.all([refreshScenarioArtifacts(), refreshMessageMonitor()]);
+            state.dashboardPlusBanner = {
+              kind: "success",
+              message: `${t("dashboardPlusStarted")} ${payload.status} | ${payload.trace_id}`,
+            };
+            return Promise.all([refreshScenarioArtifacts(), refreshMessageMonitor()]).then(() => refreshScenarioContext());
           })
           .catch((error) => {
             state.scenarioRunBanner = { kind: "error", message: error.message };
+            state.dashboardPlusBanner = { kind: "error", message: error.message };
+            renderDashboardPlus();
             renderScenarioArtifacts();
           });
       }
@@ -3577,6 +3763,7 @@
       function renderNav() {
         refs.navTabs.innerHTML = "";
         const pages = (state.payload && (state.payload.menus || state.payload.pages)) || [
+          { id: "dashboard-plus", label: "Dashboard+" },
           { id: "dashboard", label: "Dashboard" },
           { id: "help", label: "Help" },
         ];
@@ -3608,6 +3795,21 @@
         refs.heroTitle.textContent = t("heroTitle");
         refs.heroText.textContent = t("heroText");
         refs.releaseText.textContent = `Release: ${VERSION}`;
+        refs.dashboardPlusPageTitle.textContent = t("dashboardPlusPageTitle");
+        refs.dashboardPlusPageSub.textContent = t("dashboardPlusPageSub");
+        refs.dashboardPlusOperatorTitle.textContent = t("operatorTitle");
+        refs.dashboardPlusScenarioLabel.textContent = t("scenario");
+        refs.dashboardPlusScenarioState.textContent = selectorStateLabel(state.browserDiagnostics.selectorStates.scenario);
+        refs.dashboardPlusScenarioModeLabel.textContent = t("scenarioMode");
+        refs.dashboardPlusScenarioModeValue.textContent = t("dashboardPlusModeHint");
+        refs.dashboardPlusAddressRadioLabel.textContent = t("dashboardPlusAddressTarget");
+        refs.dashboardPlusAddressState.textContent = selectorStateLabel(state.browserDiagnostics.selectorStates.address);
+        refs.dashboardPlusPhoneRadioLabel.textContent = t("dashboardPlusPhoneTarget");
+        refs.dashboardPlusPhoneInput.placeholder = t("dashboardPlusPhonePlaceholder");
+        refs.dashboardPlusPhoneError.textContent = t("dashboardPlusPhoneMissing");
+        refs.dashboardPlusAppointmentTypeLabel.textContent = t("appointmentType");
+        refs.dashboardPlusStartBtn.textContent = t("dashboardPlusStart");
+        refs.dashboardPlusJourneyTitle.textContent = t("messageJourneyTitle");
         refs.dashboardPageTitle.textContent = t("dashboardPageTitle");
         refs.dashboardPageSub.textContent = t("dashboardPageSub");
         refs.operatorTitle.textContent = t("operatorTitle");
@@ -3862,6 +4064,149 @@
           option.selected = appointmentType.id === state.selectedAppointmentType;
           refs.scenarioAppointmentTypeSelect.appendChild(option);
         });
+      }
+
+      function renderDashboardPlusScenarioSelect() {
+        refs.dashboardPlusScenarioSelect.innerHTML = "";
+        const scenarios = (state.payload && ((state.payload.operator_panel && state.payload.operator_panel.scenario_options) || state.payload.scenario_options || state.payload.scenarios)) || [];
+        if (!scenarios.length) {
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = state.hydration.payloadLoaded ? t("noScenariosAvailable") : t("disconnectedOption");
+          option.selected = true;
+          refs.dashboardPlusScenarioSelect.appendChild(option);
+          return;
+        }
+        scenarios.forEach((scenario) => {
+          const option = document.createElement("option");
+          option.value = scenario.id;
+          option.textContent = scenario.title || scenario.label;
+          option.selected = scenario.id === state.scenarioId;
+          refs.dashboardPlusScenarioSelect.appendChild(option);
+        });
+      }
+
+      function renderDashboardPlusAddressSelect() {
+        renderAddressOptions(refs.dashboardPlusAddressSelect, state.selectedAddressId);
+      }
+
+      function renderDashboardPlusAppointmentTypeSelect() {
+        refs.dashboardPlusAppointmentTypeSelect.innerHTML = "";
+        const appointmentTypes = (state.payload && ((state.payload.operator_panel && state.payload.operator_panel.appointment_type_options) || state.payload.operator_appointment_types || ((state.payload.google_demo_control || {}).appointment_types) || [])) || [];
+        appointmentTypes.forEach((appointmentType) => {
+          const option = document.createElement("option");
+          option.value = appointmentType.id;
+          option.textContent = appointmentType.label;
+          option.selected = appointmentType.id === state.selectedAppointmentType;
+          refs.dashboardPlusAppointmentTypeSelect.appendChild(option);
+        });
+      }
+
+      function renderDashboardPlusContactControls() {
+        refs.dashboardPlusAddressRadio.checked = state.dashboardPlusContactTarget !== "phone";
+        refs.dashboardPlusPhoneRadio.checked = state.dashboardPlusContactTarget === "phone";
+        refs.dashboardPlusAddressSelect.disabled = state.dashboardPlusContactTarget === "phone";
+        refs.dashboardPlusPhoneInput.disabled = state.dashboardPlusContactTarget !== "phone";
+        refs.dashboardPlusPhoneInput.value = state.dashboardPlusPhoneNumber || "";
+        const selectedPhone = selectedDashboardPlusPhone();
+        const validationMessage = dashboardPlusPhoneValidationMessage();
+        refs.dashboardPlusPhoneError.hidden = !validationMessage;
+        refs.dashboardPlusPhoneError.textContent = validationMessage || t("dashboardPlusPhoneMissing");
+        refs.dashboardPlusSelectedPhone.textContent = `${t("dashboardPlusSelectedTarget")}: ${selectedPhone || "-"}`;
+        refs.dashboardPlusStatusBanner.className = "message-box";
+        const banner = state.dashboardPlusBanner || state.scenarioRunBanner;
+        refs.dashboardPlusStatusBanner.textContent = banner?.message || validationMessage || t("dashboardPlusReady");
+        if (banner?.kind === "success") refs.dashboardPlusStatusBanner.classList.add("success");
+        if (banner?.kind === "warning" || validationMessage) refs.dashboardPlusStatusBanner.classList.add("warning");
+        if (banner?.kind === "error") refs.dashboardPlusStatusBanner.classList.add("danger");
+      }
+
+      function renderDashboardPlusJourney() {
+        ensureHoldStateCurrent();
+        const scenario = currentScenario();
+        const step = currentStep();
+        const digitalTwinEntries = buildDigitalTwinEntries();
+        const conversation = digitalTwinEntries.length ? digitalTwinEntries : buildTranscriptEntries();
+        const message = currentStructuredMessage();
+        refs.dashboardPlusChatStream.innerHTML = "";
+        conversation.forEach((entry) => {
+          refs.dashboardPlusChatStream.appendChild(renderChatBubble(entry));
+        });
+        if (!conversation.length) {
+          const empty = document.createElement("div");
+          empty.className = "record small";
+          empty.textContent = scenario.simple_explanation || "No demo conversation available yet.";
+          refs.dashboardPlusChatStream.appendChild(empty);
+        }
+        refs.dashboardPlusSlotList.innerHTML = "";
+        if ((message.actions || []).length) {
+          const actionGroup = document.createElement("div");
+          actionGroup.className = "interactive-group";
+          actionGroup.innerHTML = `<h3>${t("replyActions")}</h3>`;
+          if (message.real_channel_payload) {
+            const payloadHint = document.createElement("div");
+            payloadHint.className = "record small";
+            payloadHint.textContent = `RCS suggestions: ${(message.real_channel_payload.suggestions || []).map((item) => item.label).join(", ") || "-"}`;
+            actionGroup.appendChild(payloadHint);
+          }
+          const buttonRow = document.createElement("div");
+          buttonRow.className = "interactive-buttons";
+          message.actions.forEach((action) => {
+            const button = document.createElement("button");
+            button.className = "primary";
+            button.textContent = localizedActionLabel(action.value, action.label);
+            button.disabled = true;
+            button.title = "Real mode waits for provider callback";
+            buttonRow.appendChild(button);
+          });
+          actionGroup.appendChild(buttonRow);
+          refs.dashboardPlusSlotList.appendChild(actionGroup);
+        } else {
+          const emptyActions = document.createElement("div");
+          emptyActions.className = "record small";
+          emptyActions.textContent = t("noActionsAvailable");
+          refs.dashboardPlusSlotList.appendChild(emptyActions);
+        }
+        if ((message.slot_options || []).length) {
+          const slotGroup = document.createElement("div");
+          slotGroup.className = "interactive-group";
+          slotGroup.innerHTML = `<h3>${t("slotChoices")}</h3>`;
+          const buttonRow = document.createElement("div");
+          buttonRow.className = "interactive-buttons";
+          message.slot_options.forEach((slot) => {
+            const button = document.createElement("button");
+            button.textContent = slot.label;
+            button.disabled = true;
+            button.title = "Real mode waits for provider callback";
+            buttonRow.appendChild(button);
+          });
+          slotGroup.appendChild(buttonRow);
+          refs.dashboardPlusSlotList.appendChild(slotGroup);
+        }
+        refs.dashboardPlusInteractionStatus.className = "message-box";
+        refs.dashboardPlusInteractionStatus.innerHTML = `<strong>${t("interactionStatusTitle")}</strong><div class="small">${(state.interactionStatus && state.interactionStatus.message) || scenario.simple_explanation}</div>`;
+        if (state.interactionStatus?.kind === "success") refs.dashboardPlusInteractionStatus.classList.add("success");
+        if (state.interactionStatus?.kind === "warning") refs.dashboardPlusInteractionStatus.classList.add("warning");
+        if (state.interactionStatus?.kind === "error") refs.dashboardPlusInteractionStatus.classList.add("danger");
+        refs.dashboardPlusSpeakerNotes.textContent = step.speaker_notes || scenario.simple_explanation;
+        refs.dashboardPlusLiveStatus.className = "message-box success";
+        refs.dashboardPlusLiveStatus.textContent = t("liveDemoStatusWaiting");
+        refs.dashboardPlusFlowIndicator.innerHTML = "";
+        guidedSteps().forEach((item, index) => {
+          const node = document.createElement("span");
+          node.className = "pill";
+          if (index === state.guidedStepIndex) node.classList.add("active");
+          node.textContent = `${index + 1}. ${item.title}`;
+          refs.dashboardPlusFlowIndicator.appendChild(node);
+        });
+      }
+
+      function renderDashboardPlus() {
+        renderDashboardPlusScenarioSelect();
+        renderDashboardPlusAddressSelect();
+        renderDashboardPlusAppointmentTypeSelect();
+        renderDashboardPlusContactControls();
+        renderDashboardPlusJourney();
       }
 
       function filterMessages(messages) {
@@ -5146,6 +5491,8 @@
             state.addressDraft = normalizeAddressDraft(selected);
             renderAddresses();
             renderScenarioAddressSelect();
+            renderDashboardPlusAddressSelect();
+            renderDashboardPlusContactControls();
             renderGooglePanels();
             renderReminderAssignment();
             return refreshAddressLinks();
@@ -5158,6 +5505,8 @@
             updateHydrationCheckpoint("address_source_loaded", false, error.message);
             renderAddresses();
             renderScenarioAddressSelect();
+            renderDashboardPlusAddressSelect();
+            renderDashboardPlusContactControls();
           });
       }
 
@@ -5254,6 +5603,7 @@
         renderScenarioExecutionModes();
         renderScenarioAddressSelect();
         renderScenarioAppointmentTypeSelect();
+        renderDashboardPlus();
         renderDashboardModes();
         renderGuidedModes();
         renderSettingsSubnav();
@@ -5299,6 +5649,13 @@
           if (!state.scenarioId) {
             state.scenarioId = payload.scenarios[0].id;
           }
+          const dashboardPlus = (payload.operator_panel && payload.operator_panel.dashboard_plus) || {};
+          if (dashboardPlus.contact_target_mode) {
+            state.dashboardPlusContactTarget = dashboardPlus.contact_target_mode === "phone" ? "phone" : "address";
+          }
+          if (dashboardPlus.manual_phone_number !== undefined && dashboardPlus.manual_phone_number !== null) {
+            state.dashboardPlusPhoneNumber = dashboardPlus.manual_phone_number;
+          }
           resetInteractionState();
           refs.googleFromDateInput.value = state.googleFromDate;
           refs.googleToDateInput.value = state.googleToDate;
@@ -5313,6 +5670,7 @@
         }).catch((error) => {
           state.payload = {
             pages: [
+              { id: "dashboard-plus", label: "Dashboard+" },
               { id: "dashboard", label: "Dashboard" },
               { id: "help", label: "Help" },
             ],
@@ -5656,6 +6014,77 @@
       refs.helpButton.addEventListener("click", () => {
         state.page = "help";
         render();
+      });
+      refs.dashboardPlusScenarioSelect.addEventListener("change", (event) => {
+        state.scenarioId = event.target.value;
+        state.scenarioExecutionMode = "real";
+        state.stepIndex = 0;
+        resetInteractionState();
+        persistScenarioContext({ scenario_id: state.scenarioId, mode: "real", status: "configured", current_step: "dashboard_plus_scenario_selected" })
+          .then(() => render())
+          .catch((error) => {
+            state.dashboardPlusBanner = { kind: "error", message: error.message };
+            render();
+          });
+      });
+      refs.dashboardPlusAddressRadio.addEventListener("change", () => {
+        if (!refs.dashboardPlusAddressRadio.checked) return;
+        state.dashboardPlusContactTarget = "address";
+        persistScenarioContext({ contact_target_mode: "address", manual_phone_number: state.dashboardPlusPhoneNumber, mode: "real", status: "configured" })
+          .then(() => render())
+          .catch((error) => {
+            state.dashboardPlusBanner = { kind: "error", message: error.message };
+            render();
+          });
+      });
+      refs.dashboardPlusPhoneRadio.addEventListener("change", () => {
+        if (!refs.dashboardPlusPhoneRadio.checked) return;
+        state.dashboardPlusContactTarget = "phone";
+        persistScenarioContext({ contact_target_mode: "phone", manual_phone_number: state.dashboardPlusPhoneNumber, mode: "real", status: "configured" })
+          .then(() => render())
+          .catch((error) => {
+            state.dashboardPlusBanner = { kind: "error", message: error.message };
+            render();
+          });
+      });
+      refs.dashboardPlusAddressSelect.addEventListener("change", (event) => {
+        const addressId = event.target.value || null;
+        state.selectedAddressId = addressId;
+        state.googleAssignedAddressId = addressId;
+        state.reminderAssignedAddressId = addressId;
+        state.dashboardPlusContactTarget = "address";
+        persistScenarioContext({ address_id: addressId, contact_target_mode: "address", mode: "real", status: "configured", current_step: "dashboard_plus_address_selected" })
+          .then(() => {
+            refreshAddressLinks();
+            render();
+          })
+          .catch((error) => {
+            state.dashboardPlusBanner = { kind: "error", message: error.message };
+            render();
+          });
+      });
+      refs.dashboardPlusPhoneInput.addEventListener("input", (event) => {
+        state.dashboardPlusPhoneNumber = event.target.value;
+        state.dashboardPlusContactTarget = "phone";
+        renderDashboardPlusContactControls();
+      });
+      refs.dashboardPlusPhoneInput.addEventListener("change", () => {
+        persistScenarioContext({ contact_target_mode: "phone", manual_phone_number: state.dashboardPlusPhoneNumber, mode: "real", status: "configured" }).catch((error) => {
+          state.dashboardPlusBanner = { kind: "error", message: error.message };
+          render();
+        });
+      });
+      refs.dashboardPlusAppointmentTypeSelect.addEventListener("change", (event) => {
+        state.selectedAppointmentType = event.target.value || "dentist";
+        persistScenarioContext({ appointment_type: state.selectedAppointmentType, mode: "real", status: "configured", current_step: "dashboard_plus_appointment_type_selected" })
+          .then(() => render())
+          .catch((error) => {
+            state.dashboardPlusBanner = { kind: "error", message: error.message };
+            render();
+          });
+      });
+      refs.dashboardPlusStartBtn.addEventListener("click", () => {
+        runScenario("real");
       });
       refs.scenarioSelect.addEventListener("change", (event) => {
         state.scenarioId = event.target.value;

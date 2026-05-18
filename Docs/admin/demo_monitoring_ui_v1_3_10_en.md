@@ -1,27 +1,56 @@
 # Appointment Agent Admin Guide v1.3.10 (EN)
 
 ## Release Intent
-`v1.3.10` hardens appointment identification and future-only slot handling in the demonstrator and orchestration paths.
+`v1.3.10` adds `Dashboard+`, a simplified real-mode sales demonstration surface for the Appointment Agent Cockpit.
+
+The release is additive. The existing `Dashboard`, `Message Monitor`, `Reports`, `Monitoring`, `Settings`, `Settings -> RCS`, `Google Demo Control`, `Reminder`, `Addresses`, and `Help` entries remain available.
 
 ## Admin-Relevant Changes
-- appointment identification now supports stronger reference-based resolution
-- multiple matching appointments require explicit selection before mutation
-- slot proposals are filtered through a future-only safety guard
-- same-day slot handling now respects a minimum lead time
+- New top-menu entry: `Dashboard+`, placed before `Dashboard`.
+- Main demo route `/ui/demo-monitoring/v1.3.10` now opens `Dashboard+` first.
+- `Dashboard+` operator panel contains:
+  - `Scenario`
+  - fixed `Scenario Mode = Real`
+  - address target radio plus `Selected Address`
+  - phone target radio plus manual phone input
+  - `Appointment Type`
+  - a single real-demo start action
+- Manual phone mode requires a non-empty phone number.
+- Manual phone input is capped at `40` characters.
+- Scenario runner accepts `contact_target_mode` and `manual_phone_number` for Dashboard+ real-mode sends.
 
-## Operational Defaults
-- `minimum_lead_time_minutes = 30`
-- `booking_window_days` remains bounded by configuration
-- `silence_threshold_ms = 1300`
-- adapters remain execution layers; orchestration owns resolution and mutation safety
+## Runtime Contract
+Dashboard+ stores its contact-target state in scenario-context metadata:
+
+```json
+{
+  "dashboard_plus": {
+    "contact_target_mode": "address",
+    "manual_phone_number": ""
+  }
+}
+```
+
+Supported `contact_target_mode` values:
+- `address`: use the selected address phone number
+- `phone`: use `manual_phone_number`
 
 ## Verification Checklist
-1. Confirm protected single-match flows still work.
-2. Verify that multi-match flows require appointment selection.
-3. Verify that past or stale same-day slots are not offered.
-4. Verify that selected slots are rechecked before mutation.
-5. Verify docs and release notes exist in DE and EN.
+1. Open `/ui/demo-monitoring/v1.3.10` and verify `Dashboard+` is active first.
+2. Verify the top menu order is `Dashboard+`, `Dashboard`, then the existing entries.
+3. Run a real scenario with contact target `Selected Address`.
+4. Run a real scenario with contact target `Phone Number` and a valid mobile number.
+5. Select `Phone Number`, leave the field empty, and verify the error blocks sending.
+6. Confirm `Messages and Customer Journey` still renders the same journey surface.
+7. Confirm `/api/demo-monitoring/v1.3.9/help` and `/api/demo-monitoring/v1.3.10/help` return version `v1.3.10`.
+
+## Operational Defaults
+- `silence_threshold_ms = 1300`
+- Dashboard+ scenario mode: `Real`
+- Manual phone limit: `40` characters
+- Existing v1.3.9 API base remains the compatibility API route; visible display version is `v1.3.10`.
 
 ## Risk Notes
-- Legacy static date buttons in older simulation-only paths should not be treated as the source of truth for real scheduling behavior.
-- Existing protected runtime paths must remain non-breaking within the `v1.x` line.
+- Dashboard+ must not remove the old Dashboard. It is a simplified additional view.
+- Real-mode buttons remain read-only inside the journey area because provider callbacks are the source of truth.
+- Do not commit generated scenario artifacts; keep local runtime artifacts out of release commits.

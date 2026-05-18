@@ -71,6 +71,7 @@ def build_v139_payload(lang: str = "en") -> dict:
         else "Kombinierte Incident-artige Shell mit Address Database Navigation, sichtbarer Address-Linkage, Reply-to-Action-Sicht und Reminder-Bedienung in einer Oberflaeche."
     )
     payload["pages"] = [
+        {"id": "dashboard-plus", "label": "Dashboard+" if language == "en" else "Dashboard+"},
         {"id": "dashboard", "label": "Dashboard" if language == "en" else "Dashboard"},
         {"id": "message-monitor", "label": "Message Monitor" if language == "en" else "Message Monitor"},
         {"id": "communications-reports", "label": "Reports" if language == "en" else "Berichte"},
@@ -104,6 +105,11 @@ def build_v139_payload(lang: str = "en") -> dict:
             "Phase 5 adds reproducible scenario evidence with local protocol files and guided replay buttons directly in the cockpit."
             if language == "en"
             else "Phase 5 fuegt reproduzierbare Szenario-Evidenz mit lokalen Protokolldateien und gefuehrten Replay-Buttons direkt im Cockpit hinzu."
+        ),
+        (
+            "Dashboard+ gives sales teams a simpler real-mode demo surface with address-based or manual mobile-number targeting."
+            if language == "en"
+            else "Dashboard+ gibt Vertriebsteams eine einfachere Real-Modus-Demo mit Adressauswahl oder manueller Mobilnummer als Ziel."
         ),
     ]
     payload["scenarios"] = build_phase5_scenarios(language)

@@ -1,49 +1,48 @@
 # Appointment Agent Benutzerleitfaden v1.3.10 (DE)
 
 ## Umfang
-Version `v1.3.10` verbessert zwei Kernverhalten im Appointment-Agent-Demonstrator:
-- sicherere Terminidentifikation
-- ausschließlich zukunftsgültige Slot-Vorschläge
+Version `v1.3.10` fuehrt `Dashboard+` ein: eine vereinfachte Real-Modus-Ansicht fuer Vertriebsdemonstrationen. Der bewaehrte Bereich `Messages and Customer Journey` bleibt erhalten, waehrend das Operator Panel auf die noetigen Demo-Felder reduziert wird.
 
-Ziel ist, dass das System zuerst den richtigen Termin identifiziert und danach nur noch gültige zukünftige Daten und Uhrzeiten anbietet.
+## Was sich geaendert hat
+- `Dashboard+` steht in der oberen Menueleiste vor dem bestehenden `Dashboard`.
+- Das bestehende `Dashboard` bleibt fuer Detailansichten, Monitoring, gefuehrte Demo und Protokolle verfuegbar.
+- `Dashboard+` arbeitet immer im `Real`-Modus.
+- Der Operator waehlt, ob die Zielnummer aus der ausgewaehlten Adresse oder aus einem manuellen Telefonnummernfeld kommt.
+- Wenn Telefonnummer ausgewaehlt ist und keine Mobilnummer eingegeben wurde, zeigt das Cockpit einen Fehler und blockiert den Real-Versand.
+- Die Aenderung ist additiv und non-breaking fuer geschuetztes `v1.x`-Verhalten.
 
-## Was sich geändert hat
-- Das System kann jetzt stärker mit Terminreferenzen wie Reservierungsreferenzen, Appointment-/Kalenderreferenzen, Correlation-Referenzen, Kundennummern und normalisierten Telefonnummern arbeiten.
-- Wenn mehrere zukünftige Termine zu einem Kunden passen, rät das System nicht mehr. Es fragt nach, welcher Termin bearbeitet werden soll.
-- Slot-Vorschläge sind ausschließlich zukunftsgültig und berücksichtigen eine Mindestvorlaufzeit.
-- Ein ausgewählter Slot wird vor der Mutation erneut geprüft, damit veraltete oder bereits vergangene Slots nicht versehentlich bestätigt werden.
+## Dashboard+ Operator Panel
+1. `Scenario` auswaehlen.
+2. Pruefen, dass `Scenario Mode` auf `Real` steht.
+3. Kontaktziel waehlen:
+   - `Ausgewaehlte Adresse`: verwendet die Telefonnummer des selektierten Adressdatensatzes.
+   - `Telefonnummer`: verwendet die manuell eingegebene Mobilnummer.
+4. `Appointment Type` auswaehlen.
+5. Demo starten.
 
-## Kundenerlebnis
-### 1. Klare Terminzuordnung
-Wenn der Kunde nur einen relevanten zukünftigen Termin hat, läuft der Prozess direkt weiter.
+## Regeln fuer das Kontaktziel
+- Standard ist `Ausgewaehlte Adresse`.
+- Der Adressmodus nutzt das bisherige Verhalten: gesendet wird an die Telefonnummer der ausgewaehlten Adresse.
+- Der Telefonnummernmodus ueberschreibt nur die Zielnummer fuer die Nachricht. Die ausgewaehlte Adresse kann weiter Termin- und Korrelationskontext liefern.
+- Ein leerer Telefonnummernmodus wird mit einer sichtbaren Fehlermeldung abgelehnt.
+- Die manuelle Telefonnummer ist auf `40` Zeichen begrenzt.
 
-### 2. Explizite Auswahl bei mehreren Terminen
-Wenn mehr als ein Termin passt, fragt das System, welcher Termin bestätigt, abgesagt oder verschoben werden soll.
-
-### 3. Nur zukünftige Slot-Vorschläge
-Das System schlägt nur noch Slots vor, die in der Zukunft noch gültig sind. Alte oder am selben Tag bereits abgelaufene Slots werden herausgefiltert.
-
-## Erwartetes Verhalten
-- `Bestaetigen` behält den aktuellen Termin nur dann bei, wenn das Ziel eindeutig aufgelöst ist.
-- `Verschieben` läuft nur weiter, wenn der betroffene Termin bekannt ist.
-- `Absagen` betrifft nur den aufgelösten Termin und rät niemals zwischen mehreren Terminen.
-- `Kein Treffer` führt zu einer sicheren Nachfrage oder einer No-Op-Antwort.
+## Messages And Customer Journey
+Der Bereich `Messages and Customer Journey` funktioniert wie bisher:
+- Er zeigt Outbound Prompt, Reply Suggestions, Journey-Status und Slot-/Bestaetigungsschritte.
+- Im `Real`-Modus sind Reply Buttons read-only, weil das Cockpit auf den Provider Callback wartet.
+- Message Monitor, RCS Callback Polling und Journey Rendering nutzen weiterhin dieselben APIs.
 
 ## Sicherheits-Defaults
-- Mindestvorlaufzeit: `30 Minuten`
-- Maximales Suchfenster: durch die konfigurierte Booking-Window-Grenze begrenzt
-- Maximale Anzahl vorgeschlagener Daten/Uhrzeiten: durch die aktive Flow-Konfiguration begrenzt
 - Silence Threshold Default: `1300 ms`
+- Manuelles Telefonnummernfeld: maximal `40` Zeichen
+- Scenario Execution Mode in Dashboard+: `Real`
+- Das bestehende Detail-Dashboard und der Message Monitor bleiben fuer Troubleshooting erhalten.
 
-## Typischer Ablauf
-1. Erinnerung wird zugestellt.
-2. Der Kunde wählt `Verschieben`.
-3. Das System löst auf, welcher Termin gemeint ist.
-4. Falls mehrere Termine existieren, fragt das System nach dem konkreten Zieltermin.
-5. Das System schlägt nur zukünftige Slots vor.
-6. Der Kunde wählt einen Slot.
-7. Der Slot wird vor der Buchungsmutation erneut geprüft.
-
-## Hinweise
-- `v1.3.10` ist additiv und soll geschütztes `v1.x`-Verhalten nicht brechen.
-- Mehrdeutige Terminaktionen werden absichtlich blockiert, bis der Zieltermin explizit feststeht.
+## Typischer Vertriebs-Demo-Ablauf
+1. `/ui/demo-monitoring/v1.3.10` oeffnen.
+2. Auf `Dashboard+` bleiben.
+3. Szenario, Adresse oder manuelle Telefonnummer und Terminart auswaehlen.
+4. Demo starten.
+5. Zeigen, dass die Outbound Journey in `Messages and Customer Journey` erscheint.
+6. Den Kundencallback ueber Provider Callback oder Message Monitor zeigen.

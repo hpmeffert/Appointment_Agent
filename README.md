@@ -15,7 +15,7 @@ In simple words:
 - Core public release line: `v1.4.0`
 - Demo UI stable line: `v1.0.0`
 - Demo UI release preparation line: `v1.0.2`
-- Demo UI current release line: `v1.3.9-patch9`
+- Demo UI current release line: `v1.3.10`
 - Docker runtime release line: `v1.4.0`
 
 ## Main Modules
@@ -38,6 +38,7 @@ In simple words:
 - `apps/demo_monitoring_ui/v1_3_1`
 - `apps/demo_monitoring_ui/v1_3_2`
 - `apps/demo_monitoring_ui/v1_3_3`
+- `apps/demo_monitoring_ui/v1_3_9` (visible cockpit release `v1.3.10`)
 - `apps/reminder_scheduler/v1_3_0`
 - `apps/reminder_scheduler/v1_3_1`
 - `apps/reminder_scheduler/v1_3_2`
@@ -109,8 +110,8 @@ Open:
 
 - Demo UI: `http://localhost:8080/ui/demo-monitoring/v1.0.0`
 - Demo UI Release Candidate: `http://localhost:8080/ui/demo-monitoring/v1.0.2`
-- Demo Cockpit Current Release: `http://localhost:8080/ui/demo-monitoring/v1.3.9`
-- Demo Cockpit Current Patch: `http://localhost:8080/ui/demo-monitoring/v1.3.9-patch9`
+- Demo Cockpit Current Release / Dashboard+: `http://localhost:8080/ui/demo-monitoring/v1.3.10`
+- Demo Cockpit Compatibility Route: `http://localhost:8080/ui/demo-monitoring/v1.3.9`
 - Address Database UI: `http://localhost:8080/ui/address-database/v1.3.9`
 - Embedded Reminder Scheduler Release: `http://localhost:8080/ui/reminder-scheduler/v1.3.6`
 - Demo Cockpit v1.0.5: `http://localhost:8080/ui/demo-monitoring/v1.0.5`
@@ -183,6 +184,6 @@ For a quick Docker smoke test after startup:
 
 - If Docker says the port is already in use, stop the other app that already uses port `8080`, or change `APPOINTMENT_AGENT_APP_PORT` in `.env`.
 - If the app cannot start, check `docker compose logs` and look for module import or path errors.
-- If the UI opens but looks empty, test the API route `/api/demo-monitoring/v1.3.9/payload`.
+- If the UI opens but looks empty, test the API route `/api/demo-monitoring/v1.3.9/payload`; it serves the visible `v1.3.10` Dashboard+ cockpit.
 - If `Test` mode says it is unavailable, check `.env` for `GOOGLE_REAL_INTEGRATION_ENABLED`, `GOOGLE_REFRESH_TOKEN`, and `GOOGLE_CALENDAR_ID`.
 - If the database cannot be written, reset with `docker compose down -v` and start again.

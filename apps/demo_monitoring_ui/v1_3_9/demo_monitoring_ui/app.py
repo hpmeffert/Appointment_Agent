@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -114,6 +114,8 @@ class RunScenarioRequest(BaseModel):
     appointment_type: str = "dentist"
     from_date: Optional[str] = None
     to_date: Optional[str] = None
+    contact_target_mode: Optional[Literal["address", "phone"]] = None
+    manual_phone_number: Optional[str] = None
 
 
 class ScenarioContextRequest(BaseModel):
@@ -126,6 +128,8 @@ class ScenarioContextRequest(BaseModel):
     to_date: Optional[str] = None
     dashboard_mode: Optional[str] = None
     guided_mode: Optional[str] = None
+    contact_target_mode: Optional[Literal["address", "phone"]] = None
+    manual_phone_number: Optional[str] = None
     current_step: Optional[str] = None
     status: Optional[str] = None
 
@@ -176,6 +180,14 @@ def build_live_cockpit_payload(*, session: Session, lang: str) -> dict:
         selected_address = context.get("selected_address")
     context_metadata = context.get("metadata") or {}
     ui_modes = dict(context_metadata.get("ui_modes") or {})
+    dashboard_plus_settings = dict(context_metadata.get("dashboard_plus") or {})
+    contact_target_mode = dashboard_plus_settings.get("contact_target_mode") or "address"
+    manual_phone_number = dashboard_plus_settings.get("manual_phone_number") or ""
+    selected_contact_phone = (
+        manual_phone_number.strip()
+        if contact_target_mode == "phone"
+        else ((selected_address or {}).get("phone") or "")
+    )
     real_callback = (context_metadata.get("real_callback") or {})
     selected_action = real_callback.get("selected_action")
     selected_value = real_callback.get("incoming_data")
@@ -228,6 +240,15 @@ def build_live_cockpit_payload(*, session: Session, lang: str) -> dict:
         "guided_mode": ui_modes.get("guided_mode") or "guided",
         "dashboard_modes": payload.get("dashboard_modes", []),
         "guided_modes": (payload.get("guided_demo") or {}).get("modes", []),
+        "dashboard_plus": {
+            "scenario_mode": "real",
+            "contact_target_mode": contact_target_mode,
+            "manual_phone_number": manual_phone_number,
+            "selected_contact_phone": selected_contact_phone,
+            "validation": {
+                "manual_phone_required": contact_target_mode == "phone" and not manual_phone_number.strip(),
+            },
+        },
     }
     payload["current_story"] = {
         "id": selected_scenario.get("id") if selected_scenario else None,
@@ -318,7 +339,7 @@ def _render_html(*, initial_page: str = "dashboard", page_title: str = "Appointm
 @router.get("/ui/demo-monitoring/v1.3.9-patch8")
 @router.get(f"/ui/demo-monitoring/{PATCH_VERSION}")
 def ui_view() -> HTMLResponse:
-    return HTMLResponse(_render_html())
+    return HTMLResponse(_render_html(initial_page="dashboard-plus"))
 
 
 @router.get(f"/ui/address-database/{BASE_VERSION}")
@@ -370,6 +391,8 @@ def help_view(lang: str = Query(default="en")) -> dict:
             "address_aware_google_generation",
             "file_based_protocol_artifacts",
             "messages_and_customer_journey_replay",
+            "dashboard_plus_sales_demo_view",
+            "dashboard_plus_manual_mobile_number_target",
         ],
         "design_baseline": "Incident Demo UI based on v1.3.8 with v1.3.9 address database UI, unified scenario context, appointment-address assignment flow, and reply action preview layer",
     }
@@ -423,16 +446,21 @@ def run_scenario(
     payload: RunScenarioRequest,
     service: DemoScenarioTestingService = Depends(get_scenario_service),
 ) -> dict:
-    return service.run_scenario(
-        scenario_id=payload.scenario_id,
-        mode=payload.mode,
-        lang="de" if payload.lang == "de" else "en",
-        address_id=payload.address_id,
-        output_channel=payload.output_channel,
-        appointment_type=payload.appointment_type,
-        from_date=payload.from_date,
-        to_date=payload.to_date,
-    )
+    try:
+        return service.run_scenario(
+            scenario_id=payload.scenario_id,
+            mode=payload.mode,
+            lang="de" if payload.lang == "de" else "en",
+            address_id=payload.address_id,
+            output_channel=payload.output_channel,
+            appointment_type=payload.appointment_type,
+            from_date=payload.from_date,
+            to_date=payload.to_date,
+            contact_target_mode=payload.contact_target_mode,
+            manual_phone_number=payload.manual_phone_number,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail={"message": str(exc)}) from exc
 
 
 @router.get(f"/api/demo-monitoring/{BASE_VERSION}/scenario-context")
@@ -465,6 +493,15 @@ def update_scenario_context(
     payload: ScenarioContextRequest,
     service: DemoScenarioContextService = Depends(get_context_service),
 ) -> dict:
+    current_context = service.get_context()
+    current_metadata = current_context.metadata or {}
+    current_ui_modes = dict(current_metadata.get("ui_modes") or {})
+    current_dashboard_plus = dict(current_metadata.get("dashboard_plus") or {})
+    dashboard_plus_patch = {
+        **current_dashboard_plus,
+        **({"contact_target_mode": payload.contact_target_mode} if payload.contact_target_mode else {}),
+        **({"manual_phone_number": payload.manual_phone_number} if payload.manual_phone_number is not None else {}),
+    }
     return service.save_context(
         DemoScenarioContextUpdate(
             scenario_id=payload.scenario_id,
@@ -479,14 +516,11 @@ def update_scenario_context(
             metadata={
                 "updated_from": "operator_panel",
                 "ui_modes": {
-                    **(
-                        service.get_context().metadata.get("ui_modes", {})
-                        if service.get_context().metadata
-                        else {}
-                    ),
+                    **current_ui_modes,
                     **({"dashboard_mode": payload.dashboard_mode} if payload.dashboard_mode else {}),
                     **({"guided_mode": payload.guided_mode} if payload.guided_mode else {}),
                 },
+                "dashboard_plus": dashboard_plus_patch,
             },
         )
     ).model_dump(mode="json")

@@ -11,8 +11,9 @@ health_payload="$(curl -fsS "${BASE_URL}/health")"
 grep -q '"status":"ok"' <<<"${health_payload}"
 
 echo "Checking demo UI..."
-demo_payload="$(curl -fsS "${BASE_URL}/ui/demo-monitoring/v1.3.9")"
-grep -q "Appointment Agent Cockpit v1.3.9" <<<"${demo_payload}"
+demo_payload="$(curl -fsS "${BASE_URL}/ui/demo-monitoring/v1.3.10")"
+grep -q "Appointment Agent Cockpit v1.3.10" <<<"${demo_payload}"
+grep -q "Dashboard+" <<<"${demo_payload}"
 grep -q "Addresses" <<<"${demo_payload}"
 grep -q "Reminder" <<<"${demo_payload}"
 
@@ -23,7 +24,7 @@ grep -q 'addresses' <<<"${scenario_payload}"
 
 echo "Checking standalone address UI..."
 address_ui_payload="$(curl -fsS "${BASE_URL}/ui/address-database/v1.3.9")"
-grep -q "Address Database v1.3.9" <<<"${address_ui_payload}"
+grep -q "Address Database v1.3.10" <<<"${address_ui_payload}"
 grep -q "page-addresses" <<<"${address_ui_payload}"
 
 echo "Checking help API..."
@@ -48,6 +49,6 @@ grep -q 'address_crud' <<<"${address_payload}"
 
 echo "Checking docs route..."
 docs_payload="$(curl -fsS "${BASE_URL}/docs/demo?lang=en")"
-grep -q 'v1.3.9' <<<"${docs_payload}"
+grep -q 'Dashboard+' <<<"${docs_payload}"
 
 echo "Docker smoke test passed for ${BASE_URL}"

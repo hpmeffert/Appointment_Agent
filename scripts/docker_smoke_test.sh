@@ -49,6 +49,6 @@ grep -q 'address_crud' <<<"${address_payload}"
 
 echo "Checking docs route..."
 docs_payload="$(curl -fsS "${BASE_URL}/docs/demo?lang=en")"
-grep -q 'Dashboard+' <<<"${docs_payload}"
+grep -q 'v1.3.11d' <<<"${docs_payload}"
 
 echo "Docker smoke test passed for ${BASE_URL}"

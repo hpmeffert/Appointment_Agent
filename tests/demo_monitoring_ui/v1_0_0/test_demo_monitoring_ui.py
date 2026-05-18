@@ -78,14 +78,15 @@ def test_docs_routes_render_markdown_in_new_pages() -> None:
 
     assert demo_response.status_code == 200
     assert "Demo Guide" in demo_response.text
-    assert "v1.3.9" in demo_response.text
-    assert "Story 1: Create a new address" in demo_response.text
+    assert "v1.3.11d" in demo_response.text
+    assert "Story 1: Show the hosted cockpit" in demo_response.text
     assert user_response.status_code == 200
     assert "Sprache: DE" in user_response.text
-    assert "Benutzerleitfaden v1.3.9" in user_response.text
-    assert "v1.3.9" in user_response.text
+    assert "Benutzerleitfaden v1.3.11d" in user_response.text
+    assert "v1.3.11d" in user_response.text
     assert admin_response.status_code == 200
-    assert "Admin Guide" in admin_response.text
+    assert "v1.3.11d" in admin_response.text
+    assert "Docker" in admin_response.text
 
 
 def test_demo_ui_v102_release_routes_are_available() -> None:
